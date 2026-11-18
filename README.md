@@ -65,7 +65,7 @@ the kit's check what still needs fixing.
 <tr>
 <td width="25%"><a href="https://github.com/KitionAI/kition-showcase/tree/main/doc/charity-impact-report"><img src="assets/readme/made-1.png" alt="A one-page charity impact report with a drop cap, three headline figures and a doughnut chart." /></a></td>
 <td width="25%"><a href="https://github.com/KitionAI/kition-showcase/tree/main/doc/project-proposal"><img src="assets/readme/made-2.png" alt="The full-page green cover of a community solar garden project proposal." /></a></td>
-<td width="25%"><a href="https://github.com/KitionAI/kition-showcase/tree/main/doc/gov-notice-red-header"><img src="assets/readme/made-3.png" alt="A Chinese official notice with a red masthead, a red rule, a document number and numbered headings." /></a></td>
+<td width="25%"><a href="https://github.com/KitionAI/kition-showcase/tree/main/doc/kelp-research-paper"><img src="assets/readme/made-3.png" alt="A two-column research paper on kelp canopy recovery with a full-width abstract, a numbered equation and a results table." /></a></td>
 <td width="25%"><a href="https://github.com/KitionAI/kition-showcase/tree/main/doc/recipe-card"><img src="assets/readme/made-4.png" alt="A recipe card on a tinted page, with ingredients in a narrow column and numbered method steps beside them." /></a></td>
 </tr>
 </table>

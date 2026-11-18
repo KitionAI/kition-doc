@@ -63,5 +63,5 @@ Generated-in-code art is original and has no file to list: the sample documents 
 | `assets/readme/columns.png` | The Kition authors | Screenshot of Kition Doc's editor on the showcase sample magazine-feature, taken by `web/scripts/readme-shots.mjs` | Apache-2.0 | README picture |
 | `assets/readme/made-1.png` | The Kition authors | Rendered by Kition Doc from the showcase sample charity-impact-report (its `thumb.png`) | Apache-2.0 | README picture |
 | `assets/readme/made-2.png` | The Kition authors | Rendered by Kition Doc from the showcase sample project-proposal (its `thumb.png`) | Apache-2.0 | README picture |
-| `assets/readme/made-3.png` | The Kition authors | Rendered by Kition Doc from the showcase sample gov-notice-red-header (its `thumb.png`) | Apache-2.0 | README picture |
+| `assets/readme/made-3.png` | The Kition authors | Rendered by Kition Doc from the showcase sample kelp-research-paper (its `thumb.png`) | Apache-2.0 | README picture |
 | `assets/readme/made-4.png` | The Kition authors | Rendered by Kition Doc from the showcase sample recipe-card (its `thumb.png`) | Apache-2.0 | README picture |
