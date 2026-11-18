@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-drop-cap-size-space
+feature: doc.layout.drop-cap
+intent: A document's drop cap keeps the size Word stored in its run and the distance from the text in its frame (w:hSpace, read and written back), and spans lines of the text after it, so text wraps beside it as WPS for Mac lays it out.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_documents_drop_cap_keeps_its_size_and_distance_from_the_text
+  - cargo-test:
+      package: kition-doc-docx
+      filter: a_drop_caps_distance_from_the_text_round_trips
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

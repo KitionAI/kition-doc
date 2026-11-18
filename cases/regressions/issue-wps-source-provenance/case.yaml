@@ -1,0 +1,19 @@
+format: 1
+id: regressions/issue-wps-source-provenance
+feature: doc.fidelity.wps-corpus
+intent: Comparison reports fingerprint tracked and untracked source files before and after rendering, exposing concurrent source changes while excluding ignored build output.
+layer: gate
+source:
+  kind: synthetic
+  from: tools/test_golden_provenance.py
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [python3, -m, unittest, discover, -s, tools, -p, test_golden_provenance.py]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

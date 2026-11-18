@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-c8-doc-6-next-style
+feature: doc.agent.guard
+intent: >-
+  Enter at the end of a styled paragraph holds the next-style record it reads.
+  Changes of that style refuse and changes of another style apply through both writers.
+layer: gate
+tags: [agents, paragraphs, styles]
+source:
+  kind: probe
+  from: task card C8-doc-6 (next-style read)
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::paragraph_splitting_rests_on_the_next_style" }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

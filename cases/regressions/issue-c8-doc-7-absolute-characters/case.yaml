@@ -1,0 +1,24 @@
+format: 1
+id: regressions/issue-c8-doc-7-absolute-characters
+feature: doc.agent.guard
+intent: >-
+  Absolute character operations merge unrelated style definition changes.
+  Assigned character fields and paragraph properties cleared by Clear still refuse.
+layer: gate
+tags: [agents, premises]
+source:
+  kind: probe
+  from: task card C8-doc-7 held-MORE absolute character inputs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc
+      test: c8
+      filter: independent::absolute_character_operations_hold_assigned_fields
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 300
+since: "2026-11-17"

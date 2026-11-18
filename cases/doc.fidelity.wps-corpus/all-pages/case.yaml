@@ -1,0 +1,22 @@
+format: 1
+id: doc.fidelity.wps-corpus/all-pages
+feature: doc.fidelity.wps-corpus
+intent: Compare every original document with all of its WPS reference images, reporting page and content differences without blessing current output.
+layer: corpus
+dimension: fidelity
+source:
+  kind: user-file
+  from: golden_word.zip
+  # SPDX NOASSERTION: the provenance and licence of these documents are unknown.
+  license: NOASSERTION
+  note: Unknown provenance; used only locally for automated layout comparison at the maintainers' request. Source documents and WPS images stay in the ignored corpus and are not redistributed.
+input: ["corpus:golden-word/manifest.json"]
+steps:
+  - exec:
+      cmd: [python3, tools/golden_word.py, run, --corpus, corpus/golden-word, --renderer, target/debug/xtask, --out, target/gate/wps-corpus, --pages, "1000", --check]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+timeout_s: 3600
+since: "2026-11-17"

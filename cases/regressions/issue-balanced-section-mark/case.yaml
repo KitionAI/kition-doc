@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-balanced-section-mark
+feature: doc.layout.column-balance
+intent: "The empty paragraph that only ends a section of balanced columns takes no room below them: the next continuous section starts right below the taller column, as WPS for Mac lays it out."
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/engine/tests/column_balance.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: the_mark_ending_balanced_columns_takes_no_room_below_them
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

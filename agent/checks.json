@@ -1,0 +1,68 @@
+[
+  {
+    "code": "doc.broken-link",
+    "severity": "error",
+    "summary": "A link points to a bookmark the document does not have.",
+    "fixture": "check-broken-link.docx"
+  },
+  {
+    "code": "doc.broken-reference",
+    "severity": "error",
+    "summary": "A field (REF, PAGEREF, HYPERLINK \\l) refers to a bookmark the document does not have.",
+    "fixture": "check-broken-reference.docx"
+  },
+  {
+    "code": "doc.field-error",
+    "severity": "error",
+    "summary": "A field shows an error result (\"Error! \u2026\") instead of its value.",
+    "fixture": "check-field-error.docx"
+  },
+  {
+    "code": "doc.missing-media",
+    "severity": "error",
+    "summary": "A picture's image is not in the document, so it shows as an empty frame.",
+    "fixture": "check-missing-media.docx"
+  },
+  {
+    "code": "doc.missing-note",
+    "severity": "error",
+    "summary": "A footnote or endnote reference has no note text in the document.",
+    "fixture": "check-missing-note.docx"
+  },
+  {
+    "code": "doc.empty-heading",
+    "severity": "warning",
+    "summary": "A heading has no text, so it shows as an empty entry in navigation and tables of contents.",
+    "fixture": "check-empty-heading.docx"
+  },
+  {
+    "code": "doc.ragged-table",
+    "severity": "warning",
+    "summary": "A table row spans fewer or more columns than the table's grid.",
+    "fixture": "check-ragged-table.docx"
+  },
+  {
+    "code": "doc.missing-alt-text",
+    "severity": "info",
+    "summary": "A picture or chart has no alternative text for screen readers.",
+    "fixture": "check-missing-alt-text.docx"
+  },
+  {
+    "code": "doc.font-substituted",
+    "severity": "info",
+    "summary": "A font is not available here and is drawn with a substitute, so lines may break differently.",
+    "fixture": "check-font-substituted.docx"
+  },
+  {
+    "code": "doc.tracked-changes",
+    "severity": "info",
+    "summary": "Tracked insertions or deletions are not accepted or rejected yet.",
+    "fixture": "check-tracked-changes.docx"
+  },
+  {
+    "code": "doc.truncated",
+    "severity": "info",
+    "summary": "A code was found more than 100 times; the rest are counted, not listed.",
+    "fixture": "check-truncated.docx"
+  }
+]

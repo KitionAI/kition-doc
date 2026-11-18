@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-column-balance
+feature: doc.layout.column-balance
+intent: Columns before a continuous section break are balanced on their page, keeping paragraphs kept together and widow control intact, and the next section starts below the tallest column; columns before a page break are not balanced.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/engine/tests/column_balance.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: column_balance
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

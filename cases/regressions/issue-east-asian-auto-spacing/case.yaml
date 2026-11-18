@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-east-asian-auto-spacing
+feature: doc.layout.east-asian-spacing
+intent: Automatic Latin and numeric spacing changes mixed-script geometry across formatting runs, without adding whitespace to source text or line edges.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests_auto_spacing.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: automatic_east_asian_spacing
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-picture-adjust-curve
+feature: doc.drawing.picture-adjust
+intent: Picture contrast scales about the middle grey and brightness adds, on the stored values, as WPS prints them (measured on the pictures in its PDFs).
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/doc/src/graphic.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-doc
+      filter: brightness_and_contrast_follow_wps
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

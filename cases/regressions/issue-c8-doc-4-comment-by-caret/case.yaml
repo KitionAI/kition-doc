@@ -1,0 +1,26 @@
+format: 1
+id: regressions/issue-c8-doc-4-comment-by-caret
+feature: doc.review.comments
+intent: >-
+  Delete and Resolve without an id act on the comment the selection is in, and resolving a reply
+  resolves its thread.
+layer: gate
+tags: [comments, agents]
+source:
+  kind: probe
+  from: task card C8-doc-4 item 4 (the C8-doc-3 reading's engine defects)
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: "cmd::review::tests::a_comment_by_the_caret_is_the_one_the_caret_is_in"
+  - cargo-test:
+      package: kition-doc-engine
+      filter: "cmd::review::tests::resolving_a_reply_resolves_its_thread"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 300
+since: "2026-11-17"

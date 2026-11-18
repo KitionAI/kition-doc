@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-east-asian-font-selection
+feature: doc.layout.east-asian-font
+intent: East Asian text uses the inherited East Asian font slot independently of the Latin slot, so glyph selection and line metrics do not depend on previously loaded fallback faces.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: east_asian_font
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

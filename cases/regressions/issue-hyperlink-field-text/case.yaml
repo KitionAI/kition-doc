@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-hyperlink-field-text
+feature: doc.layout.field-tabs
+intent: A HYPERLINK field's result is read as ordinary text between range markers, keeping its runs' formatting (Word's Hyperlink style) and breaking across lines, and is written back as a field with its code.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/formats/docx/tests/citations.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-docx
+      filter: hyperlink_fields_keep_their_formatted_result_as_text
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-line-number-format
+feature: doc.layout.line-numbers
+intent: Line numbers use the Line Number character style or the document's default text formatting, skip the empty paragraph that only carries a section break, and are drawn as selectable text.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/engine/tests/line_numbers.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: line_numbers
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

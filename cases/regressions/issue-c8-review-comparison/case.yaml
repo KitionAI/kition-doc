@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-review-comparison
+feature: doc.agent.guard
+intent: Membership windows never hold cell content; whole-object fingerprints remain broader than fill; geometry facts retain their holders and sorted ID scans do not supply per-object identity.
+layer: gate
+tags: [agents]
+source: { kind: probe, from: C8-expectations review doc, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-doc-kit, test: declarations_independent, filter: "comparison" }
+expected:
+  - { actual: "out:cargo-test", compare: exit, value: 0 }
+timeout_s: 60
+since: "2026-11-17"

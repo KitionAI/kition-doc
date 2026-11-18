@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-chinese-numbering
+feature: doc.lists.chinese-numbering
+intent: List levels in Chinese counting, Chinese legal and enclosed-circle formats label their items with those numerals and keep their format through repeated DOCX saves instead of turning into decimal numbers.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/engine/tests/chinese_numbering.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: chinese_numbering
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

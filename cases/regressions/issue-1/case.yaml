@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-1
+feature: doc.file.documents
+intent: With SOURCE_DATE_EPOCH set, a saved document's created and modified times are that time rather than the clock, so a headless build that saves the same document twice writes the same bytes (reproducible showcase and agent outputs).
+layer: gate
+source:
+  kind: issue
+  from: Kition Doc regression suite
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      test: source_date_epoch
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

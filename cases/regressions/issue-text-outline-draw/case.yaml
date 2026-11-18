@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-text-outline-draw
+feature: doc.layout.text-outline
+intent: Text with a visible outline is drawn as outlined letters (filled, stroked) rather than text, as WPS prints it.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: outlined_text_is_drawn_as_letters_not_text
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

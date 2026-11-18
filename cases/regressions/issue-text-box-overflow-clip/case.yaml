@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-text-box-overflow-clip
+feature: doc.layout.float-position
+intent: A text box too short for its text shows every line that starts inside it and clips the last one at its bottom edge, as WPS for Mac draws it, rather than dropping that line.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_line_that_starts_inside_a_text_box_is_drawn_clipped_at_its_edge
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

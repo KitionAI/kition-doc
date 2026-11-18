@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-c8-doc-saved
+feature: doc.agent.guard
+intent: >-
+  After every representative write the saved file reads back as the kit served it, but for pinned causes.
+layer: gate
+tags: [headless, guard]
+source:
+  kind: synthetic
+  from: C8-land-14-doc
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "saved::" }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

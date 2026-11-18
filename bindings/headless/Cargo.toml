@@ -1,0 +1,25 @@
+[package]
+name = "kition-doc"
+description = "The Doc kit for Kition's agent: the Kition SDK document served headless over the Kit Protocol."
+version.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+kition-doc-kit = { path = "../wasm" }
+kition-headless = { workspace = true }
+
+[dev-dependencies]
+# workspace_only.rs: the pictures it plants and reads back, and the Word package it writes.
+image = { workspace = true }
+zip = { workspace = true }
+kition-kit-server = { workspace = true }
+kition-kit = { workspace = true }
+# The agent tools (premise guard, receipts) the C8 tests drive the kit through.
+kition-kits = { workspace = true }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+serde_json = { workspace = true }

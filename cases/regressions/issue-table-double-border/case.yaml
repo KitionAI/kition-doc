@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-table-double-border
+feature: doc.layout.table-position
+intent: A table's double (or triple) outer border takes its whole extent above the first row and below the last (three widths for a double line), as WPS for Mac lays out luan's double-bordered tables, so the text after such a table stands where WPS puts it.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_tables_double_border_takes_its_whole_extent
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

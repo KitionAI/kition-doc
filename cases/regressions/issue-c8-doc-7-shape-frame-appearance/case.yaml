@@ -1,0 +1,24 @@
+format: 1
+id: regressions/issue-c8-doc-7-shape-frame-appearance
+feature: doc.agent.guard
+intent: >-
+  Shape rotation and wrapping merge unrelated appearance edits. Assigned frame
+  changes still refuse changed, including outside changes of unowned inline objects.
+layer: gate
+tags: [agents, premises]
+source:
+  kind: probe
+  from: task card C8-doc-7 held-MORE shape frame appearance
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc
+      test: c8
+      filter: independent::shape_frames_do_not_hold_appearance
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 300
+since: "2026-11-17"

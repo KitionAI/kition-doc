@@ -1,0 +1,16 @@
+format: 1
+id: regressions/issue-c8-doc-6-table-points
+feature: doc.agent.guard
+intent: >-
+  Independent table point readings reach the actual cell borders they name,
+  preserving both horizontal and vertical border assertions.
+layer: gate
+source: { kind: probe, from: task card C8-doc-6, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-doc-kit, test: declarations_independent, filter: "table_point_readings_reach_the_borders_they_name" }
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::a_table_stroke_rests" }
+expected:
+  - { actual: out:cargo-test, compare: exit, value: 0 }
+timeout_s: 600
+since: "2026-11-17"

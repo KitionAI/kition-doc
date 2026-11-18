@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-c8-doc-places
+feature: doc.agent.guard
+intent: >-
+  A write addressing text by position rests on the text before and inside its range and on the paragraph's place, not on text after it: an independent writer's change before refuses relocated, inside refuses changed, after applies; a cell path into a table that moved is refused, not applied to another paragraph.
+layer: gate
+tags: [headless, guard]
+source:
+  kind: synthetic
+  from: C8-land-14-doc
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "outside::" }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

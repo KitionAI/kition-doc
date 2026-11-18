@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-no-break-in-word-punctuation
+feature: doc.layout.line-break-opportunities
+intent: A line does not break inside a word after a question mark, exclamation mark or hyphen (a web address's "?sid=75", "well-known") when the word fits on the next line, as WPS for Mac keeps it whole.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: no_line_break_inside_a_word_after_a_question_mark_exclamation_or_hyphen
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

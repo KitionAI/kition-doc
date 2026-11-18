@@ -1,0 +1,25 @@
+format: 1
+id: regressions/issue-draft-replica-open
+feature: doc.agent.draft
+intent: >-
+  `kition-doc` opens a document from its replica (`model.open`, which `kit.json` lists): what
+  `model.export` answers for an open document with text and a picture, its changes and the media
+  they reference, opens again as the same document with no file. An agent's headless draft is
+  such a replica, so a person reviews its object difference.
+layer: gate
+source:
+  kind: probe
+  from: 'task card S0-1/C1 (kition-sdk tests/drafts.rs, "doc: a copy of the file, not a replica")'
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc
+      test: replica
+      filter: a_document_opens_from_its_exported_replica_with_its_media
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+since: "2026-11-17"
+timeout_s: 60

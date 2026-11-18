@@ -1,0 +1,27 @@
+format: 1
+id: regressions/issue-export-bytes
+feature: doc.file.export-print
+intent: >-
+  `file.export` answers the document as PDF, or one page as PNG, as base64 without writing a file
+  or changing the document, and kit.json declares those exports for the host and the agent's
+  `doc_export` (`exports`, `agent.export`); the headless kit answers every declared format to the
+  agent and writes no file itself.
+layer: gate
+source:
+  kind: probe
+  from: bindings/wasm/tests/export.rs, bindings/headless/tests/export.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      test: export
+  - cargo-test:
+      package: kition-doc
+      test: export
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 120
+since: "2026-11-17"

@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-page-break-mark
+feature: doc.layout.section-pages
+intent: A paragraph whose last character is a page break keeps its mark on the break line, so the next paragraph starts the next page at its top, without the paragraph space after, as WPS (and Word 2013+) lay it out.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_page_break_ending_its_paragraph_keeps_the_mark_on_its_page
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

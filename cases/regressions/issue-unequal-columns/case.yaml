@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-unequal-columns
+feature: doc.layout.column-balance
+intent: A paragraph carrying on from a narrow column into a wider one is set as wide as the column it continues in, as WPS for Mac sets luan's unequal columns (it kept the first column's width).
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/engine/tests/column_balance.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: a_paragraph_continuing_in_a_wider_column_runs_its_width
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

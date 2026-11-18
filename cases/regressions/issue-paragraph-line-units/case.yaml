@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-paragraph-line-units
+feature: doc.layout.paragraph-spacing
+intent: Preserve line-unit and automatic-spacing attributes through DOCX and replica round trips, and honor nonzero inherited line constraints during layout and point-spacing edits.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/engine/tests/paragraph_spacing_units.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: paragraph_line_units_
+  - cargo-test:
+      package: kdm-model
+      filter: paragraph_line_units_
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

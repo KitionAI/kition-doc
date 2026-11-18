@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-9
+feature: doc.layout.float-position
+intent: Floating objects placed with the drawing commands keep what they are given and lay out as Word does - drawing.insert honours placement.wrap, dashed outlines are drawn, saved and read back, and drawing.describe without ids lists every object unless objects are selected.
+layer: gate
+source:
+  kind: issue
+  from: Kition Doc regression suite
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      test: floating_objects
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

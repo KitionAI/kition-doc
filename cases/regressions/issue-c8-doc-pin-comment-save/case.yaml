@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-c8-doc-pin-comment-save
+feature: doc.agent.guard
+intent: A comment's saved paragraph identity is already present in its write receipt.
+layer: gate
+tags: [agents, receipts]
+source:
+  kind: probe
+  from: task card C8-doc-pin saved-file comparison
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc
+      test: c8
+      filter: saved::every_write_reads_back_from_the_saved_file_as_it_was_served
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 300
+since: "2026-11-17"

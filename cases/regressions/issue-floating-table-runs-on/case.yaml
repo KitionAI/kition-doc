@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-floating-table-runs-on
+feature: doc.layout.float-position
+intent: A floating table positioned from its anchor paragraph that would run past the page's foot starts where its offset puts it and carries the rows that don't fit to the next page's top, still floating; the text after it starts there, below a column-wide table and beside a narrow one, as WPS for Mac sets it, rather than moving whole to the next page.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_floating_table_running_past_the_page_runs_on_from_where_its_offset_puts_it
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

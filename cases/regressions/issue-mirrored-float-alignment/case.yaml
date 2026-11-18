@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-mirrored-float-alignment
+feature: doc.layout.float-position
+intent: Inside and outside alignment and margin areas of floating objects mirror on even pages, and positions written as alternate content are read from their absolute fallback.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/engine/tests/mirrored_alignment.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: mirrored_alignment
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

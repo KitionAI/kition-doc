@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-relative-width
+feature: doc.layout.float-position
+intent: A floating object's width given as a share of the page, the margins' text area or a margin (wp14:sizeRelH pctWidth) is read and written back and sizes the object instead of its stored width, as WPS for Mac lays out luan's 40% quote text boxes.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_relative_width_sizes_a_floating_box
+  - cargo-test:
+      package: kition-doc-docx
+      filter: a_relative_width_round_trips
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

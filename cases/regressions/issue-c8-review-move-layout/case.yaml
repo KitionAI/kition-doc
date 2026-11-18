@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-review-move-layout
+feature: doc.agent.guard
+intent: Moving a drawing holds the page geometry it uses to resolve the destination anchor, with unrelated title changes applying for both writer routes.
+layer: gate
+tags: [agents]
+source: { kind: probe, from: C8-expectations review doc, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::moving_a_drawing_rests_on_the_layout_at_its_destination" }
+expected:
+  - { actual: "out:cargo-test", compare: exit, value: 0 }
+timeout_s: 60
+since: "2026-11-17"

@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-tall-footer
+feature: doc.layout.section-pages
+intent: A footer that reaches past the bottom margin ends the body above it, as a tall header starts the body below it, as WPS for Mac lays pages out (each page by the footer it shows - first, even or default).
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: body_ends_right_above_a_tall_footer
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-grid-tall-multiple
+feature: doc.layout.document-grid
+intent: A gridded line spaced at a multiple whose text is taller than one row is the multiple of the pitch tall (a 2.4-line heading on a 15.6 pt grid is 37.6 pt), not rounded up to whole rows, as WPS lays it out.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_tall_gridded_line_at_a_multiple_takes_the_multiple_of_the_pitch
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

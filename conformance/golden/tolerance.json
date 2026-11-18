@@ -1,0 +1,5 @@
+{
+  "maxChannelDelta": 2,
+  "maxDifferentPixels": 1200,
+  "note": "The engine's own renderer draws the preview from the bundled Source Serif 4; anti-aliased glyph edges may differ by a step between platforms and SIMD paths, on at most about 0.25% of the 612 x 792 page's pixels."
+}

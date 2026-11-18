@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-table-footnote
+feature: doc.references.notes-toc
+intent: A footnote referenced in a table cell goes to the foot of the page its row starts on, leaving the rows there that much less room, as WPS for Mac lays out luan's small table (kition left such footnotes out).
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_footnote_in_a_table_row_sits_at_the_foot_of_the_rows_page
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

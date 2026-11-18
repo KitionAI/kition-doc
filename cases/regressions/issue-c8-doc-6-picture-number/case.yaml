@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-c8-doc-6-picture-number
+feature: doc.agent.guard
+intent: >-
+  A picture has its number (the file's wp:docPr/@id, its tool id), as a drawing object has: an
+  agent names it by `on`, and a picture command rests on it and on its bitmap. Another agent's
+  border on the picture, or another program's new bitmap under the same name, refuses the agent's
+  recolouring; another paragraph's text does not.
+layer: gate
+tags: [agents, pictures]
+source:
+  kind: probe
+  from: task card C8-doc-6 (pictures without a number)
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::a_picture_command_rests_on_the_picture_by_its_number" }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

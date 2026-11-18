@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-formula-field-page
+feature: doc.layout.formula-fields
+intent: A formula field whose code holds a page field (WPS's even-page header 第{= {PAGE}}页) shows each page's own number, computes plain arithmetic, and keeps the saved result for anything it cannot compute.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/fields.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: formula
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

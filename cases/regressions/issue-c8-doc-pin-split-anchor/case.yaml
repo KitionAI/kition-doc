@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-c8-doc-pin-split-anchor
+feature: doc.agent.guard
+intent: Internal split anchors are not formatted characters; peer changes to assigned formats still refuse.
+layer: gate
+source:
+  kind: probe
+  from: task card C8-doc-pin per-column matrix comparison
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc
+      test: c8
+      filter: sdk_adoption::formatting_by_id_ignores_split_anchors
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

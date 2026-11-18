@@ -1,0 +1,20 @@
+format: 1
+id: doc.editor.page-view/margin-guides
+feature: doc.editor.page-view
+intent: Four corner marks follow the layout's real body margins, remain outside document rendering, and do not create edits.
+layer: gate
+source:
+  kind: synthetic
+  from: bindings/wasm/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: page_margin_guides_follow_layout_without_entering_document_pixels
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

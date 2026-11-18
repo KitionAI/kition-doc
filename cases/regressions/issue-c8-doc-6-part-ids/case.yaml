@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-c8-doc-6-part-ids
+feature: doc.agent.guard
+intent: >-
+  A part has a tool id from what a save keeps (part:header-1-default by its section and slot,
+  part:footnote-1 by its place among the notes, part:textbox-<shape number>); Replace All with the
+  caret in a header rests on the header's paragraphs and paragraph list only. A paragraph another
+  agent or program adds to the header refuses it; another paragraph's text in the body does not.
+layer: gate
+tags: [agents, headers]
+source:
+  kind: probe
+  from: task card C8-doc-6 (parts without a tool id)
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::replace_all_in_a_header_rests_on_the_header" }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

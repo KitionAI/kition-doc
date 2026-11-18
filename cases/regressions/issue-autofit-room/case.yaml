@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-autofit-room
+feature: doc.layout.table-position
+intent: In an autofit table with preferred widths, a column narrower than its longest word grows to it and the table widens, the other columns keeping their widths, unless the table is already wider than its room; a grid wider than its room (to the borders) narrows to it, every column in proportion, and long words break, as WPS for Mac lays tables out (synthetic references).
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: autofit_grows_a_column_for_its_word_only_while_the_table_has_room
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

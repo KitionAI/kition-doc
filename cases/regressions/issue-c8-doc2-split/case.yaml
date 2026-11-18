@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-c8-doc2-split
+feature: doc.agent.guard
+intent: >-
+  A paragraph's id follows its text: Enter at a paragraph's start gives the new empty paragraph before it a new id, a join keeps the id of the paragraph whose text remains, and a pasted copy never takes its source's id; a write by id after another program's Enter at the start lands on the text.
+layer: gate
+tags: [headless, guard]
+source:
+  kind: synthetic
+  from: C8-doc-2
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "split::" }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

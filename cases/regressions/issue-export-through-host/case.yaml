@@ -1,0 +1,28 @@
+format: 1
+id: regressions/issue-export-through-host
+feature: doc.file.export-print
+intent: >-
+  File › Export PDF and Export Page as PNG write a new file beside the document through the host
+  (Kit UI protocol `host/write` mode `export`): the engine answers the bytes (`file.export`), the
+  editor says it exported only when the host answers and names the file the host wrote, and shows
+  the host's error when it refuses.
+layer: gate
+source:
+  kind: probe
+  from: web/tests/export.mjs, web/src/exportFile.test.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, --test, src/exportFile.test.mjs]
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/export.mjs, chromium]
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/export.mjs, webkit]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium, webkit]
+timeout_s: 120
+since: "2026-11-17"

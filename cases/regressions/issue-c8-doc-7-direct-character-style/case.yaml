@@ -1,0 +1,25 @@
+format: 1
+id: regressions/issue-c8-doc-7-direct-character-style
+feature: doc.agent.guard
+intent: >-
+  Assigning direct character formatting merges an unrelated paragraph style change.
+  A colleague's change of the assigned character property still refuses changed.
+  Same-server and outside files preserve both sides of a merge or refused bytes.
+layer: gate
+tags: [agents, premises]
+source:
+  kind: probe
+  from: task card C8-doc-7 held-MORE M5
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc
+      test: c8
+      filter: independent::direct_character_assignments_do_not_hold_the_paragraph_style
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 300
+since: "2026-11-17"

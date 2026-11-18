@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-c8-doc-6-story-scans
+feature: doc.agent.guard
+intent: >-
+  Delete Style, Inspector and bookmark replacement hold the other paragraphs
+  they scan. Relevant edits refuse and unrelated edits apply through both writers.
+layer: gate
+tags: [agents, paragraphs]
+source:
+  kind: probe
+  from: task card C8-doc-6 (whole story scans)
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::whole_story_commands" }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

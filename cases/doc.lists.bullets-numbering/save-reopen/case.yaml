@@ -1,0 +1,21 @@
+format: 1
+id: doc.lists.bullets-numbering/save-reopen
+feature: doc.lists.bullets-numbering
+intent: A bulleted list, a separate numbered list and a second-level item made by command keep their lists and levels after saving as .docx and opening it again.
+layer: gate
+source:
+  kind: synthetic
+  from: bindings/wasm/tests/roundtrip.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      test: roundtrip
+      filter: bulleted_and_numbered_lists_survive_save_and_reopen
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

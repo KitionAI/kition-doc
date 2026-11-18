@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-paragraph-border-room
+feature: doc.layout.paragraph-spacing
+intent: A paragraph's top and bottom borders take their space and width above its first line and below its last, outside its spacing and its line grid; paragraphs in a row with the same borders share them, a between border taking its space on both sides plus its width, as WPS for Mac lays them out.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests_paragraph_borders.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: "tests_paragraph_borders::"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

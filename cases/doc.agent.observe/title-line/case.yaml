@@ -1,0 +1,39 @@
+format: 1
+id: doc.agent.observe/title-line
+feature: doc.agent.observe
+intent: >-
+  The agent reads the document through the kit (its text, not only the inspect summary) and writes
+  what it found as a new last paragraph, placed by index without disturbing the paragraphs before it.
+layer: eval
+source:
+  kind: synthetic
+  from: repo:conformance/basic.docx
+  license: Apache-2.0
+  note: "A copy of the conformance fixture the doc engine writes (bindings/wasm/examples/checks.rs): a Heading 1 \"Quarterly report\" and two Normal paragraphs."
+input: [input/report.docx]
+steps:
+  - task:
+      prompt: >-
+        In report.docx, add a new last paragraph that reads "Title: " followed by the document's
+        title (the text of its first heading). Change nothing else.
+      max_turns: 20
+  - inspect: { path: report.docx, as: after }
+expected:
+  - actual: out:after
+    compare: values
+    value:
+      content.total: 4
+      content.paragraphs.3.text: "Title: Quarterly report"
+  - actual: out:after
+    compare: values
+    collateral: true
+    value:
+      content.paragraphs.0.text: Quarterly report
+      content.paragraphs.0.style: Heading1
+      content.paragraphs.1.text: Sales rose in every region.
+      content.paragraphs.2.text: The team thanks everyone involved.
+solution:
+  - tool: doc_run
+    args: { path: report.docx, steps: [{ command: para.insert, params: { after: 2, text: "Title: Quarterly report" } }] }
+since: "2026-11-17"
+timeout_s: 600

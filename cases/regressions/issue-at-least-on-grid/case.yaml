@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-at-least-on-grid
+feature: doc.layout.document-grid
+intent: On a line grid an "at least" line height is a floor not rounded to whole rows - at least 18 pt lines are 18 pt apart on a 15.6 pt grid with their text at the bottom - while the text's own rows still round up, as WPS for Mac spaces them.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests_grid_multiples.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: an_at_least_height_on_the_grid_is_not_rounded_to_rows
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

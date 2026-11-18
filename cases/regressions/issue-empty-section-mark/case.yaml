@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-empty-section-mark
+feature: doc.layout.paragraph-spacing
+intent: The empty paragraph that only ends a section takes no room and never moves to a new page when the next section continues on the same page; a continuous section starting on a full page starts the next one.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/engine/tests/section_start_spacing.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: empty_mark
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

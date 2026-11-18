@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-c8-doc-6-split-join-reads
+feature: doc.agent.guard
+intent: >-
+  Enter holds the paragraph properties copied into the new paragraph. A join holds the
+  neighboring paragraph it reads. Changes to those inputs refuse a stale write through both
+  the same server and an outside save; a change to a distant paragraph applies.
+layer: gate
+tags: [agents, typing]
+source:
+  kind: probe
+  from: task card C8-doc-6 (paragraph reads)
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::paragraph_" }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

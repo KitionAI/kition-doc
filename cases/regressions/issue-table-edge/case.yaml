@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-table-edge
+feature: doc.layout.table-position
+intent: A table in the text lines its first cell's text up with the margin plus the table's indent, the border a cell margin outside it, in every compatibility mode, as WPS for Mac places tables (Word 2013+ puts the border at the margin in mode 15).
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_tables_first_cell_text_lines_up_with_the_margin_in_every_mode
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

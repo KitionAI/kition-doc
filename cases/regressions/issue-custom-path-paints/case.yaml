@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-custom-path-paints
+feature: doc.render.custom-path-paints
+intent: Custom paths preserve independent fill, stroke and closure semantics, including implicit fill closure, compound winding holes and independent path paints, through repeated DOCX saves.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/engine/tests/custom_path_paints.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: custom_path_paints_
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

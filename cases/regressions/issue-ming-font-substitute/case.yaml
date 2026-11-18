@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-ming-font-substitute
+feature: doc.layout.font-substitution
+intent: A missing 新細明體 (PMingLiU) or related Ming family is drawn in the installed Songti TC, as WPS for Mac draws it, whose one-em Windows metrics keep a 10.5 pt line on one grid row, instead of the taller PingFang TC.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/support/fonts/src/word.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-fonts
+      filter: ming_families_fall_back_to_a_traditional_song_face
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

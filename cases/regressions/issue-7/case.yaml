@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-7
+feature: doc.caret.navigation
+intent: edit.goto's paragraph is the body block index document.inspect gives (from 0, a table's index going to its first cell), so an agent goes where it looked; and AutoFormat's border line on Enter acts only right after "###" (or ---, ===...) was typed, so text an agent inserts whole stays text.
+layer: gate
+source:
+  kind: issue
+  from: Kition Doc regression suite
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: goto_paragraph_takes_the_inspect_index
+  - cargo-test:
+      package: kition-doc-engine
+      filter: inserted_border_characters_stay_text
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 120
+since: "2026-11-17"

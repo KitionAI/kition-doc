@@ -1,0 +1,24 @@
+format: 1
+id: regressions/issue-c8-doc-7-table-properties
+feature: doc.agent.guard
+intent: >-
+  Table-wide properties merge unrelated cell text and row formatting changes.
+  Changes of the assigned table property still refuse changed.
+layer: gate
+tags: [agents, premises]
+source:
+  kind: probe
+  from: task card C8-doc-7 held-MORE table property inputs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc
+      test: c8
+      filter: independent::table_properties_hold_the_table_fields_they_use
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 300
+since: "2026-11-17"

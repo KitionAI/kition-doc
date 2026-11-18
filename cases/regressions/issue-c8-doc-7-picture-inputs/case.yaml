@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-c8-doc-7-picture-inputs
+feature: doc.agent.guard
+intent: >-
+  Picture property writes merge another bitmap edit while assigned picture fields remain protected.
+layer: gate
+tags: [agents, premises]
+source:
+  kind: probe
+  from: task card C8-doc-7 held-MORE picture-inputs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc
+      test: c8
+      filter: independent::picture_properties_do_not_hold_unrelated_bitmaps
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 300
+since: "2026-11-17"

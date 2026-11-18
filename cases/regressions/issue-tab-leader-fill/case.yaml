@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-tab-leader-fill
+feature: doc.layout.field-tabs
+intent: A tab leader starts half a mark after the text and fills edge to edge up to the text after the tab, as WPS fills contents lines, with no grid pushing its first mark along.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests_field_tabs.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_tab_leader_runs_from_half_a_mark_after_the_text_up_to_the_next_text
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

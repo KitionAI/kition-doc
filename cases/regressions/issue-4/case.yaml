@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-4
+feature: doc.insert.objects
+intent: insert.coverPage adds one page of its own paragraphs before the document at any page size, never taking on the caret's paragraph style, writes no date unless given one and leaves the caret where it was; insert.pageNumber at the caret honours its format ("Page x of y") and align.
+layer: gate
+source:
+  kind: issue
+  from: Kition Doc regression suite
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: cover_page_is_one_page_of_its_own_before_the_document
+  - cargo-test:
+      package: kition-doc-engine
+      filter: page_number_at_the_caret_takes_format_and_align
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 120
+since: "2026-11-17"

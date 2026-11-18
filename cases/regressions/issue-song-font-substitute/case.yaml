@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-song-font-substitute
+feature: doc.layout.font-substitution
+intent: A missing 宋体 (SimSun) or related Song family is drawn in an installed Song face, STSong first, as WPS for Mac draws it in its own Song face, instead of a sans face whose taller line height doubles grid-snapped lines.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/support/fonts/src/word.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-fonts
+      filter: song_families_
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

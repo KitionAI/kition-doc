@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-text-blur-draw
+feature: doc.layout.text-outline
+intent: Letters with a blurred shadow, glow or reflection are drawn as ink, not text, as WPS prints them as a picture.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: text_with_a_blurred_effect_is_drawn_as_letters_not_text
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

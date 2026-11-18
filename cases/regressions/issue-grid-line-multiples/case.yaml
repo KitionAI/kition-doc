@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-grid-line-multiples
+feature: doc.layout.document-grid
+intent: On a document grid, multiple spacing gives a line the rows its text needs or the pitch times the multiple, whichever is taller, with unscaled glyph metrics for baseline placement and unchanged free-layout spacing.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests_grid_multiples.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: grid_line_multiples_
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-printed-page-refs
+feature: doc.references.notes-toc
+intent: Printing or exporting shows each unlocked page reference (PAGEREF) at the page its bookmark lands on in the print layout, not the number saved with the file, as WPS for Mac prints luan's table of contents; a locked reference keeps its saved page.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/engine/src/print.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: printing_shows_the_page_a_reference_lands_on
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-page-break-overflow
+feature: doc.layout.section-pages
+intent: A paragraph holding only a page break stays at the foot of a full page instead of making a blank page of its own, as WPS prints it.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_page_break_alone_on_a_full_page_makes_no_blank_page
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

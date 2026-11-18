@@ -1,0 +1,436 @@
+//! [`DocSession`]: one document's replica, its [`DocModel`] view and its blobs, for the engine's
+//! command bridge (Kition phase 3e, Task 2; Kition Slide's `SlideSession`, same owner and licence).
+//!
+//! It is `kition_kit::session::KitSession<DocModel>`'s flow (transactions, per-actor undo, the
+//! change exchange, the post-merge repair through [`KitModel::validate`], the view patched through
+//! [`KitModel::apply`]) on concrete parts, as Kition Photo's `PhotoSession` does: the engine
+//! must enumerate, ship and garbage-collect the media blobs, which `KitSession`'s boxed blob store
+//! does not allow. Edits are diff-bridged: the engine changes its own [`Document`], and
+//! [`DocSession::record`] writes what changed as one transaction ([`write_changes`]), then
+//! adopts it as the view. Everything here is `Send`.
+
+use std::collections::{BTreeSet, HashSet};
+use std::sync::Arc;
+
+use kition_doc_doc::Document;
+use kition_kit::kdm::{ActorId, DocId, KdmError, ObjectId, Origin, OriginKind, Replica, Tx, UndoScope, Version};
+use kition_kit::session::{BlobSource, Damage, KitModel, MemoryBlobs};
+
+use crate::blob_gc::{BlobIndex, Moved};
+use crate::{DocModel, Ids, Result, kit_err, migrate_document, normalize, read_document, register_writes, write_changes, write_document};
+
+/// One open document as a KDM replica and the engine's view of it. See the module docs.
+pub struct DocSession {
+    replica: Replica,
+    model: DocModel,
+    blobs: MemoryBlobs,
+    /// Which blobs are still needed ([`crate::blob_gc`]); the rest are dropped after each change.
+    index: BlobIndex,
+    /// The hashes each record, import, undo and redo started referencing, with the version right
+    /// after it, for [`DocSession::blobs_since`] (Kition Photo's blob log: chronological, so
+    /// `since` cleanly splits it into "already has" and "needs"; trimmed with the store).
+    blob_log: Vec<(Version, Vec<String>)>,
+    /// Who edits may only comment (a commenter of a shared document): no migration is written,
+    /// since it changes the content ([`DocSession::set_comment_only`]).
+    comment_only: bool,
+}
+
+impl std::fmt::Debug for DocSession {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DocSession").field("doc", &self.replica.doc_id()).field("actor", &self.replica.actor()).finish_non_exhaustive()
+    }
+}
+
+impl DocSession {
+    /// An isolated replica with the same local view identities and retained blobs.
+    pub fn fork(&self) -> Result<Self> {
+        let mut fork = Self::open_snapshot(&self.snapshot()?, self.blobs.clone())?;
+        fork.model = DocModel::from_parts(self.model.document.clone(), self.model.ids().clone());
+        fork.model.known = self.model.known.clone();
+        fork.comment_only = self.comment_only;
+        Ok(fork)
+    }
+
+    /// A new replica holding `document`, written in its creating transaction (not an undo step).
+    /// The view is `document` itself, with its own local ids.
+    pub fn create(document: &Document) -> Result<Self> {
+        let mut blobs = MemoryBlobs::default();
+        let mut ids = Ids::default();
+        let (mut replica, ()) = Replica::create_with(DocModel::schema(), DocId::new(), ActorId::random(), &Origin::system("create"), |tx| {
+            write_document(tx, document, &mut ids, &mut blobs).map(|_| ())
+        })
+        .map_err(kit_err)?;
+        replica.take_changed();
+        let index = BlobIndex::build(&replica);
+        let model = DocModel::from_parts(document.clone(), ids);
+        Ok(Self { replica, model, blobs, index, blob_log: Vec::new(), comment_only: false })
+    }
+
+    /// Opens a snapshot (or a full change export) of another replica as a new replica of a fresh
+    /// actor. `blobs` must hold the blobs it references.
+    pub fn open_snapshot(bytes: &[u8], blobs: MemoryBlobs) -> Result<Self> {
+        let mut replica = Replica::load(DocModel::schema(), bytes, ActorId::random()).map_err(kit_err)?;
+        replica.take_changed();
+        let model = DocModel::load(&replica, &blobs)?;
+        let index = BlobIndex::build(&replica);
+        let mut session = Self { replica, model, blobs, index, blob_log: Vec::new(), comment_only: false };
+        // Best effort: a replica merged elsewhere may need the read repair; a failure leaves it.
+        let _ = session.repair_read(None);
+        session.index.collect_garbage(&mut session.blobs);
+        Ok(session)
+    }
+
+    /// The view: the document as of the last record, undo, redo or import.
+    pub fn document(&self) -> &Document {
+        &self.model.document
+    }
+
+    pub fn model(&self) -> &DocModel {
+        &self.model
+    }
+
+    /// Writes what differs between the view and `after` as one transaction of `origin`, then
+    /// makes `after` the view. Answers how many undo steps that made: 1, or 0 when nothing
+    /// replicated changed or `origin` is a `system`/`import` one (never an undo step). On failure
+    /// nothing is written and the view is unchanged.
+    pub fn record(&mut self, origin: &Origin, after: &Document) -> Result<u32> {
+        // Best effort: a paragraph this write touches is migrated by the write itself.
+        let _ = self.migrate_for(after);
+        let mut ids = self.model.ids().clone();
+        let before = self.replica.version();
+        let (model, blobs) = (&self.model, &mut self.blobs);
+        let result = self.replica.transact(origin, |tx| write_changes(tx, &model.document, after, &mut ids, blobs).map(|_| ()));
+        let changed = self.replica.take_changed();
+        if let Err(error) = result {
+            self.index.collect_garbage(&mut self.blobs);
+            return Err(kit_err(error));
+        }
+        let moved = self.index.update(&self.replica, &changed);
+        self.model.adopt(after.clone(), ids);
+        let wrote = self.replica.version() != before;
+        let undoable = wrote && !matches!(origin.kind, OriginKind::System | OriginKind::Import);
+        self.log_added(moved.added.iter().cloned());
+        if undoable {
+            self.index.push_step(moved);
+        }
+        self.index.collect_garbage(&mut self.blobs);
+        Ok(u32::from(undoable))
+    }
+
+    /// Raises a 0.3.x replica's minimum schema version (K6, rule M20) as one `system` transaction
+    /// (never an undo step), so a 0.3.x build refuses it rather than misread what this build
+    /// writes. Answers whether it wrote. Paragraphs in the register form stay so until a write
+    /// changes them ([`DocSession::record`]).
+    pub fn migrate(&mut self) -> Result<bool> {
+        self.migrate_paragraphs(&HashSet::new())
+    }
+
+    /// Before a write of `after`: [`DocSession::migrate`], and the register-form paragraphs that
+    /// write changes rewritten into the text form in the same `system` transaction
+    /// ([`migrate_document`]), so the write itself only edits text fields and the rewrite is no
+    /// undo step (undoing the write never deletes the object another person may be typing in).
+    fn migrate_for(&mut self, after: &Document) -> Result<bool> {
+        if self.comment_only {
+            return Ok(false);
+        }
+        if !self.model.ids().has_register_form() {
+            return self.migrate();
+        }
+        let mut touched = HashSet::new();
+        let (model, ids) = (&self.model, self.model.ids());
+        // A dry run of the write, dropped: which register-form paragraphs it rewrites.
+        let _ = self.replica.transact(&Origin::system("migrate"), |tx| {
+            touched = register_writes(tx, &model.document, after, ids, &mut MemoryBlobs::default())?;
+            Err::<(), _>(KdmError::Engine("dry run".into()))
+        });
+        self.migrate_paragraphs(&touched)
+    }
+
+    fn migrate_paragraphs(&mut self, paragraphs: &HashSet<ObjectId>) -> Result<bool> {
+        // A replica 0.3.x made with no paragraph yet still needs its minimum raised: the text
+        // form this build writes next would be misread by a 0.3.x build.
+        if paragraphs.is_empty() && self.replica.min_schema_version() >= crate::SCHEMA_VERSION {
+            return Ok(false);
+        }
+        let mut ids = self.model.ids().clone();
+        let doc = self.model.document.clone();
+        let blobs = &mut self.blobs;
+        let result = self.replica.transact(&Origin::system("migrate"), |tx| migrate_document(tx, &doc, paragraphs, &mut ids, blobs));
+        let changed = self.replica.take_changed();
+        let wrote = match result {
+            Ok(wrote) => wrote,
+            Err(error) => {
+                self.index.collect_garbage(&mut self.blobs);
+                return Err(kit_err(error));
+            }
+        };
+        let moved = self.index.update(&self.replica, &changed);
+        self.log_added(moved.added.iter().cloned());
+        self.model.adopt(doc, ids);
+        self.index.collect_garbage(&mut self.blobs);
+        Ok(wrote)
+    }
+
+    /// Only comments are written from here on (a commenter, Kit UI protocol `document.comments`):
+    /// the session writes no migration, which would change the content. A replica still holding
+    /// its comments in the content ([`DocSession::legacy_comments`]) then takes no write.
+    pub fn set_comment_only(&mut self, comment_only: bool) {
+        self.comment_only = comment_only;
+    }
+
+    /// Whether the replica still holds its comments in the content, as schema 2 wrote them: the
+    /// next write by someone who may edit moves them out ([`crate::migrate_document`]).
+    pub fn legacy_comments(&self) -> bool {
+        self.model.ids().legacy_comments
+    }
+
+    /// Whether the replica holds `document`'s content, compared id-blind ([`normalize`]) as
+    /// [`read_document`] reads both back. Errs if `document` cannot be written to a replica.
+    pub fn holds(&self, document: &Document) -> Result<bool> {
+        let mut blobs = MemoryBlobs::default();
+        let mut ids = Ids::default();
+        let (scratch, ()) = Replica::create_with(DocModel::schema(), DocId::new(), ActorId::random(), &Origin::system("create"), |tx| {
+            write_document(tx, document, &mut ids, &mut blobs).map(|_| ())
+        })
+        .map_err(kit_err)?;
+        let (theirs, _) = read_document(&scratch, &blobs).map_err(kit_err)?;
+        let (mine, _) = read_document(&self.replica, &self.blobs).map_err(kit_err)?;
+        let value = |d: &Document| serde_json::to_value(normalize(d)).map_err(kit_err);
+        Ok(value(&theirs)? == value(&mine)?)
+    }
+
+    /// Undoes this replica's last step of the person (never an import or a repair), repairs the
+    /// result and patches the view. Answers whether there was one, and the damage.
+    pub fn undo(&mut self) -> Result<(bool, Damage)> {
+        self.undo_in(UndoScope::Person)
+    }
+
+    pub fn redo(&mut self) -> Result<(bool, Damage)> {
+        self.redo_in(UndoScope::Person)
+    }
+
+    /// [`DocSession::undo`] in `scope` (KitModel M12a): the person's and the agent's steps on
+    /// this replica are separate histories.
+    pub fn undo_in(&mut self, scope: UndoScope) -> Result<(bool, Damage)> {
+        if !self.can_undo_in(scope) {
+            return Ok((false, Damage::None));
+        }
+        let done = self.replica.undo_in(scope).map_err(kit_err)?;
+        let (damage, moved) = self.settle();
+        if done {
+            self.log_added(moved.added.iter().cloned());
+            self.index.undone(moved);
+        }
+        self.index.collect_garbage(&mut self.blobs);
+        Ok((done, damage?))
+    }
+
+    pub fn redo_in(&mut self, scope: UndoScope) -> Result<(bool, Damage)> {
+        if !self.can_redo_in(scope) {
+            return Ok((false, Damage::None));
+        }
+        let done = self.replica.redo_in(scope).map_err(kit_err)?;
+        let (damage, moved) = self.settle();
+        if done {
+            self.log_added(moved.added.iter().cloned());
+            self.index.redone(moved);
+        }
+        self.index.collect_garbage(&mut self.blobs);
+        Ok((done, damage?))
+    }
+
+    /// Whether the person has an undo step to take: one of this replica's, not trimmed by
+    /// [`DocSession::retain_steps`].
+    pub fn can_undo(&self) -> bool {
+        self.can_undo_in(UndoScope::Person)
+    }
+
+    pub fn can_redo(&self) -> bool {
+        self.can_redo_in(UndoScope::Person)
+    }
+
+    pub fn can_undo_in(&self, scope: UndoScope) -> bool {
+        self.replica.can_undo_in(scope) && self.index.undo_steps() > 0
+    }
+
+    pub fn can_redo_in(&self, scope: UndoScope) -> bool {
+        self.replica.can_redo_in(scope) && self.index.redo_steps() > 0
+    }
+
+    /// Keeps only the newest `undo` undo steps and the next `redo` redo steps reachable (the
+    /// engine history's own) and drops the blobs only older steps needed: the replica has no
+    /// limit of its own, so this is what keeps a long session's media bounded.
+    pub fn retain_steps(&mut self, undo: usize, redo: usize) {
+        self.index.retain(undo, redo);
+        self.index.collect_garbage(&mut self.blobs);
+        let blobs = &self.blobs;
+        self.blob_log.retain(|(_, hashes)| hashes.iter().any(|hash| blobs.0.contains_key(hash)));
+    }
+
+    /// Undo and redo steps reachable, as [`DocSession::retain_steps`] left them.
+    pub fn steps(&self) -> (usize, usize) {
+        (self.index.undo_steps(), self.index.redo_steps())
+    }
+
+    /// Imports remote or stored changes (their blobs added first, [`DocSession::add_blobs`]),
+    /// repairs the merged state and patches the view. An import whose repair or view load fails
+    /// has still imported its changes: [`DocSession::view_loaded`] tells whether the view
+    /// followed.
+    pub fn import_changes(&mut self, bytes: &[u8]) -> Result<Damage> {
+        if let Err(error) = self.replica.import_changes(bytes) {
+            // A refused import of a newer schema's changes leaves the state as it was but clears
+            // the replica's undo history: drop the steps (and the blobs only they kept) too.
+            if [UndoScope::Person, UndoScope::Agent].iter().all(|&scope| !self.replica.can_undo_in(scope) && !self.replica.can_redo_in(scope)) {
+                self.index.retain(0, 0);
+                self.index.collect_garbage(&mut self.blobs);
+            }
+            return Err(kit_err(error));
+        }
+        let (damage, moved) = self.settle();
+        self.log_added(moved.added.iter().cloned());
+        self.index.imported();
+        self.index.collect_garbage(&mut self.blobs);
+        damage
+    }
+
+    /// Whether the view matches the replica as it is now (its own read succeeds).
+    pub fn view_loaded(&self) -> bool {
+        read_document(&self.replica, &self.blobs).is_ok()
+    }
+
+    /// The blobs a peer at `since` needs to reach this session's current state (Kition Photo's
+    /// `blobs_since`): the hashes logged for a version `since` does not include, still in the
+    /// store. An empty `since` answers every blob the current state references (a creating
+    /// transaction or a snapshot is never logged).
+    pub fn blobs_since(&self, since: &Version) -> Vec<(String, Arc<[u8]>)> {
+        if *since == Version::empty() {
+            return self.index.referenced().into_iter().filter_map(|hash| self.blobs.0.get(&hash).cloned().map(|bytes| (hash, bytes))).collect();
+        }
+        let mut seen = BTreeSet::new();
+        let mut out = Vec::new();
+        for (version, hashes) in &self.blob_log {
+            if since.includes(version) {
+                continue;
+            }
+            for hash in hashes {
+                if seen.insert(hash.clone())
+                    && let Some(bytes) = self.blobs.0.get(hash)
+                {
+                    out.push((hash.clone(), bytes.clone()));
+                }
+            }
+        }
+        out
+    }
+
+    fn log_added(&mut self, added: impl IntoIterator<Item = String>) {
+        let added: Vec<String> = added.into_iter().collect();
+        if !added.is_empty() {
+            self.blob_log.push((self.replica.version(), added));
+        }
+    }
+
+    pub fn export_changes(&self, since: &Version) -> Result<Vec<u8>> {
+        self.replica.export_changes(since).map_err(kit_err)
+    }
+
+    pub fn version(&self) -> Version {
+        self.replica.version()
+    }
+
+    pub fn snapshot(&self) -> Result<Vec<u8>> {
+        self.replica.snapshot().map_err(kit_err)
+    }
+
+    pub fn state_hash(&self) -> Result<String> {
+        self.replica.state_hash().map_err(kit_err)
+    }
+
+    pub fn doc_id(&self) -> DocId {
+        self.replica.doc_id()
+    }
+
+    pub fn replica(&self) -> &Replica {
+        &self.replica
+    }
+
+    /// The blobs the replica references or an undo, redo or pending import can still need.
+    pub fn blobs(&self) -> &MemoryBlobs {
+        &self.blobs
+    }
+
+    /// Adds blobs (from a peer, before importing its changes): kept until the next import. Blobs
+    /// that arrive after their changes (the view read them as empty) are read into the view: the
+    /// answer is whether the view changed.
+    pub fn add_blobs(&mut self, blobs: &MemoryBlobs) -> Result<bool> {
+        for (hash, bytes) in &blobs.0 {
+            self.blobs.0.entry(hash.clone()).or_insert_with(|| bytes.clone());
+        }
+        self.index.protect(blobs.0.keys().cloned());
+        if !blobs.0.keys().any(|hash| self.model.missing_blobs().contains(hash)) {
+            return Ok(false);
+        }
+        let source: &dyn BlobSource = &self.blobs;
+        self.model.apply(&self.replica, &BTreeSet::new(), source)?;
+        Ok(true)
+    }
+
+    /// As `KitSession`'s: repairs what changed in a `system` transaction (not an undo step), then
+    /// patches the view with both; the view follows the replica even if the repair fails. Also
+    /// answers which blobs moved (the index is updated either way).
+    fn settle(&mut self) -> (Result<Damage>, Moved) {
+        let mut changed = self.replica.take_changed();
+        let repaired = if changed.is_empty() {
+            Ok(())
+        } else {
+            let mut kit_error = None;
+            let result = self.replica.transact(&Origin::system("repair"), |tx: &mut Tx<'_>| {
+                DocModel::validate(tx, &changed).map(|_| ()).map_err(|error| {
+                    let message = error.to_string();
+                    kit_error = Some(error);
+                    KdmError::Engine(message)
+                })
+            });
+            match (result, kit_error) {
+                (_, Some(error)) => Err(error),
+                (result, None) => result.map_err(kit_err),
+            }
+        };
+        changed.extend(self.replica.take_changed());
+        let moved = self.index.update(&self.replica, &changed);
+        let damage = self.refresh(&changed).and_then(|damage| repaired.map(|()| damage));
+        let damage = match damage {
+            Ok(damage) => self.repair_read(Some(&changed)).map(|repaired| match repaired {
+                Some(more) => damage.merge(more),
+                None => damage,
+            }),
+            failed => failed,
+        };
+        (damage, moved)
+    }
+
+    /// The read repair (`crate::repair`): dangling anchors and references in run marks the view
+    /// already drops, written as a `system` transaction (not an undo step), then the view
+    /// patched. `changed`: what the last import, undo or redo touched; `None` checks everything.
+    /// Answers the view's damage when it wrote.
+    fn repair_read(&mut self, changed: Option<&BTreeSet<ObjectId>>) -> Result<Option<Damage>> {
+        let repairs = crate::repair::plan(&self.replica, self.model.ids(), changed);
+        if repairs.is_empty() {
+            return Ok(None);
+        }
+        let result = self.replica.transact(&Origin::system("repair"), |tx| crate::repair::apply(tx, &repairs));
+        let changed = self.replica.take_changed();
+        result.map_err(kit_err)?;
+        let moved = self.index.update(&self.replica, &changed);
+        self.log_added(moved.added.iter().cloned());
+        self.refresh(&changed).map(Some)
+    }
+
+    fn refresh(&mut self, changed: &BTreeSet<ObjectId>) -> Result<Damage> {
+        if changed.is_empty() {
+            return Ok(Damage::None);
+        }
+        let blobs: &dyn BlobSource = &self.blobs;
+        self.model.apply(&self.replica, changed, blobs)
+    }
+}

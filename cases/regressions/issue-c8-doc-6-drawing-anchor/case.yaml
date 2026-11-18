@@ -1,0 +1,16 @@
+format: 1
+id: regressions/issue-c8-doc-6-drawing-anchor
+feature: doc.agent.guard
+intent: >-
+  Drawing ids retain the anchor text they resolve through, and explicit connector
+  endpoints do not erase the caret premise used to insert the connector.
+layer: gate
+source: { kind: probe, from: task card C8-doc-6, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::named_drawings_rest" }
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::a_connector_with_endpoint_ids" }
+expected:
+  - { actual: out:cargo-test, compare: exit, value: 0 }
+timeout_s: 600
+since: "2026-11-17"

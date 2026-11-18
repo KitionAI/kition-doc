@@ -1,0 +1,243 @@
+{
+  "kdm": 1,
+  "kit": "kit.doc",
+  "schemaVersion": 6,
+  "root": "Document",
+  "types": {
+    "Document": {
+      "batchOps": { "*": { "direct": true } },
+      "derived": {
+        "commentCount": {
+          "description": "the number of comments, including unanchored comments and replies; every document inspector report consumes this count",
+          "premiseOnly": true
+        },
+        "inkIds": {
+          "description": "the sorted set of ink stroke ids across all stories; drawing.ink compares this set before and after insertion",
+          "premiseOnly": true
+        },
+        "drawingIds": {
+          "description": "the sorted set of numbered inline ids, including group member ids; drawing commands scan these ids for allocation and lookup",
+          "premiseOnly": true
+        },
+        "drawingFrames": {
+          "description": "numbered inline ids and their stored frames in story order; drawing stack and connector commands consume this index",
+          "premiseOnly": true
+        },
+        "paraIds": {
+          "description": "the sorted set of paragraph and row ids in body and parts, as a fingerprint; fragment insertion reads this set to clear copied ids that are still in use",
+          "premiseOnly": true
+        },
+        "bookmarks": {
+          "description": "the body's bookmark names, paragraph ids and offsets, in body order, as a fingerprint; replacing a bookmark depends on its presence and anchors, not unrelated text",
+          "premiseOnly": true
+        }
+      },
+      "fields": {
+        "settings": { "kind": "json", "optional": true },
+        "core": { "kind": "json", "optional": true },
+        "sources": { "kind": "json", "optional": true },
+        "customProps": { "kind": "json", "optional": true },
+        "lastSection": { "kind": "json", "optional": true },
+        "styles": { "kind": "json", "optional": true },
+        "numbering": { "kind": "json", "optional": true },
+        "lists": { "kind": "map" },
+        "passthrough": { "kind": "json", "optional": true, "readOnly": true },
+        "body": { "kind": "list", "of": "Block" },
+        "parts": { "kind": "list", "of": "Part" },
+        "comments": { "kind": "list", "of": "Comment" },
+        "revisions": { "kind": "list", "of": "Revision" },
+        "media": { "kind": "list", "of": "Media" }
+      }
+    },
+    "Block": {
+      "batchOps": { "*": { "direct": true } },
+      "toolId": { "field": "id" },
+      "derived": {
+        "objects": {
+          "description": "the drawing objects, pictures, charts and equations anchored in the paragraph (their kind, frame and look), as a fingerprint: another program's change of one is told by a reread of the file only through it",
+          "premiseOnly": true
+        },
+        "shapeFrames": {
+          "description": "the numbered shape and graphic frames anchored in this paragraph, as a fingerprint; rotation and wrapping consume these frames without consuming appearance",
+          "premiseOnly": true
+        },
+        "layout": {
+          "description": "where the paragraph is laid out (page geometry, line geometry and inline object frames/origins), as a fingerprint: what a command that reads the layout (page numbers, what lies at a point of a page, a drawing's frame) rests on, which no field holds",
+          "premiseOnly": true
+        },
+        "frameValidity": {
+          "description": "whether each numbered object anchored in this paragraph passes drawing write_back frame validation; format and text preserve frame coordinates, so ordinary valid reflow does not change this premise",
+          "premiseOnly": true
+        },
+        "inkCount": {
+          "description": "counts of ink strokes anchored in this paragraph by laid-out page; the drawing limit consumes counts without reading stroke appearance",
+          "premiseOnly": true
+        },
+        "inkGeometry": {
+          "description": "ink strokes anchored in this paragraph, including their ids, offsets, laid-out pages/rectangles, freeform geometry, color and pen width; erasers consume this even when no current stroke is hit",
+          "premiseOnly": true
+        },
+        "comments": {
+          "description": "the comment threads whose range starts in the paragraph, each with its comments (author, date, text, parent, resolved flag) and body anchor positions, as a fingerprint: a thread is held by no field of the document, so another program's change of one is told by a reread of the file only through it",
+          "premiseOnly": true
+        }
+      },
+      "fields": {
+        "id": { "kind": "string", "optional": true, "readOnly": true },
+        "kind": { "kind": "enum", "values": ["para", "table"], "sample": false },
+        "para": { "kind": "json", "optional": true },
+        "text": {
+          "kind": "text",
+          "marks": {
+            "style": { "expand": "after" },
+            "font": { "expand": "after" },
+            "size": { "expand": "after" },
+            "bold": { "expand": "after" },
+            "italic": { "expand": "after" },
+            "underline": { "expand": "after" },
+            "underlineColor": { "expand": "after" },
+            "strike": { "expand": "after" },
+            "doubleStrike": { "expand": "after" },
+            "color": { "expand": "after" },
+            "highlight": { "expand": "after" },
+            "shading": { "expand": "after" },
+            "border": { "expand": "after" },
+            "vertAlign": { "expand": "after" },
+            "caps": { "expand": "after" },
+            "smallCaps": { "expand": "after" },
+            "hidden": { "expand": "after" },
+            "spacing": { "expand": "after" },
+            "scale": { "expand": "after" },
+            "fitText": { "expand": "after" },
+            "eastAsianLayout": { "expand": "after" },
+            "position": { "expand": "after" },
+            "kern": { "expand": "after" },
+            "outline": { "expand": "after" },
+            "shadow": { "expand": "after" },
+            "emboss": { "expand": "after" },
+            "engrave": { "expand": "after" },
+            "lang": { "expand": "after" },
+            "noProof": { "expand": "after" },
+            "rtl": { "expand": "after" },
+            "cs": { "expand": "after" },
+            "fontCs": { "expand": "after" },
+            "fontEa": { "expand": "after" },
+            "fontHint": { "expand": "after" },
+            "sizeCs": { "expand": "after" },
+            "boldCs": { "expand": "after" },
+            "italicCs": { "expand": "after" },
+            "langBidi": { "expand": "after" },
+            "langEa": { "expand": "after" },
+            "textEffects": { "expand": "after" },
+            "colorTheme": { "expand": "after" },
+            "shadingTheme": { "expand": "after" },
+            "fontTheme": { "expand": "after" },
+            "link": { "expand": "none" },
+            "ins": { "expand": "none" },
+            "del": { "expand": "none" },
+            "fmtChange": { "expand": "none" },
+            "control": { "expand": "none" },
+            "object": { "expand": "none" },
+            "extra": { "expand": "after" }
+          }
+        },
+        "table": { "kind": "ref", "of": "Table", "optional": true, "owns": true }
+      }
+    },
+    "Inline": {
+      "batchOps": { "*": { "direct": true } },
+      "toolId": { "field": "uid" },
+      "fields": {
+        "uid": { "kind": "integer", "optional": true, "readOnly": true },
+        "value": { "kind": "json", "optional": true },
+        "frame": { "kind": "json", "optional": true },
+        "look": { "kind": "map" },
+        "chart": { "kind": "ref", "of": "Chart", "optional": true, "owns": true }
+      }
+    },
+    "Chart": {
+      "batchOps": { "*": { "direct": true } },
+      "fields": {
+        "parts": { "kind": "map" }
+      }
+    },
+    "Table": {
+      "batchOps": { "*": { "direct": true } },
+      "fields": {
+        "props": { "kind": "json", "optional": true },
+        "grid": { "kind": "json", "optional": true },
+        "rows": { "kind": "list", "of": "Row" }
+      }
+    },
+    "Row": {
+      "batchOps": { "*": { "direct": true } },
+      "toolId": { "field": "id" },
+      "derived": {
+        "tableOrder": {
+          "description": "the containing table's ordered row ids, as a fingerprint; anchored to a stable row even when sorting changes the table's first-row tool id",
+          "premiseOnly": true
+        }
+      },
+      "fields": {
+        "id": { "kind": "string", "optional": true, "readOnly": true },
+        "props": { "kind": "json", "optional": true },
+        "cells": { "kind": "list", "of": "Cell" }
+      }
+    },
+    "Cell": {
+      "batchOps": { "*": { "direct": true } },
+      "fields": {
+        "props": { "kind": "json", "optional": true },
+        "blocks": { "kind": "list", "of": "Block" }
+      }
+    },
+    "Part": {
+      "batchOps": { "*": { "direct": true } },
+      "toolId": { "field": "id", "prefix": "part:" },
+      "fields": {
+        "id": { "kind": "string", "optional": true, "readOnly": true },
+        "kind": { "kind": "enum", "values": ["header", "footer", "footnote", "endnote", "comment", "textbox"], "sample": false },
+        "props": { "kind": "json", "optional": true },
+        "blocks": { "kind": "list", "of": "Block" }
+      }
+    },
+    "CommentThread": {
+      "batchOps": { "*": { "direct": true } },
+      "toolId": { "field": "id", "prefix": "thread:" },
+      "fields": {
+        "id": { "kind": "string", "optional": true, "readOnly": true },
+        "anchor": { "kind": "json" },
+        "resolved": { "kind": "boolean", "optional": true },
+        "comments": { "kind": "list", "of": "Comment" }
+      }
+    },
+    "Comment": {
+      "batchOps": { "*": { "direct": true } },
+      "toolId": { "field": "id", "prefix": "comment:" },
+      "fields": {
+        "id": { "kind": "string", "optional": true, "readOnly": true },
+        "author": { "kind": "string" },
+        "name": { "kind": "string", "optional": true },
+        "body": { "kind": "text" },
+        "created": { "kind": "string" },
+        "initials": { "kind": "string", "optional": true },
+        "props": { "kind": "json", "optional": true },
+        "part": { "kind": "ref", "of": "Part", "optional": true },
+        "parent": { "kind": "ref", "of": "Comment", "optional": true }
+      }
+    },
+    "Revision": {
+      "batchOps": { "*": { "direct": true } },
+      "fields": {
+        "props": { "kind": "json", "optional": true }
+      }
+    },
+    "Media": {
+      "batchOps": { "*": { "direct": true } },
+      "fields": {
+        "key": { "kind": "string" },
+        "blob": { "kind": "blob", "optional": true }
+      }
+    }
+  }
+}

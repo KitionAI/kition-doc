@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-review-inspector-report
+feature: doc.agent.guard
+intent: Every inspector path holds the comments its unconditional report counts, including comments without body anchors, and applies after an unrelated title change.
+layer: gate
+tags: [agents, comments]
+source: { kind: probe, from: C8-expectations review doc, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::inspector_removals_rest_on_unanchored_comments_they_count" }
+expected:
+  - { actual: "out:cargo-test", compare: exit, value: 0 }
+timeout_s: 60
+since: "2026-11-17"

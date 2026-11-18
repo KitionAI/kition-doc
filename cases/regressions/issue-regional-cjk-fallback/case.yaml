@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-regional-cjk-fallback
+feature: doc.layout.east-asian-font
+intent: Regional Source Han faces are eligible CJK substitutes ahead of legacy system fallbacks, with coverage checked before selection.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/support/fonts/src/tests_sysfonts.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-fonts
+      filter: regional_cjk_fallback
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

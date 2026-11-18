@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-punctuation-compression
+feature: doc.layout.punctuation-compression
+intent: Enabled full-width punctuation compression absorbs a bounded line overflow before wrapping, retaining glyph advances and leaving roomy lines, ASCII punctuation and the disabled mode unchanged.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests_compression.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: punctuation_compression_
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

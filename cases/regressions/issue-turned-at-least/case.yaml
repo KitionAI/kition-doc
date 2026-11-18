@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-turned-at-least
+feature: doc.tables.edit
+intent: An "at least" row height sets the length of a turned cell's lines as an exact one does, longer text wrapping onto more lines across the cell rather than the row growing, as WPS for Mac lays out luan's 90 degree cell.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: turned_text_wraps_at_an_at_least_row_height
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

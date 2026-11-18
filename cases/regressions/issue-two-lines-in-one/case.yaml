@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-two-lines-in-one
+feature: doc.layout.two-lines
+intent: Preserve East Asian run settings and render contiguous combined text as two editable sub-rows within one logical line, retaining source order, independent groups and font formatting.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/engine/tests/two_lines.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: two_lines_
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

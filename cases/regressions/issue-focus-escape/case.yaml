@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-focus-escape
+feature: doc.editor.display-modes
+intent: In Focus, Escape with a selection collapses it and stays in Focus, and Escape with nothing to cancel leaves Focus (the text tool took every Escape, so Focus could not be left by key); the find bar is hidden in Focus and back after it.
+layer: gate
+source:
+  kind: probe
+  from: web/tests/focus-escape.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/focus-escape.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+timeout_s: 60
+since: "2026-11-17"

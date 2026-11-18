@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-chinese-font-names
+feature: doc.layout.font-substitution
+intent: Missing Chinese font names are drawn in the Song, FangSong, Hei or Kai face their name says (方正小标宋简体 as Song, 方正黑体_GBK as Hei) and macOS faces are found by their Chinese names (冬青黑体, 华文行楷, 隶书), as WPS for Mac draws them; names of no style go to the sans fallback.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/support/fonts/src/word.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-fonts
+      filter: chinese_names_resolve_to_the_style_they_name_or_the_macos_face_they_name
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

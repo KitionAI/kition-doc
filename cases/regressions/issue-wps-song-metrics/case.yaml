@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-wps-song-metrics
+feature: doc.layout.east-asian-line-height
+intent: 宋体, 黑体, 楷体 and the names drawn in WPS's own faces stand 0.969 em above the baseline and 0.329 em below, and a Latin font's line gap goes above its text, so a 12 pt Song line with Helvetica Neue text takes two 15.6 pt grid rows, as WPS for Mac lays them out.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/support/fonts/src/word.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-fonts
+      filter: wps_line_heights_are_measured_for_families_it_draws_in_its_own_faces
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

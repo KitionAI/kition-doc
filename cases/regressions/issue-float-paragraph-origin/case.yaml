@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-float-paragraph-origin
+feature: doc.layout.float-position
+intent: An object positioned from its paragraph is offset from the paragraph's top above its space before, so the space moves only the text, as WPS for Mac places it.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_paragraph_offset_counts_from_above_the_paragraphs_space_before
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-keep-apart
+feature: doc.layout.float-position
+intent: A floating object that may not overlap others (wp:anchor allowOverlap="0") is read and written back and moves down below the objects of its page that may not be overlapped, as WPS for Mac stacks word-41add's alignment diagrams (its 64 pages now match WPS).
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: objects_that_may_not_overlap_stand_one_below_the_other
+  - cargo-test:
+      package: kition-doc-docx
+      filter: an_object_kept_apart_round_trips
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

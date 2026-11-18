@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-turned-section
+feature: doc.layout.turned-sections
+intent: A section whose text direction is top to bottom (w:textDirection tbRl on its sectPr) is read and written back, and its body lines run down the page from the top margin, the first at the right margin and the next to its left, the page keeping its size, as WPS for Mac lays out luan's vertical sections.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_turned_section_sets_its_lines_down_the_page_from_the_right
+  - cargo-test:
+      package: kition-doc-docx
+      filter: sections_headers_footers_round_trip
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

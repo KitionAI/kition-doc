@@ -1,0 +1,24 @@
+format: 1
+id: regressions/issue-c8-doc-6-list-neighbours
+feature: doc.agent.guard
+intent: >-
+  A list command rests on the selected paragraphs' properties and on the paragraphs before and
+  after them, where a list continues or restarts, and on the list definitions, not on every
+  paragraph. Another agent's removal of the previous paragraph's numbering refuses the agent's
+  numbering; another paragraph's text does not (another program's save still refuses it: a
+  reread mints the lists' ids).
+layer: gate
+tags: [agents, lists]
+source:
+  kind: probe
+  from: "task card C8-doc-6 (other paragraphs read: list neighbours)"
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::numbering_rests_on_the_paragraph_before" }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-punctuation-squeeze
+feature: doc.layout.punctuation-compression
+intent: With punctuation compression, a line's full-width marks give up at most half the largest mark's size in all (one mark may give all of it), as WPS for Mac compresses them - two 20 pt marks absorb 10 pt of overflow but not 11 pt.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests_compression.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: punctuation_compression_squeezes_each_mark_by_a_fifth_of_its_size
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

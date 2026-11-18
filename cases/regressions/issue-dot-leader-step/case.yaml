@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-dot-leader-step
+feature: doc.layout.field-tabs
+intent: A dot leader's marks step a whole tenth of a point apart, the mark's advance rounded up, as WPS for Mac fills luan's contents (11 pt Helvetica Neue's 3.06 pt full stop 3.1 pt apart, so each line has WPS's count of dots).
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests_field_tabs.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: dot_leaders_step_a_whole_tenth_of_a_point
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

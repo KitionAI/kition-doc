@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-text-outline-read
+feature: doc.layout.text-outline
+intent: A visible w14:textOutline (a colour not fully transparent, a width) is read with its w14:textFill for drawing; a transparent or absent outline is none; the effects are saved as written.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/formats/docx/tests/fixtures.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-docx
+      filter: a_visible_text_outline_is_read_for_drawing
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

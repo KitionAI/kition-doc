@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-c8-doc-6-reject-equation
+feature: doc.agent.guard
+intent: >-
+  Reject holds paragraph formatting and equation Enter holds the paragraph
+  it splits, through same-server and outside writers, while distant edits apply.
+layer: gate
+source:
+  kind: probe
+  from: task card C8-doc-6
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::rejection_rests" }
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::equation_enter_rests" }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

@@ -1,0 +1,5 @@
+{
+  "steps": [
+    { "command": "text.insert", "params": { "text": "Costs fell by a tenth. " } }
+  ]
+}

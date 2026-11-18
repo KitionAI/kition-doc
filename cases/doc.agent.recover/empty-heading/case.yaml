@@ -1,0 +1,35 @@
+format: 1
+id: doc.agent.recover/empty-heading
+feature: doc.agent.recover
+intent: >-
+  The agent runs the kit's check, finds the heading with no text, and repairs it by giving the heading
+  a title (or removing the empty heading), keeping the body paragraph under it (KHP Verify).
+layer: eval
+source:
+  kind: synthetic
+  from: repo:conformance/check-empty-heading.docx
+  license: Apache-2.0
+  note: "A copy of the conformance fixture for doc.empty-heading (an empty Heading 1 above one Normal paragraph)."
+input: [input/notes.docx]
+steps:
+  - task:
+      prompt: >-
+        Run the kit's check on notes.docx and fix what it reports. The paragraph of body text must
+        stay exactly as it is.
+      max_turns: 20
+  - check: { path: notes.docx, as: diagnostics }
+  - inspect: { path: notes.docx, as: after }
+expected:
+  - actual: out:diagnostics
+    compare: diagnostics
+    value: { absent: [doc.empty-heading], max_errors: 0 }
+  - actual: out:after
+    compare: values
+    collateral: true
+    value:
+      content.paragraphs: { any: { text: Text under a heading with no title., style: Normal } }
+solution:
+  - tool: doc_run
+    args: { path: notes.docx, steps: [{ command: para.text, params: { index: 0, text: Overview } }] }
+since: "2026-11-17"
+timeout_s: 600

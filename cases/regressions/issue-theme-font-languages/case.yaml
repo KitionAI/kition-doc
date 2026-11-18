@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-theme-font-languages
+feature: doc.layout.theme-fonts
+intent: Resolve theme-only font references through document theme languages and regional defaults, retain script distinctions through saves, and use the selected font during shaping.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/engine/tests/theme_font_languages.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: theme_font_languages_
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

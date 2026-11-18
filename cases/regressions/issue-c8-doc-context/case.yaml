@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-c8-doc-context
+feature: doc.agent.guard
+intent: >-
+  Setting and restoring the call context changes nothing in the document; no command depends on the page the caret was last seen on; commands declaring no reads give the same result whatever the selection.
+layer: gate
+tags: [headless, guard]
+source:
+  kind: synthetic
+  from: C8-land-14-doc
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc-kit, test: acts }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

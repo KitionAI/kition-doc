@@ -1,0 +1,28 @@
+format: 1
+id: regressions/issue-3
+feature: doc.editor.page-view
+intent: >-
+  KitDocument::render draws pages as printed for thumbnails and agents' screenshots (headers and
+  footers at full strength, no spelling squiggles) and with the editing look only when the kit's
+  editor asks for it; lines between columns are drawn in every column region, including one a
+  continuous section break starts, beside columns that hold something; automatic text is white on
+  dark cell and paragraph shading.
+layer: gate
+source:
+  kind: issue
+  from: Kition Doc regression suite
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: renders_pages_as_printed_unless_the_editor_asks_for_its_editing_look
+  - cargo-test:
+      package: kition-doc-engine
+      test: printed_look
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

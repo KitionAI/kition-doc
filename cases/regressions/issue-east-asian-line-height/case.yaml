@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-east-asian-line-height
+feature: doc.layout.east-asian-line-height
+intent: A font that declares an East Asian code page gets 1.3 times its Windows ascent plus descent as single line spacing, the extra split evenly above and below, while other fonts keep their own line height.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/support/fonts/src/tests_line_metrics.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-fonts
+      filter: tests_line_metrics
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

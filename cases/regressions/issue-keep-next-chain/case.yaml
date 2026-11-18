@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-keep-next-chain
+feature: doc.layout.paragraph-spacing
+intent: Linked keep-with-next paragraphs reserve fitting chains and start oversized groups on a fresh page, honoring terminal keep-lines paragraphs, forced breaks and leading spacing.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests_keep_chain.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: keep_chain_
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

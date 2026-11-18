@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-c8-doc-refusals-missing-range
+feature: doc.agent.guard
+intent: >-
+  A range naming a joined paragraph by id reports deletion even when the replica retains its piece. Deleted paragraphs still refuse without writing, and a live range merges text added after it.
+layer: gate
+tags: [agents, premises]
+source:
+  kind: probe
+  from: task card C8-doc-refusals matrix
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc
+      test: c8
+      filter: matrix::missing_id_ranges_report_deletion
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

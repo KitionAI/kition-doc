@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-table-cell-spacing
+feature: doc.layout.table-cell-spacing
+intent: Spacing between table cells (w:tblCellSpacing, which holds half the gap) is read and written back and opens above every row and below the last, the cells' borders standing apart, as WPS for Mac lays tables out.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: cell_spacing_opens_above_every_row_and_below_the_last
+  - cargo-test:
+      package: kition-doc-docx
+      filter: table_cell_spacing_round_trips
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

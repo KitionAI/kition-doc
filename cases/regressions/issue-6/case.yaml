@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-6
+feature: doc.references.notes-toc
+intent: The table of contents lists numbered headings as "number, tab, text, tab, page" and its TOC Heading never takes Heading 1's list number; table formulas take cell references, arithmetic and Word's functions, read "£360.50" as a number, format with a \# picture and compute again on Update Field (F9).
+layer: gate
+source:
+  kind: issue
+  from: Kition Doc regression suite
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: toc_entries_show_heading_numbers
+  - cargo-test:
+      package: kition-doc-engine
+      filter: table_formula
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 120
+since: "2026-11-17"

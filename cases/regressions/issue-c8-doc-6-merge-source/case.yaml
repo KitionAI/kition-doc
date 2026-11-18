@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-c8-doc-6-merge-source
+feature: doc.agent.guard
+intent: >-
+  The session's mail merge list is the kit's external input `mergeSource` (its fingerprint follows
+  its fields and rows), and the merge commands that read it (next, previous, preview, find,
+  finish, envelopes and labels from the list) name it in `under`: a write resting on it is
+  refused when a person changed the list since the agent's basis.
+layer: gate
+tags: [agents, mailings]
+source:
+  kind: probe
+  from: "task card C8-doc-6 (a read no stored field holds: the mail merge source)"
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc-kit, test: acts, filter: "the_mail_merge_list_is_an_external_input_the_merge_commands_rest_on" }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

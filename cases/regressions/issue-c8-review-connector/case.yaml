@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-review-connector
+feature: doc.agent.guard
+intent: A connector holds the text at its post-insertion destination, for both writer routes, while unrelated formatting applies.
+layer: gate
+tags: [agents]
+source: { kind: probe, from: C8-expectations review doc, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::a_connector_rests_on_its_positioned_destination" }
+expected:
+  - { actual: "out:cargo-test", compare: exit, value: 0 }
+timeout_s: 60
+since: "2026-11-17"

@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-keep-next-list-label
+feature: doc.layout.paragraph-spacing
+intent: Keep-with-next measures the following numbered paragraph with its label and indentation, without advancing the visible numbering during preview.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests_keep_list.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: keep_list_
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

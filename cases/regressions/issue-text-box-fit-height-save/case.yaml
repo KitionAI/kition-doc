@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-text-box-fit-height-save
+feature: doc.layout.float-position
+intent: A text box that fits its wrapped text (a:spAutoFit without wrap="none") is read as fitting its height and keeps saying so when saved.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/formats/docx/tests/fixtures.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-docx
+      filter: a_text_box_that_grows_to_its_wrapped_text_keeps_saying_so
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

@@ -1,0 +1,106 @@
+/* The Doc editor's own layout; colors and shapes come from @kition/kit-editor's tokens. */
+
+.doc-page-workspace {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) 14px;
+  grid-template-rows: minmax(0, 1fr) auto;
+  background: var(--kit-surface-muted);
+}
+
+.doc-page-viewport {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Comment threads the host keeps: markers in the page's right margin and the Comment button. */
+.doc-host-comments {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.doc-host-comment-marker,
+.doc-host-comment-add {
+  position: absolute;
+  pointer-events: auto;
+}
+
+.doc-host-comment-marker > .kui-icon-button,
+.doc-host-comment-add > .kui-icon-button {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--kit-surface, var(--kit-panel));
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+}
+
+.doc-host-comment-marker > .kui-icon-button {
+  color: var(--kit-primary);
+}
+
+.doc-host-comment-marker[data-active] > .kui-icon-button {
+  background: var(--kit-primary-soft, var(--kit-surface));
+}
+
+.doc-page-workspace > .kui-scrollbar[aria-orientation='horizontal'] {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.doc-style {
+  font-size: 12px;
+}
+
+.doc-style[data-style^='Heading'] {
+  color: var(--kit-primary);
+  font-weight: 600;
+}
+
+.doc-style[data-style='Title'] {
+  font-size: 15px;
+}
+
+.doc-symbols {
+  display: grid;
+  grid-template-columns: repeat(6, 28px);
+  gap: 2px;
+  padding: 4px;
+}
+
+.doc-symbol {
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.doc-symbol:hover {
+  border-color: var(--kit-border);
+  background: var(--kit-primary-soft);
+}
+
+.doc-comments {
+  display: flex;
+  flex-direction: column;
+  width: 300px;
+  min-height: 0;
+  border-left: 1px solid var(--kit-border);
+  background: var(--kit-surface);
+}
+
+.doc-comments-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--kit-border);
+}

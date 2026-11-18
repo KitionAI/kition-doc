@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-c8-doc3-independent
+feature: doc.agent.guard
+intent: >-
+  Each class of the independent reading, with a writer that really changes the document between the agent's observation and its write: a section command refuses another writer's section break after the selection, a command on the selected drawing object another agent's change of it, a write by index another agent's join before it; a page colour applies after another writer's new paragraph, a reply after another agent accepted the tracked changes.
+layer: gate
+tags: [headless, guard]
+source:
+  kind: synthetic
+  from: C8-doc-3
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::" }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-wrap-polygon
+feature: doc.layout.float-position
+intent: Tight and through wrapping keep text clear of the object's wrap polygon, not its whole frame, for charts and diagrams as well as pictures and shapes, as WPS for Mac lays them out (a polygon over a tenth of the frame lets the lines beside the rest run full width).
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: tight_wrap_follows_a_diagrams_polygon_and_a_pictures_frame
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

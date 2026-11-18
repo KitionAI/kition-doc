@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-macos-reserved-fonts
+feature: doc.layout.east-asian-font
+intent: Native macOS font discovery includes the system FontServices Reserved directory, where current macOS provides the installed PingFang collection used by WPS references.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/support/fonts/src/tests_sysfonts.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-fonts
+      filter: macos_font_discovery
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+tags: [platform-macos]
+since: "2026-11-17"

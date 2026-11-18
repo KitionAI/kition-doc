@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-styles-part-defaults
+feature: doc.layout.document-grid
+intent: A .docx without a styles part takes the format's paragraph defaults (single line spacing, no space after), as WPS lays it out, so a line grid spaces its lines at the pitch rather than at 1.15 times it.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/formats/docx/tests/fixtures.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-docx
+      filter: a_package_without_styles_takes_the_formats_paragraph_defaults
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-picture-edge-draw
+feature: doc.drawing.picture-shape
+intent: A picture is drawn with its line on its edge and its shadow behind it, beyond its corner.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/render/render/src/lib.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-render
+      filter: pictures_draw_their_line_and_shadow
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

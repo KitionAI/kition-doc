@@ -1,0 +1,6 @@
+[alias]
+xtask = "run --package xtask --"
+
+[net]
+# Fetch the pinned public SDK revision with git.
+git-fetch-with-cli = true

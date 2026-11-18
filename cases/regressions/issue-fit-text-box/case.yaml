@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-fit-text-box
+feature: doc.layout.float-position
+intent: A floating text box that fits its text (wrap="none" with a:spAutoFit) is placed at its text's width, so a page number set to the margin sits against it as WPS draws it.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_text_box_that_fits_its_text_takes_its_width_for_its_placement
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

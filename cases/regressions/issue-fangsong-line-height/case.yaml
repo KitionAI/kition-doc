@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-fangsong-line-height
+feature: doc.layout.font-substitution
+intent: A 12 pt single line of a missing 仿宋 is laid out 17.4 pt tall, as WPS for Mac draws it, not at the height of the face that stands in for it.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_missing_fangsong_line_is_as_tall_as_wps_draws_it
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

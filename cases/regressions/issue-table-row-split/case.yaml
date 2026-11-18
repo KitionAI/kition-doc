@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-table-row-split
+feature: doc.layout.table-row-split
+intent: A row split at a page's foot keeps at least the first line of every cell above the cut, or moves on whole, as WPS lays it out; no cell's text is left alone on the next page.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_row_moves_whole_when_a_cell_would_keep_no_line
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

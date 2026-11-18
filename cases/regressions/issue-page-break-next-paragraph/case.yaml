@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-page-break-next-paragraph
+feature: doc.layout.section-pages
+intent: Marks after a paragraph-ending page break (a bookmark, a content control's end) stay on the break's line instead of starting an empty line on the next page, and the paragraph that starts that page drops its space before, as WPS for Mac lays them out.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests_control_marks.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: marks_after_a_page_break_stay_on_its_line_and_the_next_page_drops_the_space_before
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

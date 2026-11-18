@@ -1,0 +1,19 @@
+format: 1
+id: regressions/issue-page-raster-density
+feature: doc.fidelity.wps-corpus
+intent: Pixel-density metadata preserves physical content coordinates when raster page edges round differently; paper dimensions remain separate acceptance constraints.
+layer: gate
+source:
+  kind: synthetic
+  from: tools/test_golden_word.py
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [python3, -m, unittest, discover, -s, tools, -p, test_golden_word.py]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

@@ -1,0 +1,15 @@
+format: 1
+id: regressions/issue-c8-doc-6-comment-anchors
+feature: doc.agent.guard
+intent: >-
+  Deleting a comment holds its body anchors. A move of those anchors refuses
+  the write, while text changes away from its paragraph apply.
+layer: gate
+source: { kind: probe, from: task card C8-doc-6, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::deleting_a_comment_rests" }
+expected:
+  - { actual: out:cargo-test, compare: exit, value: 0 }
+timeout_s: 600
+since: "2026-11-17"

@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-float-anchor-line-height
+feature: doc.layout.float-position
+intent: The run holding a floating object's anchor adds nothing to its line's height, so a 16 pt run around a floating picture at the end of 10.5 pt text keeps the line one grid row tall, as WPS lays it out.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_floating_objects_anchor_does_not_make_its_line_taller
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

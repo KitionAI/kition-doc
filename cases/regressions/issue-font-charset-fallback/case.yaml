@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-font-charset-fallback
+feature: doc.layout.font-charset
+intent: Font-table character sets survive DOCX conversion, invalidate cached metrics when changed, and select regional fallback faces for missing declared East Asian fonts without replacing available requested fonts.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/engine/tests/font_charsets.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: font_charset_
+  - cargo-test:
+      package: kition-doc-fonts
+      filter: font_charset_
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

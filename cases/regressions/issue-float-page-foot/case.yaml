@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-float-page-foot
+feature: doc.layout.float-position
+intent: An object positioned from its paragraph or line that would end below the page is moved up to end at the page's bottom edge and keeps its size, while its paragraph stays on its page, as WPS for Mac places it.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_float_that_would_run_past_the_page_is_moved_up_to_its_foot
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

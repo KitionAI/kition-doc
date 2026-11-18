@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-composite-border-room
+feature: doc.layout.paragraph-spacing
+intent: A paragraph border of a composite style takes more room than its width, as WPS for Mac lays it out - a double line three widths, a triple five, a wave 2.16 pt more and a double wave (kept as its own style) 4.56 pt more.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests_paragraph_borders.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: composite_border_styles_take_more_room_than_their_width
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

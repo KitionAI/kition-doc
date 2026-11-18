@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-picture-edge-read
+feature: doc.drawing.picture-shape
+intent: A picture's line (pic:spPr a:ln with a fill) and effects (blurred shadow, glow) are read and written back on save; a line with no fill is no line.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/formats/docx/tests/fixtures.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-docx
+      filter: a_picture_keeps_its_line_and_effects
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

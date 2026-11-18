@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-gb2312-english-names
+feature: doc.layout.font-substitution
+intent: The English font names KaiTi_GB2312 and FangSong_GB2312 are drawn in the sans fallback (FangSong_GB2312 at 微软雅黑's measured line height), as WPS for Mac draws them, unlike the Chinese names 楷体_GB2312 and 仿宋_GB2312.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/support/fonts/src/word.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-fonts
+      filter: the_english_gb2312_names_are_drawn_in_the_sans_fallback
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

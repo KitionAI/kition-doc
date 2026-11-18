@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-picture-shape-read
+feature: doc.drawing.picture-shape
+intent: A picture's preset outline (pic:spPr prstGeom other than a rectangle, with its adjust values) is read and written back on save.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/formats/docx/tests/fixtures.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-docx
+      filter: a_picture_cut_to_a_preset_outline_keeps_it
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

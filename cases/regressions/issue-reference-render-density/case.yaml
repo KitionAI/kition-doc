@@ -1,0 +1,19 @@
+format: 1
+id: regressions/issue-reference-render-density
+feature: doc.fidelity.wps-corpus
+intent: Native comparisons use consistent reference PNG density, fall back when it disagrees with paper dimensions, reject incorrect renderer scale metadata, and distinguish reports made with different sampling methods.
+layer: gate
+source:
+  kind: synthetic
+  from: tools/test_golden_raster.py
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [python3, -m, unittest, discover, -s, tools, -p, test_golden_raster.py]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

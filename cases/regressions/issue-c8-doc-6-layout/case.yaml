@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-c8-doc-6-layout
+feature: doc.agent.guard
+intent: >-
+  A command reading the layout rests on where the paragraphs it reads are laid out (a paragraph's
+  derived `~layout`): a stroke at a point of a page on that page's paragraphs. Another writer's
+  text that moves them refuses the stroke; text that moves nothing does not.
+layer: gate
+tags: [agents, layout]
+source:
+  kind: probe
+  from: "task card C8-doc-6 (a read no stored field holds: the layout)"
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::a_stroke_at_a_point_rests_on_the_layout_of_its_page" }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

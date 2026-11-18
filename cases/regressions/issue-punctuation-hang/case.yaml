@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-punctuation-hang
+feature: doc.layout.punctuation-compression
+intent: A closing comma or full stop that ends a full line hangs past the right margin when the paragraph lets punctuation overflow (the default), as WPS lays it out, and wraps when it doesn't.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests_compression.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: punctuation_hangs_past_the_right_edge_at_a_line_end
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

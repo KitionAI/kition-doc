@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-c8-doc-6-drawing-paths
+feature: doc.agent.guard
+intent: >-
+  Resizing an object rests on its size and preserves its other properties. Only moving the
+  object reads its page layout. Another writer's object change refuses a resize; a section
+  margin change applies. Group and Ungroup hold layout inputs only past their early returns.
+layer: gate
+tags: [agents, drawing]
+source:
+  kind: probe
+  from: task card C8-doc-6 continuation (conditional root reads)
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::resizing_an_object_rests_on_its_size_without_the_page_layout" }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

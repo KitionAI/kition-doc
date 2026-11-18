@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-vml-art-text
+feature: doc.drawing.vml-art-text
+intent: A VML art text drawing (a text watermark) is read as its string in its font and fill colour at its opacity, stretched to fill the shape behind the text, and written back as the same VML drawing with the story's text as its string.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/formats/docx/tests/fixtures.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-docx
+      filter: a_vml_word_art_watermark_is_read_as_fitted_text_and_written_back
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

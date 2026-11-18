@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-line-unit-twelve-points
+feature: doc.layout.paragraph-spacing
+intent: Without a line grid, a line of paragraph spacing (w:beforeLines, w:afterLines) is 12 pt whatever the paragraph's font and size, as WPS for Mac spaces it; with a grid it is the grid's pitch.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/engine/tests/paragraph_spacing_units.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: paragraph_line_units_
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

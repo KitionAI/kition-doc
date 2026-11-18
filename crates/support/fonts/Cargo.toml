@@ -1,0 +1,17 @@
+[package]
+name = "kition-doc-fonts"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Kition Doc fonts: font database (bundled OFL + system), metrics, glyph outlines, shaping"
+
+[lints]
+workspace = true
+
+[dependencies]
+kition-office-core = { workspace = true }
+kurbo = { workspace = true }
+skrifa = { workspace = true }
+harfrust = { workspace = true }
+unicode-bidi = { workspace = true }
+log = { workspace = true }

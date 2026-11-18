@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-missing-latin-font
+feature: doc.layout.font-substitution
+intent: A missing Latin family is drawn in PingFang SC, as WPS for Mac draws it, except Calibri and Aptos, drawn in Helvetica Neue after the metric-compatible Carlito.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/support/fonts/src/word.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-fonts
+      filter: missing_latin_families
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

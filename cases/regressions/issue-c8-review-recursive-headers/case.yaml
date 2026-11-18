@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-review-recursive-headers
+feature: doc.agent.guard
+intent: Removing headers holds nested body sections in the live model and persisted body sections for outside writers, with unrelated text changes applying.
+layer: gate
+tags: [agents]
+source: { kind: probe, from: C8-expectations review doc, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::removing_headers_rests_on_nested_body_section_properties" }
+expected:
+  - { actual: "out:cargo-test", compare: exit, value: 0 }
+timeout_s: 60
+since: "2026-11-17"

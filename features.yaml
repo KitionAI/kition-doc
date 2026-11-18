@@ -1,0 +1,822 @@
+format: 1
+kit: doc
+updated: "2026-11-17"
+gate_budget_s: 600
+protected: []
+features:
+  - id: doc.drawing.smart-graphic
+    title: Smart graphics are drawn from their stored drawing with the shared preset outlines and placeholder prompts
+    dimension: [fidelity]
+    priority: P1
+    status: partial
+    paths: [crates/formats/docx/src/read/diagram.rs, crates/formats/docx/src/read/drawing_color.rs, crates/engine/doc/src/outline.rs, crates/engine/layout/src/display.rs]
+    gap: The diagram layout is not run (the stored drawing is the picture), text turned other than level is drawn level, gradients show their first stop, and the reader lives in Kition Doc rather than the drawing crate the kits share.
+    cases: [regressions/issue-smart-graphic-drawing, regressions/issue-smart-graphic-prompt-outline]
+    since: "2026-11-17"
+  - id: doc.drawing.vml-art-text
+    title: VML art text (text watermarks) is drawn as its string stretched to its shape and written back as VML
+    dimension: [fidelity, function]
+    priority: P1
+    status: partial
+    paths: [crates/formats/docx/src/read/story.rs, crates/formats/docx/src/write/story.rs, crates/formats/docx/tests/fixtures.rs, crates/engine/layout/src/display.rs, crates/engine/layout/src/lib.rs]
+    gap: Only plain stretched text paths are drawn (no VML text path shapes other than the plain one), the fill's opacity is shown over a white page, and picture watermarks' washout is not applied.
+    cases: [regressions/issue-vml-art-text, regressions/issue-art-text-turn]
+    since: "2026-11-17"
+  - id: doc.layout.section-pages
+    title: Section and page breaks start their pages as WPS does - no blank page for an empty section mark, no empty line after a paragraph-ending page break, and blank even or odd filler pages without headers or footers
+    dimension: [fidelity]
+    priority: P0
+    status: partial
+    paths: [crates/engine/layout/src/lib.rs, crates/engine/engine/tests/section_start_spacing.rs]
+    gap: Whether Word (rather than WPS) shows headers on inserted blank pages is not reference-checked.
+    cases: [regressions/issue-section-mark-overflow, regressions/issue-section-mark-spacing, regressions/issue-blank-page-header, regressions/issue-page-number-start-zero, regressions/issue-page-break-mark, regressions/issue-page-break-overflow, regressions/issue-page-break-next-paragraph, regressions/issue-tall-footer, regressions/issue-page-break-before-section-mark]
+    since: "2026-11-17"
+  - id: doc.layout.content-control-marks
+    title: Content controls make room for their start and end marks on their lines, as WPS lays them out
+    dimension: [fidelity]
+    priority: P0
+    status: partial
+    paths: [crates/engine/doc/src/props.rs, crates/formats/docx/src/read/story.rs, crates/engine/layout/src/para.rs, crates/kdm/kdm-model/model/schema.json, crates/kdm/kdm-model/src/text.rs]
+    gap: Content controls are not written back, so their marks are lost on save; controls around table rows and cells are not marked; the marks' metrics are measured from 10.5 to 40 pt only.
+    cases: [regressions/issue-content-control-marks, regressions/issue-content-control-marks-read]
+    since: "2026-11-17"
+  - id: doc.layout.line-break-opportunities
+    title: Lines break where WPS for Mac breaks them - not inside a word after a slash, question mark, exclamation mark or hyphen
+    dimension: [fidelity]
+    priority: P0
+    status: partial
+    paths: [crates/engine/layout/src/para.rs, crates/engine/layout/src/kinsoku.rs]
+    gap: Other punctuation inside Latin words matches the Unicode line breaking rules WPS was measured to follow; breaks at hyphens before digits and in East Asian runs are not reference-checked.
+    cases: [regressions/issue-no-break-in-word-punctuation]
+    since: "2026-11-17"
+  - id: doc.layout.drop-cap
+    title: Drop caps keep the size and distance from the text the document gives them and span lines of the text after them
+    dimension: [fidelity, conversion]
+    priority: P1
+    status: partial
+    paths: [crates/engine/layout/src/para.rs, crates/formats/docx/src/read/props.rs, crates/formats/docx/src/read/story.rs, crates/formats/docx/src/write/props.rs, crates/engine/doc/src/props.rs]
+    gap: A drop cap with no room beside it (WPS then starts the text below it) still squeezes the text into a narrow column; margin drop caps hang like dropped ones.
+    cases: [regressions/issue-drop-cap-size-space]
+    since: "2026-11-17"
+  - id: doc.layout.text-outline
+    title: Text with a visible outline (w14 text effects) is drawn as outlined letters, and text with a blurred shadow, glow or reflection as ink, as WPS prints them
+    dimension: [fidelity]
+    priority: P1
+    status: partial
+    paths: [crates/formats/docx/src/read/props.rs, crates/engine/doc/src/props.rs, crates/engine/layout/src/display.rs]
+    gap: Colour modifiers in text effects (lumMod, tint, shade) and gradients beyond their first stop are not applied, and the shadow, glow, reflection and 3-D effects themselves are not drawn (their letters are only drawn as ink).
+    cases: [regressions/issue-text-outline-read, regressions/issue-text-outline-draw, regressions/issue-text-outline-warp, regressions/issue-text-blur-read, regressions/issue-text-blur-draw]
+    since: "2026-11-17"
+  - id: doc.drawing.picture-adjust
+    title: Pictures are drawn with their colour adjustments (brightness, contrast, washout, grey scale, black and white, opacity)
+    dimension: [fidelity, function]
+    priority: P1
+    status: partial
+    commands: [picture.corrections, picture.color, picture.transparency]
+    paths: [crates/engine/doc/src/graphic.rs, crates/formats/docx/src/read/story.rs, crates/formats/docx/src/write/story.rs, crates/render/render/src/lib.rs, crates/formats/pdf/src/lib.rs]
+    gap: Other blip effects (recolour, duotone, artistic effects) and VML picture gain and black level are not applied; brightness and contrast follow WPS's printed pictures, but how brightness combines with more contrast is not reference-checked.
+    cases: [regressions/issue-picture-adjust-read, regressions/issue-picture-adjust-draw, regressions/issue-picture-adjust-pixels, regressions/issue-picture-adjust-curve]
+    since: "2026-11-17"
+  - id: doc.drawing.picture-shape
+    title: Pictures cut to a preset outline (an ellipse, a rounded rectangle, an arrow...) are drawn cut to it, with their line, shadow and glow, and keep them through saves
+    dimension: [fidelity, function]
+    priority: P1
+    status: partial
+    paths: [crates/formats/docx/src/read/story.rs, crates/formats/docx/src/write/story.rs, crates/engine/layout/src/display.rs, crates/render/render/src/lib.rs, crates/formats/pdf/src/lib.rs]
+    gap: Vector pictures (SVG, metafiles) are not cut, custom outlines (a:custGeom), dashed lines, soft edges, inner shadows, reflections and 3-D rotation are not drawn, a picture that may have see-through pixels casts no shadow or glow (WPS's follow its pixels), and the drawing tools cannot set an outline yet.
+    cases: [regressions/issue-picture-shape-read, regressions/issue-picture-shape-draw, regressions/issue-picture-edge-read, regressions/issue-picture-edge-draw, regressions/issue-transparent-picture-shadow]
+    since: "2026-11-17"
+  - id: doc.drawing.blurred-group
+    title: A group holding a blurred shadow, a glow or soft edges prints its text as ink, as WPS prints such a group as one picture
+    dimension: [fidelity]
+    priority: P1
+    status: partial
+    paths: [crates/engine/layout/src/lib.rs, crates/engine/layout/src/display.rs]
+    gap: The group is still drawn as vectors (WPS rasterises it), only the effects Kition Doc reads (outer shadow, glow, soft edges) count, and whether WPS also flattens a lone shape with a blurred effect is not reference-checked.
+    cases: [regressions/issue-blurred-group-text]
+    since: "2026-11-17"
+  - id: doc.drawing.vml-shape-line
+    title: VML shapes and text boxes take their line from their v:stroke element, as WPS draws them
+    dimension: [fidelity]
+    priority: P1
+    status: partial
+    paths: [crates/formats/docx/src/read/story.rs]
+    gap: Dash styles, line joins and VML's default fill for shapes that name none are not read, and a shape with neither a stroked attribute nor a v:stroke element draws no line.
+    cases: [regressions/issue-vml-stroke]
+    since: "2026-11-17"
+  - id: doc.layout.table-cell-spacing
+    title: Spacing between table cells takes room above every row and below the last
+    dimension: [fidelity, conversion]
+    priority: P1
+    status: partial
+    paths: [crates/engine/layout/src/table.rs, crates/engine/doc/src/props.rs, crates/formats/docx/src/read/props.rs, crates/formats/docx/src/write/props.rs]
+    gap: Only the vertical room is laid out; cells aren't inset across the row, row-level spacing (w:trPr/w:tblCellSpacing) is ignored, and the cells' separate borders are drawn as shared lines.
+    cases: [regressions/issue-table-cell-spacing]
+    since: "2026-11-17"
+  - id: doc.layout.turned-sections
+    title: Sections whose text runs top to bottom or bottom to top lay their body out turned, East Asian letters upright
+    dimension: [fidelity, conversion]
+    priority: P1
+    status: partial
+    paths: [crates/engine/layout/src/lib.rs, crates/engine/doc/src/section.rs, crates/formats/docx/src/read/props.rs, crates/formats/docx/src/write/story.rs, tools/xtask/src/render_pages.rs]
+    gap: Floating objects and footnotes in turned sections aren't turned with the text, and a header taller than its margin doesn't move the turned body.
+    cases: [regressions/issue-turned-section, regressions/issue-across-vertical]
+    since: "2026-11-17"
+  - id: doc.layout.table-position
+    title: A table's first cell text lines up with the margin plus the table's indent in every compatibility mode, and autofit columns grow for long words only while the table has room
+    dimension: [fidelity]
+    priority: P1
+    status: partial
+    paths: [crates/engine/layout/src/table.rs]
+    gap: A first cell without a left margin starts its text half a border further in in WPS, which isn't followed; floating tables keep the compatibility-mode rule.
+    cases: [regressions/issue-table-edge, regressions/issue-autofit-room, regressions/issue-table-double-border, regressions/issue-table-room]
+    since: "2026-11-17"
+  - id: doc.layout.table-row-split
+    title: A table row split across pages keeps the first line of every cell on the first page, or moves on whole
+    dimension: [fidelity]
+    priority: P1
+    status: partial
+    paths: [crates/engine/layout/src/table.rs]
+    gap: Cells are told apart by their text's left edge, and rows holding only pictures or nested tables split as before.
+    cases: [regressions/issue-table-row-split]
+    since: "2026-11-17"
+  - id: doc.layout.float-position
+    title: Floating objects mirror inside and outside placement on even pages, read alternate-content positions, wrap tightly along an object's wrap polygon, text boxes that fit their text are placed at its size, and text boxes that don't wrap keep long lines whole
+    dimension: [fidelity]
+    priority: P0
+    status: partial
+    paths: [crates/engine/layout/src/lib.rs, crates/formats/docx/src/read/story.rs, crates/formats/docx/src/write/story.rs, crates/engine/engine/tests/mirrored_alignment.rs]
+    gap: Vertical inside and outside alignment, Word 2010 percentage positions (read from their absolute fallback, not computed), and wrap polygons of turned objects (their turned bounds are used) remain incomplete; polygons keep at most 32 points.
+    cases: [regressions/issue-mirrored-float-alignment, regressions/issue-wrap-polygon, regressions/issue-fit-text-box, regressions/issue-fit-text-box-indent, regressions/issue-fit-text-box-save, regressions/issue-grid-wrap-text-band, regressions/issue-no-wrap-text-box, regressions/issue-no-wrap-text-box-save, regressions/issue-text-box-fit-height, regressions/issue-text-box-fit-height-save, regressions/issue-float-page-foot, regressions/issue-float-anchor-line-height, regressions/issue-text-box-overflow-clip, regressions/issue-9, regressions/issue-unwrapped-float-past-page, regressions/issue-float-paragraph-origin, regressions/issue-keep-next-float, regressions/issue-float-reach-up, regressions/issue-floating-table-runs-on, regressions/issue-reach-back-new-page, regressions/issue-tight-wrap-outline, regressions/issue-wrap-distances, regressions/issue-relative-width, regressions/issue-keep-apart, regressions/issue-word-beside-float]
+    since: "2026-11-17"
+  - id: doc.layout.line-numbers
+    title: Line numbers in text formatting, as selectable text, skipping section-break marks
+    dimension: [fidelity, function]
+    priority: P1
+    status: partial
+    commands: [layout.lineNumbers]
+    paths: [crates/engine/layout/src/lib.rs, crates/engine/engine/tests/line_numbers.rs]
+    gap: Numbering of empty paragraphs other than section-break marks and table rows is not reference-checked.
+    cases: [regressions/issue-line-number-format]
+    since: "2026-11-17"
+  - id: doc.layout.column-balance
+    title: Columns before a continuous section break are balanced
+    dimension: [fidelity]
+    priority: P0
+    status: partial
+    paths: [crates/engine/layout/src/lib.rs, crates/engine/engine/tests/column_balance.rs]
+    gap: Floating objects and footnotes inside balanced columns are not reference-checked.
+    cases: [regressions/issue-column-balance, regressions/issue-unequal-columns, regressions/issue-balanced-section-mark, regressions/issue-balance-last-page]
+    since: "2026-11-17"
+  - id: doc.lists.chinese-numbering
+    title: Chinese counting, legal and enclosed-circle list numbering
+    dimension: [fidelity, conversion]
+    priority: P0
+    status: partial
+    paths: [crates/engine/doc/src/section.rs, crates/engine/engine/tests/chinese_numbering.rs]
+    gap: WPS references only show values up to three; forms above ten follow standard Chinese numerals, unconfirmed against a reference. Other ECMA-376 number formats still read as decimal and save as decimal.
+    cases: [regressions/issue-chinese-numbering]
+    since: "2026-11-17"
+  - id: doc.layout.font-substitution
+    title: Missing Latin families fall back to PingFang SC (Calibri and Aptos to Helvetica Neue after Carlito), missing Song, Ming, Hei, Kai and FangSong (宋体, 新細明體, 黑体, 楷体, 仿宋) families to an installed face of their style, and equation text falls back for letters its font lacks
+    dimension: [fidelity]
+    priority: P0
+    status: partial
+    paths: [crates/support/fonts/src/word.rs, crates/engine/layout/src/math.rs]
+    gap: Families WPS may lack but this machine has (Arial) and run font hints on ASCII punctuation are not yet compared; the line heights of the legacy macOS faces Helvetica, Courier and Monaco are not matched.
+    cases: [regressions/issue-missing-latin-font, regressions/issue-math-text-fallback, regressions/issue-song-font-substitute, regressions/issue-chinese-family-substitutes, regressions/issue-ming-font-substitute, regressions/issue-measured-line-heights, regressions/issue-fangsong-line-height, regressions/issue-chinese-font-names, regressions/issue-gb2312-english-names, regressions/issue-japanese-font-names, regressions/issue-symbol-fallback-song]
+    since: "2026-11-17"
+  - id: doc.layout.east-asian-line-height
+    title: Fonts for East Asian text use Word's East Asian single line height
+    dimension: [fidelity]
+    priority: P0
+    status: partial
+    paths: [crates/support/fonts/src/word.rs, crates/support/fonts/src/tests_line_metrics.rs]
+    gap: Applies to the font that draws each run; Word's rule for East Asian characters drawn by a fallback font inside a Latin run, and remaining 8pt and large-multiple grid outliers in the WPS corpus, are not yet confirmed.
+    cases: [regressions/issue-east-asian-line-height, regressions/issue-wps-song-metrics, regressions/issue-character-border-height]
+    since: "2026-11-17"
+  - id: doc.layout.eq-field
+    title: Uncached EQ fields are drawn from their codes in each code run's formatting
+    dimension: [fidelity, conversion]
+    priority: P0
+    status: partial
+    paths: [crates/engine/doc/src/para.rs, crates/engine/layout/src/eq_field.rs, crates/engine/layout/src/para.rs, crates/engine/layout/src/display.rs, crates/formats/docx/src/read/story.rs, crates/formats/docx/src/write/story.rs, crates/engine/engine/tests/eq_fields.rs, crates/kdm/kdm-model/tests/eq_fields.rs]
+    gap: Fractions, brackets, boxes, displacement, arrays, radicals and integrals are not yet compared with a reference; justified overstrike, Phonetic Guide alignments other than centred, line breaks between adjacent EQ fields, stacked superscripts and EQ fields nested in other fields remain incomplete.
+    cases: [regressions/issue-eq-field-code]
+    since: "2026-11-17"
+  - id: doc.layout.two-lines
+    title: Combined text uses two editable sub-rows in one logical line
+    dimension: [fidelity, conversion, function]
+    priority: P0
+    status: partial
+    paths: [crates/engine/doc/src/props.rs, crates/engine/doc/src/resolve.rs, crates/engine/layout/src/two_lines.rs, crates/engine/layout/src/inline_groups.rs, crates/engine/layout/src/para.rs, crates/engine/layout/src/display.rs, crates/engine/layout/src/hit.rs, crates/formats/docx/src/read/props.rs, crates/formats/docx/src/write/props.rs, crates/engine/engine/tests/two_lines.rs, crates/kdm/kdm-model/src/text.rs, crates/kdm/kdm-model/model/schema.json, crates/kdm/kdm-model/tests/two_lines.rs]
+    gap: Enclosing brackets, rotated or bidirectional groups, explicit controls/objects, simultaneous manual widths, inherited anonymous and replica boundaries, and exact WPS parity remain incomplete.
+    cases: [regressions/issue-two-lines-in-one]
+    since: "2026-11-17"
+  - id: doc.layout.manual-run-width
+    title: Manual run widths preserve contiguous formatting groups
+    dimension: [fidelity, conversion]
+    priority: P0
+    status: partial
+    paths: [crates/engine/doc/src/props.rs, crates/engine/doc/src/resolve.rs, crates/engine/layout/src/fit_text.rs, crates/engine/layout/src/para.rs, crates/formats/docx/src/read/props.rs, crates/formats/docx/src/write/props.rs, crates/formats/docx/src/read/story.rs, crates/formats/docx/src/write/story.rs, crates/engine/engine/tests/fit_text.rs, crates/kdm/kdm-model/src/text.rs, crates/kdm/kdm-model/model/schema.json, crates/kdm/kdm-model/tests/fit_text.rs]
+    gap: Groups containing explicit controls or objects, inherited anonymous run boundaries, anonymous replica boundaries and exact WPS parity remain incomplete.
+    cases: [regressions/issue-manual-run-width]
+    since: "2026-11-17"
+  - id: doc.render.character-scale
+    title: Character width scales glyph outlines in raster and selectable PDF output
+    dimension: [fidelity, conversion, function]
+    priority: P0
+    status: partial
+    paths: [crates/engine/layout/src/display.rs, crates/render/render/src/lib.rs, crates/render/render/src/tests_character_scale.rs, crates/formats/pdf/src/lib.rs, crates/formats/pdf/src/tests_character_scale.rs]
+    gap: Manual fitText widths, combined East Asian runs and exact WPS raster parity remain incomplete.
+    cases: [regressions/issue-character-horizontal-scale]
+    since: "2026-11-17"
+  - id: doc.layout.theme-fonts
+    title: Theme-only font references select language-specific and regional theme faces
+    dimension: [fidelity, conversion]
+    priority: P0
+    status: partial
+    paths: [crates/formats/docx/src/read/mod.rs, crates/formats/docx/src/read/props.rs, crates/formats/docx/src/theme_fonts.rs, crates/engine/engine/tests/theme_font_languages.rs]
+    gap: Unlisted locale mappings, explicit cached-name priority and re-resolving script references after theme edits remain incomplete.
+    cases: [regressions/issue-theme-font-languages]
+    since: "2026-11-17"
+  - id: doc.layout.field-tabs
+    title: Field results honor paragraph tab stops, font runs and searchable leaders, hyperlink results keep their own formatting, and leaders fill as WPS fills them
+    dimension: [fidelity, function, conversion]
+    priority: P0
+    status: partial
+    paths: [crates/engine/layout/src/para.rs, crates/engine/layout/src/display.rs, crates/engine/layout/src/tests_field_tabs.rs, crates/formats/docx/src/read/story.rs]
+    gap: Hyperlink results are not clickable, general field-result word wrapping and mixed-direction field flows still require reference validation.
+    cases: [regressions/issue-field-result-tabs, regressions/issue-hyperlink-field-text, regressions/issue-tab-leader-fill, regressions/issue-dot-leader-step]
+    since: "2026-11-17"
+  - id: doc.layout.formula-fields
+    title: Formula fields compute again from the fields nested in their code, so a page number inside a formula shows each page's number as WPS shows it
+    dimension: [fidelity, conversion]
+    priority: P1
+    status: partial
+    paths: [crates/engine/layout/src/fields.rs, crates/engine/doc/src/para.rs, crates/formats/docx/src/read/story.rs, crates/formats/docx/src/write/story.rs]
+    gap: Only arithmetic (+ - * / ^ and parentheses) is computed; functions such as SUM(ABOVE), bookmarks, comparisons and number pictures keep the saved result. Fields nested two levels deep keep the inner level's saved result.
+    cases: [regressions/issue-formula-field-page, regressions/issue-nested-field-code]
+    since: "2026-11-17"
+  - id: doc.layout.font-charset
+    title: Font-table character sets guide missing-font substitution and round-trip safely
+    dimension: [fidelity, conversion, data-safety]
+    priority: P0
+    status: partial
+    paths: [crates/engine/doc/src/lib.rs, crates/engine/layout/src/para.rs, crates/engine/layout/src/lib.rs, crates/engine/layout/src/display.rs, crates/support/fonts/src/word.rs, crates/formats/docx/src/font_table.rs, crates/render/render/src/lib.rs, crates/formats/pdf/src/lib.rs, crates/engine/engine/tests/font_charsets.rs]
+    gap: Embedded font tables, named character-set values, font family classifications, Panose matching and alternate names remain incomplete.
+    cases: [regressions/issue-font-charset-fallback]
+    since: "2026-11-17"
+  - id: doc.render.custom-curves
+    title: Custom Bezier curves keep their control points in raster output and DOCX saves
+    dimension: [fidelity, conversion, function]
+    priority: P0
+    status: partial
+    paths: [crates/engine/doc/src/freeform.rs, crates/engine/doc/src/freeform/curves.rs, crates/engine/layout/src/freeform_display.rs, crates/formats/docx/src/read/freeform.rs, crates/formats/docx/src/write/story.rs, crates/engine/engine/tests/custom_path_curves.rs]
+    gap: Formula coordinates and arc commands still require reference validation.
+    cases: [regressions/issue-custom-path-curves]
+    since: "2026-11-17"
+  - id: doc.render.custom-path-paints
+    title: Custom paths retain independent fills and strokes and compound contour winding
+    dimension: [fidelity, conversion, data-safety]
+    priority: P0
+    status: partial
+    paths: [crates/engine/doc/src/freeform.rs, crates/engine/layout/src/display.rs, crates/engine/layout/src/freeform_display.rs, crates/formats/docx/src/read/freeform.rs, crates/formats/docx/src/write/story.rs, crates/engine/engine/tests/custom_path_paints.rs]
+    gap: Formula coordinates and arc commands still require reference validation.
+    cases: [regressions/issue-custom-path-paints]
+    since: "2026-11-17"
+  - id: doc.format.group-freeform
+    title: Custom drawing paths survive import and save inside groups, and members keep their place in a group's own space
+    dimension: [conversion, fidelity, data-safety]
+    priority: P0
+    status: partial
+    paths: [crates/formats/docx/src/read/story.rs, crates/formats/docx/src/read/freeform.rs, crates/formats/docx/tests/group_freeform.rs]
+    gap: Formula coordinates and arc commands still require reference validation.
+    cases: [regressions/issue-group-freeform, regressions/issue-flat-group-scale]
+    since: "2026-11-17"
+  - id: doc.layout.punctuation-compression
+    title: Enabled full-width punctuation compression participates in line breaking, and closing marks hang past the right margin
+    dimension: [fidelity]
+    priority: P0
+    status: partial
+    paths: [crates/engine/layout/src/compression.rs, crates/engine/layout/src/para.rs, crates/engine/layout/src/tests_compression.rs]
+    gap: Opening brackets, quotation marks, Japanese kana compression and historical compatibility flags still need reference validation.
+    cases: [regressions/issue-punctuation-compression, regressions/issue-punctuation-squeeze, regressions/issue-punctuation-hang, regressions/issue-punctuation-hang-language, regressions/issue-autospace-compression]
+    since: "2026-11-17"
+  - id: doc.editor.scrollbars
+    title: Visible document scrollbars track the viewport and support pointer and keyboard navigation
+    dimension: [function, data-safety]
+    priority: P1
+    status: has
+    paths: [web/src/DocumentCanvas.tsx, web/src/app.css, web/tests/scrollbar.mjs]
+    cases: [regressions/issue-document-scrollbar]
+    since: "2026-11-17"
+  - id: doc.editor.display-modes
+    title: The editor in Menus, Single line, Classic and Focus; Escape in Focus cancels first, and Focus shows no kit bar
+    dimension: [function]
+    priority: P1
+    status: has
+    paths: [web/src/App.tsx, web/src/FindBar.tsx, web/src/doc.ts, web/src/ribbon/HomeTab.tsx, web/src/ribbon/InsertTab.tsx, web/src/ribbon/LayoutTab.tsx, web/src/ribbon/ViewTab.tsx, web/src/ribbon/ExportGroup.tsx, bindings/wasm/src/lib.rs, web/tests/modes.mjs, web/tests/focus-escape.mjs]
+    cases: [doc.editor.display-modes/mode-smoke, regressions/issue-focus-escape]
+    since: "2026-11-17"
+  - id: doc.editor.page-view
+    title: Document pages open at a readable scale with corner guides at their body margins
+    dimension: [function, fidelity, data-safety]
+    priority: P1
+    status: has
+    paths: [web/src/DocumentCanvas.tsx, web/src/pageView.ts, bindings/wasm/src/margin_guides.rs, bindings/wasm/src/lib.rs]
+    cases: [regressions/issue-page-view-scale, doc.editor.page-view/margin-guides, regressions/issue-page-toolbar-gap, regressions/issue-3]
+    since: "2026-11-17"
+  - id: doc.layout.east-asian-spacing
+    title: Mixed East Asian text honors automatic Latin and numeric spacing
+    dimension: [fidelity]
+    priority: P0
+    status: partial
+    paths: [crates/engine/layout/src/auto_spacing.rs, crates/engine/layout/src/para.rs]
+    gap: Field boundaries, character grids and historical spacing compatibility flags still need reference validation.
+    cases: [regressions/issue-east-asian-auto-spacing, regressions/issue-east-asian-numeric-symbols, regressions/issue-balanced-space-width, regressions/issue-space-runs, regressions/issue-space-shrink]
+    since: "2026-11-17"
+  - id: doc.layout.paragraph-spacing
+    title: Adjacent paragraph spacing overlaps in body text and nested stories
+    dimension: [fidelity]
+    priority: P0
+    status: partial
+    paths: [crates/engine/layout/src/lib.rs, crates/engine/layout/src/spacing_units.rs, crates/engine/layout/src/lookahead.rs, crates/engine/doc/src/props.rs, crates/formats/docx/src/read/props.rs, crates/formats/docx/src/write/props.rs]
+    gap: Legacy automatic-spacing interactions, complex list boundaries and remaining WPS baseline differences still require reference validation.
+    cases: [regressions/issue-paragraph-spacing-collapse, regressions/issue-keep-next-spacing, regressions/issue-keep-next-chain, regressions/issue-paragraph-line-units, regressions/issue-line-unit-float-anchor, regressions/issue-keep-next-table, regressions/issue-keep-next-list-label, regressions/issue-column-start-spacing, regressions/issue-automatic-paragraph-spacing, regressions/issue-multiple-line-baseline, regressions/issue-section-start-spacing, regressions/issue-empty-section-mark, regressions/issue-mid-page-section-top, regressions/issue-page-top-spacing, regressions/issue-text-extent-fit, regressions/issue-paragraph-border-room, regressions/issue-line-unit-twelve-points, regressions/issue-composite-border-room, regressions/issue-border-band-fit]
+    since: "2026-11-17"
+  - id: doc.layout.east-asian-font
+    title: East Asian and Latin font slots are selected independently during shaping
+    dimension: [fidelity]
+    priority: P0
+    status: partial
+    paths:
+      - crates/engine/doc/src/resolve.rs
+      - crates/engine/doc/src/resolve/font_slots.rs
+      - crates/engine/layout/src/para.rs
+      - crates/support/fonts/src/word.rs
+      - crates/support/fonts/src/fontdb.rs
+    gap: Theme script mappings, legacy font charsets, the Times New Roman slot exception and matching reference fonts remain necessary for full fidelity.
+    cases:
+      - regressions/issue-east-asian-font-selection
+      - regressions/issue-macos-reserved-fonts
+      - regressions/issue-nondrawable-font
+      - regressions/issue-late-font-registration
+      - regressions/issue-regional-cjk-fallback
+      - regressions/issue-east-asian-font-hint
+    since: "2026-11-17"
+  - id: doc.platform.file-parameters
+    title: File parameters declare their actual read, write or create access
+    dimension: [security, function]
+    priority: P0
+    status: has
+    paths: [bindings/wasm/src/files.rs]
+    cases: [regressions/issue-file-parameter-declarations]
+    since: "2026-11-17"
+  - id: doc.agent.guard
+    title: "An agent's write rests on what it observed: stable tool ids, call context, premises per call (C8)"
+    dimension: [ai]
+    priority: P0
+    status: has
+    paths: [bindings/wasm/src/acts.rs, bindings/wasm/src/context.rs, bindings/wasm/src/family.rs, bindings/wasm/src/place.rs, crates/engine/doc/src/lib.rs, crates/kdm/kdm-model/model/schema.json, bindings/headless/tests/c8.rs]
+    gap: Independent comparison retains conservative family holds. Comment reports include detached threads, and destructive writes must hold the content and metadata they discard. Private geometry facts are eager. Existing saved-file identity and convergence limitations remain documented in agent/guide.md.
+    cases: [regressions/issue-c8-doc-refusals-formats, regressions/issue-c8-doc-refusals-missing-range, regressions/issue-c8-doc-refusals-cell-path, regressions/issue-c8-doc-pin-split-anchor, regressions/issue-c8-doc-pin-endpoint, regressions/issue-c8-doc-pin-sdk-adoption, regressions/issue-c8-doc-pin-reread, regressions/issue-c8-doc-pin-table-order, regressions/issue-c8-doc-pin-inline-scope, regressions/issue-c8-doc-pin-media-scope, regressions/issue-c8-doc-pin-watermark-selection, regressions/issue-c8-doc-pin-comment-save, regressions/issue-c8-doc-7-search-split-style, regressions/issue-c8-doc-7-scan-metadata, regressions/issue-c8-doc-7-paragraph-replacement-inputs, regressions/issue-c8-doc-7-table-style-inputs, regressions/issue-c8-doc-7-picture-inputs, regressions/issue-c8-doc-7-paragraph-inspector, regressions/issue-c8-doc-7-unused-style-inputs, regressions/issue-c8-doc-7-list-off, regressions/issue-c8-doc-7-list-definition-inputs, regressions/issue-c8-doc-7-list-properties, regressions/issue-c8-doc-7-named-comments, regressions/issue-c8-doc-7-shape-frame-appearance, regressions/issue-c8-doc-7-table-properties, regressions/issue-c8-doc-7-absolute-characters, regressions/issue-c8-doc-7-section-inputs, regressions/issue-c8-doc-7-short-references, regressions/issue-c8-doc-7-paragraph-inputs, regressions/issue-c8-doc-7-design-inputs, regressions/issue-c8-doc-7-direct-character-style, regressions/issue-c8-doc-7-paragraph-text, regressions/issue-c8-doc-7-unused-selection, regressions/issue-c8-doc-7-reference-metadata, regressions/issue-c8-doc-ids, regressions/issue-c8-doc-object-params, regressions/issue-c8-doc-context, regressions/issue-c8-doc-places, regressions/issue-c8-doc-tables, regressions/issue-c8-doc-saved, regressions/issue-c8-doc2-split, regressions/issue-c8-doc2-holds, regressions/issue-c8-doc2-matrix, regressions/issue-c8-doc3-reading, regressions/issue-c8-doc3-independent, regressions/issue-c8-doc-6-autoformat-reads, regressions/issue-c8-doc-6-block-kind, regressions/issue-c8-doc-6-call-selection, regressions/issue-c8-doc-6-column-reading, regressions/issue-c8-doc-6-comment-anchors, regressions/issue-c8-doc-6-comment-ids, regressions/issue-c8-doc-6-compare-body, regressions/issue-c8-doc-6-drawing-anchor, regressions/issue-c8-doc-6-drawing-destination, regressions/issue-c8-doc-6-drawing-id-scan, regressions/issue-c8-doc-6-drawing-paths, regressions/issue-c8-doc-6-drawing-readings, regressions/issue-c8-doc-6-empty-readings, regressions/issue-c8-doc-6-equation-number, regressions/issue-c8-doc-6-group-anchors, regressions/issue-c8-doc-6-ink-geometry, regressions/issue-c8-doc-6-layout-frame, regressions/issue-c8-doc-6-layout, regressions/issue-c8-doc-6-list-containers, regressions/issue-c8-doc-6-list-neighbours, regressions/issue-c8-doc-6-merge-source, regressions/issue-c8-doc-6-next-style, regressions/issue-c8-doc-6-part-ids, regressions/issue-c8-doc-6-paste-delimiters, regressions/issue-c8-doc-6-paste-id-scan, regressions/issue-c8-doc-6-picture-number, regressions/issue-c8-doc-6-reject-equation, regressions/issue-c8-doc-6-section-breaks, regressions/issue-c8-doc-6-sort-reads, regressions/issue-c8-doc-6-split-join-reads, regressions/issue-c8-doc-6-story-scans, regressions/issue-c8-doc-6-table-point, regressions/issue-c8-doc-6-table-points, regressions/issue-c8-review-clipboard, regressions/issue-c8-review-comment-format, regressions/issue-c8-review-discarded-table, regressions/issue-c8-review-inspector-report, regressions/issue-c8-review-deleted-comment, regressions/issue-c8-review-recursive-headers, regressions/issue-c8-review-drawing-frame, regressions/issue-c8-review-connector, regressions/issue-c8-review-move-layout, regressions/issue-c8-review-compare-body, regressions/issue-c8-review-comparison]
+    since: "2026-11-17"
+  - id: doc.security.workspace
+    title: The kit reads and writes only its workspace's files, through its host, and starts no program
+    dimension: [security]
+    priority: P0
+    status: has
+    paths: [crates/engine/engine/src/disk.rs, crates/engine/engine/src/tests_hosted.rs, crates/engine/engine/src/io.rs, crates/engine/engine/src/speech.rs, crates/support/fonts/src/fontdb.rs, bindings/wasm/src/files.rs, bindings/headless/src/lib.rs, bindings/headless/tests/workspace_only.rs]
+    requirements: [AX11, E4]
+    gap: Links a document holds (external pictures, templates, data sources, INCLUDETEXT and the other fields) are never read and stay as data, but no check code reports them yet.
+    cases: [regressions/issue-c8-doc-refusals-scanner, regressions/issue-c8-doc-pin-html-reader, regressions/issue-host-files-only, regressions/issue-writes-outside-workspace]
+    since: "2026-11-17"
+  - id: doc.layout.document-grid
+    title: Section line grids control paragraph spacing and survive DOCX round trips
+    dimension: [fidelity, conversion]
+    priority: P0
+    status: partial
+    paths:
+      - crates/engine/doc/src/section.rs
+      - crates/engine/doc/src/resolve.rs
+      - crates/engine/layout/src/lib.rs
+      - crates/engine/layout/src/para.rs
+      - crates/formats/docx/src/read/props.rs
+      - crates/formats/docx/src/write/story.rs
+    gap: Character grids set East Asian characters in whole cells but don't snap Latin text or compress punctuation into them; exact glyph baseline parity still needs WPS corpus validation. A multiple whose text fits one row stays unrounded, as in WPS for Mac.
+    cases:
+      - regressions/issue-document-grid
+      - regressions/issue-grid-line-multiples
+      - regressions/issue-grid-pitch-multiple
+      - regressions/issue-styles-part-defaults
+      - regressions/issue-text-box-grid
+      - regressions/issue-inline-picture-grid
+      - regressions/issue-picture-grid-descent
+      - regressions/issue-grid-tall-multiple
+      - regressions/issue-at-least-on-grid
+      - regressions/issue-character-grid
+    since: "2026-11-17"
+  - id: doc.fidelity.wps-corpus
+    title: Word layout is compared automatically with immutable WPS reference pages
+    dimension: [fidelity, conversion]
+    priority: P0
+    status: has
+    paths:
+      - tools/golden_word.py
+      - tools/golden_fidelity.py
+      - tools/golden_pages.py
+      - tools/golden_provenance.py
+      - tools/golden_raster.py
+      - tools/test_golden_word.py
+      - tools/test_golden_provenance.py
+      - tools/test_golden_raster.py
+      - tools/xtask/src/render_pages.rs
+    cases:
+      - regressions/issue-wps-layout-detection
+      - regressions/issue-wps-strict-fidelity
+      - regressions/issue-page-raster-density
+      - regressions/issue-wps-source-provenance
+      - regressions/issue-reference-render-density
+      - regressions/issue-symbol-label-text
+      - doc.fidelity.wps-corpus/all-pages
+    since: "2026-11-17"
+  - id: doc.view.page-scroll
+    title: Scrolling stays within the document pages
+    dimension: [function, data-safety]
+    priority: P1
+    status: has
+    paths:
+      - web/src/App.tsx
+      - web/tests/scroll.mjs
+    cases:
+      - regressions/issue-document-scroll
+    since: "2026-11-17"
+  - id: doc.agent.observe
+    title: An agent reads the document and writes what it found
+    dimension: [ai]
+    priority: P0
+    status: has
+    commands: [format.state, list.get, styles.inspect, view.state, equation.get, document.inspect, document.text, document.paragraph, document.selection, document.layout, drawing.describe, draw.state, readAloud.status]
+    requirements: [AX13]
+    cases: [doc.agent.observe/title-line]
+    since: "2026-11-17"
+  - id: doc.agent.act
+    title: An agent formats words inside a paragraph
+    dimension: [ai]
+    priority: P0
+    status: has
+    requirements: [AX13]
+    cases: [doc.agent.act/bold-words, regressions/issue-param-types]
+    since: "2026-11-17"
+  - id: doc.agent.recover
+    title: An agent fixes what the check reports
+    dimension: [ai]
+    priority: P0
+    status: has
+    requirements: [AX13]
+    cases: [doc.agent.recover/empty-heading, regressions/issue-unknown-params]
+    since: "2026-11-17"
+  - id: doc.agent.draft
+    title: An agent works in a draft over a conversation
+    dimension: [ai]
+    priority: P1
+    status: has
+    paths: [bindings/wasm/src/collab.rs, bindings/headless/tests/replica.rs]
+    requirements: [AX13]
+    cases: [doc.agent.draft/costs-paragraph, regressions/issue-draft-replica-open]
+    since: "2026-11-17"
+  - id: doc.collab.presence
+    title: "Carets shown to co-editors and located in the document"
+    dimension: [collab]
+    priority: P1
+    status: partial
+    commands: [presence.caret, presence.locate]
+    paths: [crates/engine/engine/src/cmd/presence.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
+    since: "2026-11-17"
+  - id: doc.file.documents
+    title: "New, open, save, save as, templates, AutoSave, recovery, versions and close"
+    dimension: [function, conversion, data-safety]
+    priority: P1
+    status: partial
+    commands: [file.new, file.open, file.save, file.saveAs, file.close, file.versions, file.recover, file.newFromTemplate, file.saveTemplate, file.autosave]
+    paths: [bindings/wasm/src/lib.rs, bindings/wasm/src/files.rs, crates/engine/engine/src/cmd/file.rs, crates/engine/engine/src/cmd/tools.rs, crates/engine/engine/tests/source_date_epoch.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: DOCX round trips are tested at the format level (crates/formats/docx/tests); no case reopens a whole document through the commands.
+    cases: [regressions/issue-1]
+    since: "2026-11-17"
+  - id: doc.file.export-print
+    title: "Export to PDF and PNG, and print"
+    dimension: [conversion, fidelity]
+    priority: P1
+    status: partial
+    commands: [file.export, file.exportPdf, file.exportPng, file.print]
+    paths: [crates/engine/engine/src/cmd/file.rs, bindings/wasm/src/files.rs, web/src/exportFile.ts, web/src/ribbon/ExportGroup.tsx]
+    target: "Word 16.113.4 (Mac)"
+    gap: Export PDF and PNG run in the editor through the host (regressions/issue-export-through-host); Print has no editor case, and no case reopens an exported file.
+    since: "2026-11-17"
+  - id: doc.file.info
+    title: "Properties, info, options, user name, encryption, protection, accessibility, inspection, compatibility and sharing"
+    dimension: [function, security]
+    priority: P1
+    status: partial
+    commands: [file.encrypt, file.properties, file.info, file.options, file.setAuthor, file.accessibility, file.inspect, file.protect, file.compatibility, file.share]
+    paths: [crates/engine/engine/src/cmd/file.rs, crates/engine/engine/src/cmd/tools.rs, bindings/wasm/src/lib.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
+    since: "2026-11-17"
+  - id: doc.text.typing
+    title: "Typing, paragraphs, breaks, tabs, deleting and special characters"
+    dimension: [function]
+    priority: P0
+    status: has
+    commands: [text.insert, text.newParagraph, text.lineBreak, text.pageBreak, text.columnBreak, text.tab, text.backTab, text.backspace, text.delete, text.deleteWordBack, text.deleteWordForward, text.nbsp, text.nbHyphen, text.optionalHyphen, document.setText, para.insert, para.text]
+    paths: [crates/engine/engine/src/cmd/text.rs, crates/engine/engine/src/cmd/file.rs, crates/engine/engine/src/tests_typing.rs, crates/engine/engine/src/cmd/column.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Save and reopen as .docx is proven by command for typing, tabs, line breaks, new paragraphs and page breaks; the feature's other commands are covered by engine tests only.
+    cases: [doc.text.typing/save-reopen]
+    since: "2026-11-17"
+  - id: doc.caret.navigation
+    title: "Caret movement by character, word, line, paragraph, page and document"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [caret.left, caret.right, caret.up, caret.down, caret.wordLeft, caret.wordRight, caret.home, caret.end, caret.paraUp, caret.paraDown, caret.docStart, caret.docEnd, caret.pageUp, caret.pageDown, caret.set, edit.goto]
+    paths: [crates/engine/engine/src/cmd/caret.rs, crates/engine/engine/src/tests_bidi.rs, crates/engine/engine/src/tests_typing.rs, crates/engine/engine/src/cmd/citations.rs, crates/engine/engine/src/cmd/edit.rs, crates/engine/engine/src/cmd/text.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
+    cases: [regressions/issue-7]
+    since: "2026-11-17"
+  - id: doc.select.text
+    title: "Selecting words, sentences, paragraphs, lines, columns, objects and similar formatting"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [select.all, select.range, select.word, select.sentence, select.paragraph, select.line, select.text, select.collapse, select.column, select.addObject, select.objects, select.similar, select.extend]
+    paths: [crates/engine/engine/src/cmd/caret.rs, crates/engine/engine/src/cmd/tools.rs, crates/engine/engine/src/cmd/objects.rs, web/src/ribbon/HomeTab.tsx]
+    target: "Word 16.113.4 (Mac)"
+    gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
+    since: "2026-11-17"
+  - id: doc.edit.clipboard
+    title: "Undo, redo, repeat, cut, copy, paste options, Office clipboard and format painter"
+    dimension: [function, data-safety]
+    priority: P1
+    status: partial
+    commands: [edit.undo, edit.redo, edit.cut, edit.copy, edit.paste, edit.pasteText, edit.pasteMerge, edit.clipboardPane, edit.clipboardItems, edit.pasteClipboardItem, edit.pasteAllClipboard, edit.deleteClipboardItem, edit.clearClipboard, edit.formatPainter, edit.copyFormat, edit.pasteFormat, edit.pasteSpecial, edit.repeat]
+    paths: [crates/engine/engine/src/cmd/edit.rs, web/src/ribbon/HomeTab.tsx, crates/engine/engine/src/session.rs, bindings/wasm/src/lib.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
+    since: "2026-11-17"
+  - id: doc.edit.find-replace
+    title: "Find, advanced find and replace"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [edit.find, edit.advancedFind, edit.findNext, edit.findPrevious, edit.replace, edit.replaceAll]
+    paths: [crates/engine/engine/src/cmd/edit.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
+    since: "2026-11-17"
+  - id: doc.format.character
+    title: "Character formatting: font, size, colour, highlight, effects, case, spacing, scale and position"
+    dimension: [function, fidelity]
+    priority: P0
+    status: has
+    commands: [format.bold, format.italic, format.underline, format.doubleUnderline, format.wordUnderline, format.strikethrough, format.border, format.doubleStrikethrough, format.subscript, format.superscript, format.allCaps, format.smallCaps, format.hidden, format.outline, format.shadow, format.emboss, format.engrave, format.font, format.size, format.growFont, format.shrinkFont, format.growFont1, format.shrinkFont1, format.color, format.highlight, format.shading, format.changeCase, format.clear, format.resetChar, format.spacing, format.scale, format.position, format.charStyle, format.set, format.fontDialog]
+    paths: [crates/engine/engine/src/cmd/format.rs, web/src/ribbon/HomeTab.tsx, crates/engine/engine/src/cmd/review.rs, crates/engine/engine/src/tests_bidi.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Save and reopen as .docx is proven by command for bold, italic, underline, strikethrough, size, font, highlight, superscript and colour; the feature's other commands are covered by engine tests only.
+    cases: [doc.format.character/save-reopen, regressions/issue-5]
+    since: "2026-11-17"
+  - id: doc.format.paragraph
+    title: "Paragraph alignment, direction, indents, spacing, shading, borders, sort, pagination, tabs and outline level"
+    dimension: [function, fidelity]
+    priority: P0
+    status: has
+    commands: [para.alignLeft, para.alignCenter, para.alignRight, para.justify, para.distribute, para.align, para.rtl, para.ltr, para.indent, para.outdent, para.hangingIndent, para.removeHanging, para.indents, para.lineSpacing, para.single, para.double, para.oneAndHalf, para.spacing, para.addSpaceBefore, para.removeSpaceAfter, para.shading, para.borders, para.sort, para.keepNext, para.keepLines, para.pageBreakBefore, para.widowControl, para.asianTypography, para.tabs, para.outlineLevel, para.set, para.dialog]
+    paths: [crates/engine/engine/src/cmd/para.rs, web/src/ribbon/HomeTab.tsx, crates/engine/engine/src/tests_bidi.rs, crates/engine/engine/src/cmd/review.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Save and reopen as .docx is proven by command for alignment, indent and line spacing; the feature's other commands are covered by engine tests only.
+    cases: [doc.format.paragraph/save-reopen]
+    since: "2026-11-17"
+  - id: doc.lists.bullets-numbering
+    title: "Bullets, numbering, multilevel lists and list levels"
+    dimension: [function, fidelity]
+    priority: P0
+    status: has
+    commands: [para.bullets, para.numbering, para.multilevel, para.listLevel, para.restartNumbering, list.define, para.setNumberingValue, para.defineBullet, para.defineNumber]
+    paths: [crates/engine/engine/src/cmd/para.rs, web/src/ribbon/HomeTab.tsx, crates/engine/engine/src/cmd/tools.rs, crates/engine/engine/src/cmd/lists.rs, crates/engine/layout/src/lib.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Save and reopen as .docx is proven by command for bullets, numbering and list levels; the feature's other commands are covered by engine tests only.
+    cases: [doc.lists.bullets-numbering/save-reopen, regressions/issue-text-box-list]
+    since: "2026-11-17"
+  - id: doc.styles.manage
+    title: "Apply, create, modify, update, delete and inspect styles"
+    dimension: [function, fidelity]
+    priority: P0
+    status: has
+    commands: [para.style, para.normal, para.heading1, para.heading2, para.heading3, styles.create, styles.modify, styles.updateToMatch, styles.delete, styles.manage, styles.setVisibility, styles.list, styles.pane, styles.apply, styles.addToGallery, styles.inspector, styles.inspectorClear]
+    paths: [crates/engine/engine/src/cmd/para.rs, crates/engine/engine/src/cmd/inspector.rs, crates/engine/engine/src/cmd/citations.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Save and reopen as .docx is proven by command for applying Heading 1, Heading 2 and a named style (Quote); the feature's other commands are covered by engine tests only.
+    cases: [doc.styles.manage/save-reopen]
+    since: "2026-11-17"
+  - id: doc.view.modes
+    title: "View modes, marks, ruler, gridlines, navigation pane, zoom, page views, panes and windows"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [view.marks, view.printLayout, view.webLayout, view.draft, view.outline, view.readMode, view.focus, view.ruler, view.gridlines, view.navigationPane, view.zoom, view.zoom100, view.zoomIn, view.zoomOut, view.onePage, view.multiplePages, view.pageWidth, view.darkMode, view.stylesPane, view.commentsPane, view.newWindow, view.split, view.immersive, view.vertical, view.sideToSide]
+    paths: [crates/engine/engine/src/cmd/view.rs, web/src/ribbon/ViewTab.tsx, crates/engine/engine/src/cmd/tools.rs, web/src/ribbon/HomeTab.tsx]
+    target: "Word 16.113.4 (Mac)"
+    gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
+    since: "2026-11-17"
+  - id: doc.tables.edit
+    title: "Tables: rows, columns, cells, merge and split, styles, borders, sizing, sorting, formulas and conversion"
+    dimension: [function, fidelity]
+    priority: P0
+    status: has
+    commands: [table.viewGridlines, table.insertRowAbove, table.insertRowBelow, table.insertColumnLeft, table.insertColumnRight, table.deleteRow, table.deleteColumn, table.deleteTable, table.deleteCells, table.merge, table.split, table.splitTable, table.style, table.look, table.shading, table.borders, table.cellAlign, table.textDirection, table.autofit, table.distributeColumns, table.distributeRows, table.columnWidth, table.rowHeight, table.repeatHeader, table.sort, table.toText, table.formula, table.selectTable, table.selectRow, table.selectCell, table.properties, table.fromText, table.quick, table.newStyle, table.modifyStyle, table.deleteStyle, table.draw, table.eraser, table.cellMargins, table.borderPainter]
+    paths: [crates/engine/engine/src/cmd/table.rs, crates/engine/engine/src/cmd/table_style.rs, crates/engine/engine/src/cmd/tools.rs, crates/engine/engine/src/cmd/table_draw.rs, crates/engine/engine/src/cmd/table_formula.rs, crates/engine/layout/src/table.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Save and reopen as .docx is proven by command for inserting a table, typing in cells, inserting rows and columns, and cell formatting; the feature's other commands are covered by engine tests only.
+    cases: [doc.tables.edit/save-reopen, regressions/issue-10, regressions/issue-turned-at-least]
+    since: "2026-11-17"
+  - id: doc.insert.objects
+    title: "Insert pages, tables, pictures, shapes, text boxes, links, bookmarks, fields, symbols, art text, charts, objects and Quick Parts"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [insert.pageBreak, insert.blankPage, insert.coverPage, insert.table, insert.picture, insert.shape, insert.textBox, insert.link, insert.removeLink, insert.bookmark, insert.dateTime, insert.symbol, insert.field, insert.dropCap, insert.horizontalLine, insert.artText, insert.textFromFile, insert.equation, insert.crossReference, insert.chart, insert.quickParts, insert.autoText, insert.docProperty, insert.signatureLine, insert.object, insert.spreadsheet]
+    paths: [crates/engine/engine/src/cmd/insert.rs, web/src/ribbon/InsertTab.tsx, crates/engine/engine/src/cmd/tools.rs, crates/engine/engine/src/cmd/drawing.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
+    cases: [regressions/issue-4]
+    since: "2026-11-17"
+  - id: doc.headers.footers
+    title: "Headers, footers and page numbers"
+    dimension: [function, fidelity]
+    priority: P0
+    status: has
+    commands: [insert.header, insert.footer, insert.pageNumber, insert.editHeader, insert.editFooter, insert.closeHeader, insert.removeHeader, insert.removeFooter, hf.next, hf.previous, hf.position]
+    paths: [crates/engine/engine/src/cmd/insert.rs, web/src/ribbon/InsertTab.tsx, crates/engine/engine/src/cmd/tools.rs, bindings/wasm/src/lib.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Save and reopen as .docx is proven by command for header text and a page-number footer; the feature's other commands are covered by engine tests only.
+    cases: [doc.headers.footers/save-reopen]
+    since: "2026-11-17"
+  - id: doc.equations.edit
+    title: "Equation editing, structures, symbols, formats and numbering"
+    dimension: [function, fidelity]
+    priority: P1
+    status: partial
+    commands: [equation.edit, equation.exit, equation.type, equation.insertStructure, equation.insertSymbol, equation.move, equation.backspace, equation.delete, equation.enter, equation.convert, equation.inputFormat, equation.normalText, equation.display, equation.justify, equation.number, equation.set, equation.gallery, equation.structureActions, equation.structure]
+    paths: [crates/engine/engine/src/cmd/equation.rs, bindings/wasm/src/files.rs, crates/engine/engine/src/session.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
+    since: "2026-11-17"
+  - id: doc.layout.page-setup
+    title: "Margins, orientation, size, columns, breaks, hyphenation, vertical alignment and section properties"
+    dimension: [function, fidelity]
+    priority: P0
+    status: has
+    commands: [layout.margins, layout.orientation, layout.size, layout.columns, layout.break, layout.hyphenation, layout.pageSetup, layout.verticalAlign, layout.differentFirstPage, layout.differentOddEven, layout.pageNumberFormat, layout.section, layout.linkToPrevious]
+    paths: [crates/engine/engine/src/cmd/page.rs, web/src/ribbon/LayoutTab.tsx, crates/engine/engine/src/cmd/tools.rs, crates/engine/layout/src/lookahead.rs, crates/engine/engine/tests/page_setup_commands.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Save and reopen as .docx is proven by command for page size, orientation, margins and columns; the feature's other commands are covered by engine tests only. layout.hyphenation sets the document's automatic hyphenation, which is saved but, as in WPS for Mac, doesn't break words.
+    cases: [doc.layout.page-setup/save-reopen, regressions/issue-empty-section-margins, regressions/issue-no-automatic-hyphenation, regressions/issue-8]
+    since: "2026-11-17"
+  - id: doc.review.comments
+    title: "Comments and threads"
+    dimension: [function, collab]
+    priority: P1
+    status: partial
+    commands: [review.newComment, review.reply, review.editComment, review.deleteComment, review.resolveComment, review.nextComment, review.previousComment, review.comments, comment.threads, comment.add, comment.reply, comment.resolve, comment.delete, comment.goto]
+    paths: [crates/engine/engine/src/cmd/review.rs, crates/engine/engine/src/session.rs, crates/engine/engine/src/cmd/tools.rs, web/src/ribbon/InsertTab.tsx]
+    target: "Word 16.113.4 (Mac)"
+    gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
+    since: "2026-11-17"
+  - id: doc.review.host-comments
+    title: "Comments a host keeps: select a passage, comment, and the thread's marker follows the text"
+    dimension: [function, collab]
+    priority: P1
+    status: partial
+    commands: [comment.anchor, comment.locate]
+    paths: [crates/engine/engine/src/cmd/anchors.rs, web/src/hostAnchors.ts, web/src/HostComments.tsx, web/src/App.tsx, web/src/main.tsx, web/tests/host-comments.mjs]
+    target: "Kit UI protocol 2.6 section 7k (comment-anchors, comment.create, comments/show, comments/locate, comments/activated)"
+    gap: Proven against a mocked host in the editor and by engine tests; not yet run against Kition One's own host.
+    cases: [doc.review.host-comments/anchors-through-edits]
+    since: "2026-11-17"
+  - id: doc.review.track-changes
+    title: "Track changes, accept, reject, markup, compare and combine"
+    dimension: [function, collab]
+    priority: P1
+    status: partial
+    commands: [review.trackChanges, review.acceptAll, review.rejectAll, review.accept, review.reject, review.nextChange, review.previousChange, review.markup, review.trackingOptions, review.changes, review.compare, review.combine, review.showMarkup]
+    paths: [crates/engine/engine/src/cmd/review.rs, crates/engine/engine/src/cmd/fmt_revisions.rs, crates/engine/engine/src/cmd/tools.rs, bindings/wasm/src/files.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
+    since: "2026-11-17"
+  - id: doc.review.proofing
+    title: "Spelling and grammar, word count, thesaurus, language, restrict editing and Read Aloud"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [review.wordCount, review.spelling, review.issues, review.suggestions, review.addToDictionary, review.ignoreAll, review.applySuggestion, review.proofing, review.thesaurus, review.hideInk, review.restrict, review.language, review.editor, review.readAloud, readAloud.playPause, readAloud.next, readAloud.previous, readAloud.stop, readAloud.speed, readAloud.skipCitations]
+    paths: [crates/engine/engine/src/cmd/review.rs, crates/engine/engine/src/cmd/speech.rs, crates/engine/engine/src/cmd/tools.rs, crates/engine/engine/src/cmd/draw.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
+    since: "2026-11-17"
+  - id: doc.design.page
+    title: "Themes, style sets, paragraph spacing, watermark, page colour and borders"
+    dimension: [function, fidelity]
+    priority: P1
+    status: partial
+    commands: [design.theme, design.themeFonts, design.themeColors, design.styleSet, design.paragraphSpacing, design.watermark, design.pageColor, design.pageBorders, design.setDefault, design.themes, design.effects]
+    paths: [crates/engine/engine/src/cmd/design.rs, crates/engine/engine/src/cmd/tools.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
+    since: "2026-11-17"
+  - id: doc.references.notes-toc
+    title: "Table of contents, footnotes, endnotes, captions and field updates"
+    dimension: [function, fidelity]
+    priority: P1
+    status: partial
+    commands: [references.toc, references.updateToc, references.removeToc, references.addText, references.footnote, references.endnote, references.nextFootnote, references.notes, references.caption, references.updateFields, references.noteOptions, caret.pastCitation]
+    paths: [crates/engine/engine/src/cmd/references.rs, crates/engine/engine/src/cmd/citations.rs, bindings/wasm/src/check.rs, crates/engine/engine/src/cmd/speech.rs, crates/engine/engine/src/cmd/table_formula.rs, crates/engine/engine/src/print.rs, crates/engine/layout/src/lib.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
+    cases: [regressions/issue-6, regressions/issue-printed-page-refs, regressions/issue-table-footnote]
+    since: "2026-11-17"
+  - id: doc.references.citations-index
+    title: "Citations, bibliography, tables of figures and authorities, and index"
+    dimension: [function]
+    priority: P2
+    status: partial
+    commands: [references.sources, references.citation, references.citationStyle, references.bibliography, references.tableOfFigures, references.updateFigures, references.markEntry, references.index, references.updateIndex, references.markCitation, references.tableOfAuthorities, references.researcher]
+    paths: [crates/engine/engine/src/cmd/citations.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
+    since: "2026-11-17"
+  - id: doc.mailings.merge
+    title: "Mail merge, envelopes and labels"
+    dimension: [function]
+    priority: P2
+    status: partial
+    commands: [mailings.start, mailings.recipients, mailings.editRecipients, mailings.insertField, mailings.addressBlock, mailings.greetingLine, mailings.rules, mailings.matchFields, mailings.highlightFields, mailings.preview, mailings.next, mailings.previous, mailings.findRecipient, mailings.checkErrors, mailings.finish, mailings.envelopes, mailings.labels]
+    paths: [crates/engine/engine/src/cmd/mailings.rs, bindings/wasm/src/files.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
+    since: "2026-11-17"
+  - id: doc.pictures.edit
+    title: "Picture size, crop, alt text, effects, background removal, compression, styles and borders"
+    dimension: [function, fidelity]
+    priority: P1
+    status: partial
+    commands: [picture.size, picture.crop, picture.altText, picture.effects, picture.removeBackground, picture.compress, picture.reset, picture.change, picture.style, picture.border, shape.fill, shape.outline, shape.effects, shape.change]
+    paths: [crates/engine/engine/src/cmd/objects.rs, bindings/wasm/src/check.rs, bindings/wasm/src/files.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
+    since: "2026-11-17"
+  - id: doc.arrange.objects
+    title: "Rotate, wrap, position, order, align, group and nudge objects"
+    dimension: [function, fidelity]
+    priority: P1
+    status: partial
+    commands: [arrange.rotate, arrange.rotation, arrange.wrap, arrange.position, arrange.bringForward, arrange.sendBackward, arrange.align, arrange.selectionPane, arrange.bounds, arrange.nudge, arrange.group, arrange.ungroup]
+    paths: [crates/engine/engine/src/cmd/objects.rs, crates/engine/engine/src/cmd/drawing.rs, bindings/wasm/src/objects.rs, crates/engine/engine/src/session.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
+    since: "2026-11-17"
+  - id: doc.drawing.objects
+    title: "Drawing objects: insert, transform, format, connect, group, arrange; ink"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [drawing.insert, drawing.delete, drawing.transform, drawing.format, drawing.text, drawing.reconnect, drawing.connect, drawing.group, drawing.ungroup, drawing.arrange, drawing.chart, drawing.ink, drawing.erase]
+    paths: [crates/engine/engine/src/cmd/drawing.rs, bindings/wasm/src/objects.rs, crates/engine/engine/src/cmd/ink.rs, bindings/wasm/src/files.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
+    cases: [regressions/issue-2]
+    since: "2026-11-17"
+  - id: doc.draw.ink-tools
+    title: "Draw tab pens, highlighter and eraser"
+    dimension: [function]
+    priority: P2
+    status: partial
+    commands: [draw.select, draw.shape, draw.eraser, draw.pen, draw.pencil, draw.highlighter, draw.stroke, draw.erase]
+    paths: [crates/engine/engine/src/cmd/draw.rs, bindings/wasm/src/objects.rs, crates/engine/engine/src/cmd/ink.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
+    since: "2026-11-17"
+  - id: doc.tools.macros
+    title: "Macros and AutoCorrect options"
+    dimension: [function]
+    priority: P2
+    status: partial
+    commands: [tools.recordMacro, tools.macros, tools.autocorrect]
+    paths: [crates/engine/engine/src/cmd/tools.rs, crates/engine/engine/src/session.rs]
+    target: "Word 16.113.4 (Mac)"
+    gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
+    since: "2026-11-17"

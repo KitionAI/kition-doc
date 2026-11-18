@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-page-toolbar-gap
+feature: doc.editor.page-view
+intent: Paper starts about twenty screen pixels below the toolbar and stays there when a taller window can contain the entire page.
+layer: gate
+source:
+  kind: probe
+  from: web/tests/page-gap.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/page-gap.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+timeout_s: 60
+since: "2026-11-17"

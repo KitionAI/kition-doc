@@ -1,0 +1,21 @@
+format: 1
+id: doc.text.typing/save-reopen
+feature: doc.text.typing
+intent: Typed text with a tab, a line break, a new paragraph and a page break survives saving as .docx and opening it again.
+layer: gate
+source:
+  kind: synthetic
+  from: bindings/wasm/tests/roundtrip.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      test: roundtrip
+      filter: typed_breaks_and_tabs_survive_save_and_reopen
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

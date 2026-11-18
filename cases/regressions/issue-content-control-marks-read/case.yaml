@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-content-control-marks-read
+feature: doc.layout.content-control-marks
+intent: A content control around paragraphs marks its first paragraph with its start mark and its last with its end mark (sizes from w:sdtPr and w:sdtEndPr), and one around runs marks those runs, without changing the text.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/formats/docx/tests/fixtures.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-docx
+      filter: content_controls_mark_their_first_and_last_paragraphs_and_their_runs
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

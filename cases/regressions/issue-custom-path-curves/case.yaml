@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-custom-path-curves
+feature: doc.render.custom-curves
+intent: Cubic and quadratic custom geometry retains control points through drawing and repeated DOCX saves, and hit testing measures the mathematical curve rather than fixed chord approximations.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/engine/tests/custom_path_curves.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: custom_curves_
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

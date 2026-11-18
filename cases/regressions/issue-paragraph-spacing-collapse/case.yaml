@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-paragraph-spacing-collapse
+feature: doc.layout.paragraph-spacing
+intent: Adjacent paragraph spacing uses the larger effective before or after value in body text, table cells, and headers, preserving contextual spacing independently on each side.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: paragraph_spacing
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

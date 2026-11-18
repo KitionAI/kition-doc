@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-c8-doc-refusals-scanner
+feature: doc.security.workspace
+intent: >-
+  The hosted-code scanner skips complete test items containing raw byte strings
+  with embedded quotes and braces, and retains production file access after them.
+layer: gate
+tags: [agents, hosted, scanner]
+source:
+  kind: probe
+  from: task card C8-doc-refusals inherited rtf.rs scanner failure
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: tests_hosted::byte_raw_strings_stay_inside_test_items
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

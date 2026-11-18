@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-c8-doc-6-sort-reads
+feature: doc.agent.guard
+intent: >-
+  Sorting reads the whole last paragraph even when the selection ends at its start.
+  Relevant text edits refuse and edits outside the sorted range apply through both writers.
+layer: gate
+tags: [agents, paragraphs]
+source:
+  kind: probe
+  from: task card C8-doc-6 (sort paragraph reads)
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::paragraph_sorting" }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

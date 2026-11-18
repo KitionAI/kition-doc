@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-space-shrink
+feature: doc.layout.east-asian-spacing
+intent: A justified line's spaces take back up to a tenth of their width to fit, and spaces made half an em by balanced widths take back nothing, as WPS for Mac fits lines (synthetic references, 7 and 14 spaces).
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: justified_spaces_give_up_a_tenth_and_balanced_ones_nothing
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

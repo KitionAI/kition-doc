@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-c8-doc-5-cells-two-tables
+feature: doc.agent.guard
+intent: >-
+  A cell command (shading, borders, alignment) with a selection from a cell of one table into a
+  cell of another acts on the cell the focus is in.
+layer: gate
+tags: [agents, tables]
+source:
+  kind: probe
+  from: task card C8-doc-5 item 8 (the C8-doc-3 reading's engine defects)
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: "tests::a_cell_command_across_two_tables_acts_on_the_focus_cell"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 300
+since: "2026-11-17"

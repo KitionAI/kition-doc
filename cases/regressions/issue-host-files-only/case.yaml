@@ -1,0 +1,33 @@
+format: 1
+id: regressions/issue-host-files-only
+feature: doc.security.workspace
+intent: >-
+  An engine session made for a host (Session::for_host, KHP A29, A42, A45, section 10.6) reads a
+  file a command names only through its host, by a plain path in the workspace, and reaches
+  nothing else by path: no save, export, template or merged document written by path (not even
+  the document's own name into the current folder), no document, text, template, compared
+  document, mail merge data source or picture read by an absolute path, `..`, a `file:` or remote
+  URL, and no speech program started by Read Aloud. Anyone but a person passes the session's
+  agent gate at every step a command dispatches (a macro's steps, nested macros, Repeat). The
+  engine and the crates it links reach files, programs and connections only through its door
+  (crate::disk) or behind a refusal of hosted sessions.
+layer: gate
+tags: [security]
+source:
+  kind: probe
+  from: workspace escape audit (doc section)
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: tests_hosted
+  - cargo-test:
+      package: kition-doc-engine
+      filter: "disk::"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 300
+since: "2026-11-17"

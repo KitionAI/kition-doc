@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-art-text-turn
+feature: doc.drawing.vml-art-text
+intent: Plain art text keeps its letters' curves and turns with its shape about the shape's centre, as a turned watermark is drawn.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: plain_word_art_keeps_its_letters_curves_and_turns_with_its_shape
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

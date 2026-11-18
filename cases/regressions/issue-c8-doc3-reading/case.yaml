@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-c8-doc3-reading
+feature: doc.agent.guard
+intent: >-
+  The independent reading of every write command (324 of 324, 722 rows, one per code path, written from the engine code without the declarations) compared with what the kit declares: what differs only falls (before C8-doc-3 316 of 324 commands, 230 holding less, 262 holding more).
+layer: gate
+tags: [guard]
+source:
+  kind: synthetic
+  from: C8-doc-3
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc-kit, test: declarations_independent }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-c8-doc-refusals-formats
+feature: doc.agent.guard
+intent: >-
+  Formatting a paragraph by id merges a rejected insertion when surviving formats are unchanged. Changed surviving formats and accepted revision marks still refuse without writing.
+layer: gate
+tags: [agents, premises]
+source:
+  kind: probe
+  from: task card C8-doc-refusals matrix
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc
+      test: c8
+      filter: matrix::character_formats_survive_rejected_insertion
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

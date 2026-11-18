@@ -1,0 +1,113 @@
+import type { KitEngineInfo, RasterRect } from '@kition/kit-editor'
+
+/** What the editor reads from the engine's `inspect()`. */
+export type DocInfo = {
+  page: number
+  pages: RasterRect[]
+  words: number
+  /** Characters selected. */
+  selected: number
+  /** Where the caret is: `body`, or `headerFooter`. */
+  story: string
+  equation: boolean
+  /** The selected shape's id (`drawing.*`). */
+  shape: string | null
+  /** Every selected drawing object's id (the selected one, then those added with Shift). */
+  shapes: string[]
+  /** The selected chart's id (`drawing.chart`). */
+  chart: string | null
+  /** Whether Escape has something to cancel: a gesture, a shape chosen to draw, or a selection. */
+  escape: boolean
+}
+
+type Area = { x: number; y: number; width: number; height: number }
+
+export function describe(info: KitEngineInfo): DocInfo {
+  const inspected = info.inspected as { page?: number; pages?: Array<{ area?: Area }>; words?: number; selected?: number; story?: unknown; equation?: boolean; shape?: string | null; shapes?: string[]; chart?: string | null; escape?: boolean }
+  return {
+    page: inspected.page ?? 0,
+    pages: (inspected.pages ?? []).map(({ area }) => (area ? { x0: area.x, y0: area.y, x1: area.x + area.width, y1: area.y + area.height } : { x0: 0, y0: 0, x1: 0, y1: 0 })),
+    words: inspected.words ?? 0,
+    selected: inspected.selected ?? 0,
+    story: typeof inspected.story === 'string' ? inspected.story : 'body',
+    equation: inspected.equation === true,
+    shape: inspected.shape ?? null,
+    shapes: Array.isArray(inspected.shapes) ? inspected.shapes : [],
+    chart: inspected.chart ?? null,
+    escape: inspected.escape === true,
+  }
+}
+
+/** The top of a page at full width, for the explicit Page Width view command. */
+export function pageWidthArea(page: RasterRect | undefined): RasterRect | null {
+  if (!page) return null
+  const width = page.x1 - page.x0
+  return { x0: page.x0 - 24, y0: page.y0 - 24, x1: page.x1 + 24, y1: page.y0 + width * 0.55 }
+}
+
+/** `format.state`: the formatting at the selection. */
+export type FormatState = {
+  font?: string
+  size?: number | null
+  bold?: boolean
+  italic?: boolean
+  underline?: boolean
+  strike?: boolean
+  subscript?: boolean
+  superscript?: boolean
+  border?: boolean
+  styleName?: string
+  color?: string
+}
+
+/** `view.state`: the view's options and the drawing mode. */
+export type ViewState = {
+  mode?: string
+  marks?: boolean
+  ruler?: boolean
+  gridlines?: boolean
+  navPane?: boolean
+  readMode?: boolean
+  focusMode?: boolean
+  draw?: { mode?: string }
+}
+
+export type StyleEntry = { id: string; name: string; kind: string; quick: boolean }
+
+/**
+ * The contextual tabs and when they show: while the caret is in a table, on a picture or shape,
+ * in a header or footer, or in an equation.
+ */
+export const CONTEXT_TABS: Array<{ id: string; menu: string; when: (enabled: (id: string) => boolean, info: DocInfo) => boolean; extra?: string[]; label?: string; primary?: readonly string[] }> = [
+  { id: 'tableDesign', menu: 'Table Design', when: (enabled) => enabled('table.style'), primary: ['table.style', 'table.shading', 'table.borders', 'table.look'] },
+  { id: 'tableLayout', menu: 'Table Layout', when: (enabled) => enabled('table.insertRowBelow'), primary: ['table.insertRowAbove', 'table.insertRowBelow', 'table.insertColumnLeft', 'table.insertColumnRight', 'table.deleteRow', 'table.deleteColumn', 'table.merge', 'table.split', 'table.cellAlign'] },
+  { id: 'pictureFormat', menu: 'Picture Format', when: (enabled) => enabled('picture.size') && !enabled('shape.fill') && !enabled('arrange.ungroup'), primary: ['picture.crop', 'picture.size', 'picture.corrections', 'picture.color', 'picture.effects', 'picture.style', 'picture.border', 'picture.altText'] },
+  // A shape, or a group (Arrange › Ungroup applies), takes Shape Format.
+  { id: 'shapeFormat', menu: 'Shape Format', when: (enabled) => enabled('shape.fill') || enabled('arrange.ungroup'), primary: ['shape.fill', 'shape.outline', 'shape.effects', 'shape.change'] },
+  { id: 'chartDesign', menu: 'Chart Design', label: 'chartDesign', when: (_, info) => info.chart != null },
+  { id: 'headerFooter', menu: 'Header & Footer', when: (_, info) => info.story === 'headerFooter', primary: ['insert.closeHeader', 'layout.differentFirstPage', 'layout.differentOddEven', 'layout.linkToPrevious', 'hf.previous', 'hf.next'] },
+  { id: 'equation', menu: 'Equation', when: (_, info) => info.equation, primary: ['equation.insertStructure', 'equation.insertSymbol', 'equation.display', 'equation.inputFormat', 'equation.normalText', 'equation.convert', 'equation.exit'] },
+]
+
+/** File commands the host's own Save, Open, and Close already cover. */
+export const HOST_FILE_COMMANDS = ['file.new', 'file.open', 'file.save', 'file.saveAs', 'file.close', 'file.print', 'file.share', 'file.options']
+
+/**
+ * The engine's export commands, which the File tab's own Export group runs instead: the engine's
+ * bytes go to the host, which writes the file (`ribbon/ExportGroup.tsx`). `file.exportPdf` and
+ * `file.exportPng` write to a path, which only the headless kit can.
+ */
+export const EXPORT_COMMANDS = ['file.export', 'file.exportPdf', 'file.exportPng']
+
+/** The engine commands each generated tab shows in Single line's row (Office's Simplified Ribbon), by menu. */
+export const DOC_PRIMARY: Record<string, readonly string[]> = {
+  File: ['file.info', 'file.properties', 'file.encrypt'],
+  Design: ['design.theme', 'design.styleSet', 'design.themeColors', 'design.themeFonts', 'design.paragraphSpacing', 'design.watermark', 'design.pageColor', 'design.pageBorders'],
+  Layout: ['para.indents', 'para.spacing', 'arrange.position', 'arrange.wrap', 'arrange.align'],
+  References: ['references.toc', 'references.updateToc', 'references.footnote', 'references.endnote', 'references.caption', 'references.citation', 'references.bibliography', 'references.index'],
+  Mailings: ['mailings.start', 'mailings.recipients', 'mailings.insertField', 'mailings.addressBlock', 'mailings.greetingLine', 'mailings.preview', 'mailings.finish'],
+  Review: ['review.spelling', 'review.wordCount', 'review.newComment', 'review.deleteComment', 'review.previousComment', 'review.nextComment', 'review.trackChanges', 'review.accept', 'review.reject'],
+}
+
+export const FONTS = ['Aptos', 'Aptos Display', 'Calibri', 'Cambria', 'Arial', 'Helvetica', 'Times New Roman', 'Georgia', 'Garamond', 'Verdana', 'Courier New', 'Consolas']
+export const SIZES = [8, 9, 10, 10.5, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72]

@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-nested-field-code
+feature: doc.layout.formula-fields
+intent: A field nested in another field's code keeps its own code and its place in the enclosing code when a .docx is read, whether its result was written as text or as field code, and is written back as a nested field.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/formats/docx/tests/fixtures.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-docx
+      filter: fields_nested_in_a_field_code_keep_their_code
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

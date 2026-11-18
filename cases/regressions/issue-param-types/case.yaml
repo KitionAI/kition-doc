@@ -1,0 +1,24 @@
+format: 1
+id: regressions/issue-param-types
+feature: doc.agent.act
+intent: >-
+  At least 95% of the parameter keys an agent is offered say their type, and every command's
+  parameter schema is well formed (kit requirement AX14); a key without a type ("type": "json") leaves an agent to guess
+  whether a value is a number, a text, a list or an object.
+layer: gate
+source:
+  kind: probe
+  from: kition-sdk tools/kit-matrix.mjs --dynamic (AX14 parameter keys typed through kit-probe)
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      test: commands
+      filter: parameter_keys_say_their_type
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

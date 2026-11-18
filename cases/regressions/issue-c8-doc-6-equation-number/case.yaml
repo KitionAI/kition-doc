@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-c8-doc-6-equation-number
+feature: doc.agent.guard
+intent: >-
+  An equation has its number (its place among the document's equations, from 1000001: OMML keeps
+  no id), and an equation command rests on the equation it edits (at the caret or being edited).
+  Another agent's or another program's change of the equation refuses the agent's Equation
+  Number toggle; another paragraph's text does not.
+layer: gate
+tags: [agents, equations]
+source:
+  kind: probe
+  from: task card C8-doc-6 (equations without a number)
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::an_equation_command_rests_on_the_equation" }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

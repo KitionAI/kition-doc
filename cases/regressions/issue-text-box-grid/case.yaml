@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-text-box-grid
+feature: doc.layout.document-grid
+intent: A text box's lines follow the section's line grid, as WPS for Mac spaces them (10.5 pt single lines one 15.6 pt row, 1.5 lines 23.4 pt).
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_text_boxs_lines_follow_the_document_grid
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

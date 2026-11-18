@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-c8-doc-5-paragraph-id
+feature: doc.agent.guard
+intent: >-
+  A paragraph keeps its id (w14:paraId, the tool id agents name it by) through Clear All
+  Formatting, the Style Inspector's Clear, Update Style to Match and Paste Formatting.
+layer: gate
+tags: [agents, formatting]
+source:
+  kind: probe
+  from: task card C8-doc-5 item 8 (the C8-doc-3 reading's engine defects)
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: "tests::a_paragraph_keeps_its_id_through_formatting_commands"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 300
+since: "2026-11-17"

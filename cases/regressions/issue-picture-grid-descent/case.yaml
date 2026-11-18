@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-picture-grid-descent
+feature: doc.layout.document-grid
+intent: On a line grid, a line holding only inline pictures, charts or diagrams takes as many rows as the tallest needs, the descent below it adding none (a 108 pt diagram or picture takes 7 rows of 15.6 pt in WPS); with text beside it, the line counts the text's descent.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: document_grid_leaves_out_the_descent_of_a_line_of_only_pictures
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-flat-group-scale
+feature: doc.format.group-freeform
+intent: A group of no height (a:chExt cy 0) keeps its members' width scale from a:chExt cx, so a header rule drawn as a red and a grey line spans the group.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/formats/docx/tests/fixtures.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-docx
+      filter: a_flat_group_keeps_its_members_width_scale
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

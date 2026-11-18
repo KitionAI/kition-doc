@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-smart-graphic-prompt-outline
+feature: doc.drawing.smart-graphic
+intent: A placeholder's prompt in a diagram is drawn as outlines, not as document text, so it is never selected, searched or exported as text (WPS outlines it in its PDF).
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: graphic_prompts_are_drawn_as_outlines_not_text
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

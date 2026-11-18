@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-c8-doc-6-paste-delimiters
+feature: doc.agent.guard
+intent: >-
+  Plain-text paste holds copied paragraph properties for LF, CR and U+2029 paragraph
+  delimiters. A relevant formatting change refuses and distant formatting applies through
+  the same server and an outside save.
+layer: gate
+tags: [agents, typing]
+source:
+  kind: probe
+  from: task card C8-doc-6 (paste paragraph delimiters)
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::pasted_paragraph_delimiters" }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

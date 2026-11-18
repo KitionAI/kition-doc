@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-c8-doc-pin-endpoint
+feature: doc.agent.guard
+intent: A shortened surviving endpoint proves changed content and refuses before execution.
+layer: gate
+source:
+  kind: probe
+  from: task card C8-doc-pin coverage diagnostics
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc
+      test: c8
+      filter: sdk_adoption::shortening_a_selected_endpoint
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

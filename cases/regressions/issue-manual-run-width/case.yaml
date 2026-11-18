@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-manual-run-width
+feature: doc.layout.manual-run-width
+intent: Preserve manual run widths and contiguous group IDs through DOCX saves, scale every formatted piece to one total width and keep the group intact when wrapping without losing character caret ranges.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/engine/tests/fit_text.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: fit_text_
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

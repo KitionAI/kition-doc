@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-balance-last-page
+feature: doc.layout.column-balance
+intent: A multi-column section that runs on to later pages before a continuous section break has its last page's columns balanced, as WPS for Mac lays out luan's four-column section (only sections ending on their first page were balanced).
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/engine/tests/column_balance.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: the_last_page_of_a_section_running_on_is_balanced
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

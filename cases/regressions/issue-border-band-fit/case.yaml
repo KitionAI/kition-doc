@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-border-band-fit
+feature: doc.layout.paragraph-spacing
+intent: A bordered paragraph's last line fits on its page only with its bottom border's room below it, as WPS for Mac paginates it.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests_paragraph_borders.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_paragraphs_last_line_fits_only_with_its_bottom_borders_room
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

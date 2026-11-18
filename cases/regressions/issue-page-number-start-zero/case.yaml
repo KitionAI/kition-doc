@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-page-number-start-zero
+feature: doc.layout.section-pages
+intent: A section whose page numbering starts at 0 numbers its first page 0, as WPS shows a cover page, so the pages after it keep WPS's odd and even headers and page numbers.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: page_numbers_restart_at_zero
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

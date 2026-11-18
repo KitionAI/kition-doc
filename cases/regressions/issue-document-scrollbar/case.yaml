@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-document-scrollbar
+feature: doc.editor.scrollbars
+intent: A visible scrollbar follows wheel scrolling and accepts dragging and navigation keys, with horizontal scrolling when paper exceeds the viewport, without editing the document.
+layer: gate
+source:
+  kind: probe
+  from: web/tests/scrollbar.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/scrollbar.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+timeout_s: 60
+since: "2026-11-17"

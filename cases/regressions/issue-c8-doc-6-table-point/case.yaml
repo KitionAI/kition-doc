@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-c8-doc-6-table-point
+feature: doc.agent.guard
+intent: >-
+  A table stroke holds the table cells at its page point.
+  An edit in those cells refuses and a distant paragraph edit applies through both writers.
+layer: gate
+tags: [agents, tables, layout]
+source:
+  kind: probe
+  from: task card C8-doc-6 (table point read)
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::a_table_stroke_rests" }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

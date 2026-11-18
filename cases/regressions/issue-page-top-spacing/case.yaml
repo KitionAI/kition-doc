@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-page-top-spacing
+feature: doc.layout.paragraph-spacing
+intent: A paragraph starting a new page keeps its space before less the previous paragraph's space after.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/engine/tests/section_start_spacing.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: collapsed_space
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

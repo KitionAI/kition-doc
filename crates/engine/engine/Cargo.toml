@@ -1,0 +1,39 @@
+[package]
+name = "kition-doc-engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Kition Doc engine: session, selection, undo, the command registry (every action is a command), Word's command catalog, file I/O dispatch"
+
+[lints]
+workspace = true
+
+[dependencies]
+kition-office-core = { workspace = true }
+kition-doc-geom = { workspace = true }
+kition-doc-doc = { workspace = true }
+kition-doc-fonts = { workspace = true }
+kition-doc-layout = { workspace = true }
+kition-doc-render = { workspace = true }
+kition-doc-proof = { workspace = true }
+kition-doc-docx = { workspace = true }
+kition-doc-docbin = { workspace = true }
+kition-doc-pdf = { workspace = true }
+kition-doc-formats = { workspace = true }
+kdm-model = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+base64 = { workspace = true }
+thiserror = { workspace = true }
+log = { workspace = true }
+regex = { workspace = true }
+regex-automata = { workspace = true }
+image = { workspace = true }
+zeroize = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+# The browser clock for `now_iso` (`SystemTime::now()` panics on wasm32).
+js-sys = "0.3"
+
+[dev-dependencies]
+zip = { workspace = true }

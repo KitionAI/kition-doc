@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-c8-doc-4-merge-empty-range
+feature: doc.mailings.merge
+intent: >-
+  Finish & Merge over a range naming no recipient (from past the last one, or after to) is
+  refused and leaves the document as it was.
+layer: gate
+tags: [mailings, agents]
+source:
+  kind: probe
+  from: task card C8-doc-4 item 4 (the C8-doc-3 reading's engine defects)
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: "cmd::mailings::tests::finish_with_a_range_naming_no_recipient_changes_nothing"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 300
+since: "2026-11-17"

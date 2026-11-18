@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-across-vertical
+feature: doc.layout.turned-sections
+intent: In a section whose text runs top to bottom, a run set across the line (w:eastAsianLayout w:vert="1", squeezed with w:vertCompress) takes one em along the column and its letters are drawn across it, as WPS for Mac sets luan's red years on its vertical page.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_run_set_across_vertical_text_takes_one_em
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

@@ -1,0 +1,24 @@
+format: 1
+id: regressions/issue-c8-doc-5-pure-commands
+feature: doc.agent.guard
+intent: >-
+  A command that changes the document is not marked pure: Edit Header and Edit Footer make the
+  part when there is none, Version History restores a version, New from Template replaces the
+  document.
+layer: gate
+tags: [agents, undo]
+source:
+  kind: probe
+  from: task card C8-doc-5 item 8 (the C8-doc-3 reading's engine defects)
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: "tests::commands_that_change_the_document_are_not_pure"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 300
+since: "2026-11-17"

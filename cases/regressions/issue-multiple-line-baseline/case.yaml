@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-multiple-line-baseline
+feature: doc.layout.paragraph-spacing
+intent: Off a line grid, multiple line spacing adds its room below the text, so a spaced line's first baseline sits one ascent below its top as at single spacing.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests_grid_multiples.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: free_line_multiples
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

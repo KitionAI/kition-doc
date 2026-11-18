@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-table-room
+feature: doc.layout.table-position
+intent: A table's room reaches its borders, a cell margin outside the text column on each side. An autofit table with no width of its own whose grid is wider narrows to the room, every column in proportion and from its indent; a percentage width is a share of the room, past 100 % too; a width in points stands however wide, as WPS for Mac lays tables out (synthetic references, 12 tables, and luan's 121 % and currency tables).
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_table_fits_its_room_to_the_borders_unless_it_has_a_width_of_its_own
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

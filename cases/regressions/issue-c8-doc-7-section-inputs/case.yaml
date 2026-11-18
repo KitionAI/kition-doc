@@ -1,0 +1,24 @@
+format: 1
+id: regressions/issue-c8-doc-7-section-inputs
+feature: doc.agent.guard
+intent: >-
+  Section property changes merge character edits at the caret paragraph.
+  Changes of an assigned section property or document setting still refuse.
+layer: gate
+tags: [agents, premises]
+source:
+  kind: probe
+  from: task card C8-doc-7 held-MORE section inputs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc
+      test: c8
+      filter: independent::section_properties_do_not_hold_caret_characters
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 300
+since: "2026-11-17"

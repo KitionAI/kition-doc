@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-c8-doc-pin-media-scope
+feature: doc.agent.guard
+intent: >-
+  A bitmap adjustment protects its consumed media and collection scan. Another picture's
+  saved alternative text merges, while a peer edit to the consumed bitmap refuses with changed.
+layer: gate
+source:
+  kind: probe
+  from: task card C8-doc-pin document-wide held-more comparison
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc
+      test: c8
+      filter: sdk_precision::bitmap_adjustments
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

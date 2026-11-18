@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-math-text-fallback
+feature: doc.layout.font-substitution
+intent: Normal text in an equation (an empty equation's placeholder, m:nor in Times New Roman) draws the letters its font lacks, such as Chinese, in a face that has them instead of missing glyphs.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/math.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: normal_text_falls_back_for_letters_its_font_lacks
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

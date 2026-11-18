@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-picture-adjust-read
+feature: doc.drawing.picture-adjust
+intent: A picture's a:blip effects (a:lum brightness and contrast, a:grayscl, a:biLevel, a:alphaModFix) are read as its colour adjustments and written back on save.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/formats/docx/tests/fixtures.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-docx
+      filter: picture_colour_adjustments_are_read_and_saved
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

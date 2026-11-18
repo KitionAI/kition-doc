@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-fit-text-box-save
+feature: doc.layout.float-position
+intent: A text box that fits its text is read and saved with wrap="none" and a:spAutoFit.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/formats/docx/tests/fixtures.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-docx
+      filter: a_text_box_that_fits_its_text_keeps_saying_so
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

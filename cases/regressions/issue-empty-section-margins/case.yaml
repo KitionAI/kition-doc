@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-empty-section-margins
+feature: doc.layout.page-setup
+intent: A section whose w:sectPr has no w:pgMar (an empty section mark) takes WPS for Mac's margins, 1.25 inches left and right and 1 inch top and bottom, instead of 1 inch all round.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/formats/docx/tests/fixtures.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-docx
+      filter: a_section_without_page_margins_takes_wps_margins
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

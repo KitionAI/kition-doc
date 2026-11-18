@@ -1,0 +1,15 @@
+format: 1
+id: regressions/issue-c8-doc-6-drawing-readings
+feature: doc.agent.guard
+intent: >-
+  Independent drawing readings compare the objects and selection their rows
+  specify, including paragraph ends and concrete groups, charts and connectors.
+layer: gate
+source: { kind: probe, from: task card C8-doc-6, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-doc-kit, test: declarations_independent, filter: "drawing_readings_resolve_real_ends_and_real_objects" }
+expected:
+  - { actual: out:cargo-test, compare: exit, value: 0 }
+timeout_s: 600
+since: "2026-11-17"

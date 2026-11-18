@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-group-freeform
+feature: doc.format.group-freeform
+intent: Custom paths inside drawing groups retain their geometry, closure and stroke opacity rather than becoming rectangle presets when a document is opened and saved.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/formats/docx/tests/group_freeform.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-docx
+      filter: group_freeform_
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

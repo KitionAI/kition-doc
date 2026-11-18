@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-reach-back-new-page
+feature: doc.layout.float-position
+intent: A paragraph that moves on to the next page keeps that page's wrap areas of floating objects reaching back to it, so it wraps around a box reaching up from the paragraph after it, as WPS for Mac sets it.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: text_moved_to_a_new_page_wraps_around_a_float_reaching_up_there
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

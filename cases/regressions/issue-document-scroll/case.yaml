@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-document-scroll
+feature: doc.view.page-scroll
+intent: Wheel scrolling stops at the document's first and last page without leaving an empty canvas or changing the file.
+layer: gate
+source:
+  kind: probe
+  from: web/tests/scroll.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/scroll.mjs, chromium]
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/scroll.mjs, webkit]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium, webkit]
+timeout_s: 60
+since: "2026-11-17"

@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-automatic-paragraph-spacing
+feature: doc.layout.paragraph-spacing
+intent: Apply automatic paragraph spacing instead of ignored point or line constraints, collapse HTML margins, and suppress list interiors and cell edges without losing keep-with-next pagination or cache invalidation.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests_auto_paragraph_spacing.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: automatic_paragraph_spacing_
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

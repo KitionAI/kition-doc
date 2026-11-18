@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-measured-line-heights
+feature: doc.layout.font-substitution
+intent: Families WPS for Mac draws in faces of its own that nothing installed matches (仿宋, 微软雅黑) take the single-line heights measured on its exports (about 1.45 and 1.58 em), whatever face stands in for them.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/support/fonts/src/word.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-fonts
+      filter: wps_line_heights_are_measured_for_families_it_draws_in_its_own_faces
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

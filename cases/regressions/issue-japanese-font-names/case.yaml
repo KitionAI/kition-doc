@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-japanese-font-names
+feature: doc.layout.font-substitution
+intent: ＭＳ 明朝, MS Mincho and Meiryo are drawn in Hiragino Sans, with the characters it lacks in a Song face, and ヒラギノ角ゴ Pro W3 in the installed Hiragino Kaku Gothic Pro, while other Japanese names go to the sans fallback, as WPS for Mac draws them (a Japanese theme font language makes ＭＳ 明朝 the body font).
+layer: gate
+source:
+  kind: synthetic
+  from: crates/support/fonts/src/word.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-fonts
+      filter: ms_mincho_and_meiryo_are_drawn_in_hiragino_other_japanese_names_in_the_sans_fallback
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

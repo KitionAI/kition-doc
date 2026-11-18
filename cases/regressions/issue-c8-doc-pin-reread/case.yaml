@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-c8-doc-pin-reread
+feature: doc.agent.guard
+intent: >-
+  A saved-file reread preserves editor identities, follows caret offsets, refuses deleted active
+  targets without changing the live session, and retains newly imported picture bytes.
+layer: gate
+source:
+  kind: probe
+  from: task card C8-doc-pin session continuity
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      test: reread
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-c8-doc-object-params
+feature: doc.agent.guard
+intent: >-
+  Every parameter that names an object by id or by name is marked for the premise guard and typed by what its handler resolves, or allowed with its reason.
+layer: gate
+tags: [headless, guard]
+source:
+  kind: synthetic
+  from: C8-land-14-doc
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc-kit, test: object_params }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-review-compare-body
+feature: doc.agent.guard
+intent: Compare and Combine refuse stale discarded table contents before reaching the existing agent file gate; unrelated titles pass the guard and reach that gate.
+layer: gate
+tags: [agents]
+source: { kind: probe, from: C8-expectations review doc, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::comparing_rests_on_the_table_contents_it_discards" }
+expected:
+  - { actual: "out:cargo-test", compare: exit, value: 0 }
+timeout_s: 60
+since: "2026-11-17"

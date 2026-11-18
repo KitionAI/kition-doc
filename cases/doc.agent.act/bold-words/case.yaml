@@ -1,0 +1,45 @@
+format: 1
+id: doc.agent.act/bold-words
+feature: doc.agent.act
+intent: >-
+  The agent formats two words inside a paragraph, not the whole paragraph: it selects the text first
+  (select.text) and then applies bold, and the rest of the sentence stays regular.
+layer: eval
+source:
+  kind: synthetic
+  from: repo:conformance/basic.docx
+  license: Apache-2.0
+  note: "A copy of the conformance fixture the doc engine writes (bindings/wasm/examples/checks.rs): a Heading 1 \"Quarterly report\" and two Normal paragraphs."
+input: [input/report.docx]
+steps:
+  - task:
+      prompt: >-
+        In report.docx, make the words "every region" bold. The rest of that sentence and the
+        document must stay as they are.
+      max_turns: 20
+  - run: { path: report.docx, args: { save: false }, steps: [{ command: select.text, params: { text: every region } }, { command: format.state }], as: words }
+  - run: { path: report.docx, args: { save: false }, steps: [{ command: select.text, params: { text: Sales rose } }, { command: format.state }], as: rest }
+  - inspect: { path: report.docx, as: after }
+expected:
+  - actual: out:words
+    compare: values
+    value:
+      completed.1.result.bold: true
+  - actual: out:rest
+    compare: values
+    collateral: true
+    value:
+      completed.1.result.bold: false
+  - actual: out:after
+    compare: values
+    collateral: true
+    value:
+      content.paragraphs.0.text: Quarterly report
+      content.paragraphs.0.style: Heading1
+      content.paragraphs.1.text: Sales rose in every region.
+      content.paragraphs.2.text: The team thanks everyone involved.
+solution:
+  - tool: doc_run
+    args: { path: report.docx, steps: [{ command: select.text, params: { text: every region } }, { command: format.bold, params: { value: true } }] }
+since: "2026-11-17"
+timeout_s: 600

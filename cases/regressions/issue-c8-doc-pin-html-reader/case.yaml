@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-c8-doc-pin-html-reader
+feature: doc.security.workspace
+intent: The advertised HTML reader opens through the host and never loads outside resources.
+layer: gate
+source:
+  kind: probe
+  from: task card C8-doc-pin SDK format validation
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc
+      test: workspace_only
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

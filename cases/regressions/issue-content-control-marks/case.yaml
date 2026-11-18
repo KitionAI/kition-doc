@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-content-control-marks
+feature: doc.layout.content-control-marks
+intent: A content control's start and end marks make their lines as tall as glyphs of the marks' size (1.125 em above the baseline, 0.39 em below; the paragraph style's size when the control sets none), and the line grid rounds such a line up, as WPS for Mac lays them out.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests_control_marks.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: tests_control_marks::a_
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

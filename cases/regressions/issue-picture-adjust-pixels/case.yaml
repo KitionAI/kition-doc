@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-picture-adjust-pixels
+feature: doc.drawing.picture-adjust
+intent: Washout (brightness +70 %, contrast -70 %) keeps a faint picture whose blacks and whites stay apart; grey scale and black and white follow luminance.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/doc/src/graphic.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-doc
+      filter: washout_keeps_a_faint_picture
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

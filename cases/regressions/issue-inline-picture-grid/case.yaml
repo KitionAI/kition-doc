@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-inline-picture-grid
+feature: doc.layout.document-grid
+intent: On a line grid, a line holding an inline picture or diagram takes whole grid rows like a text line.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: document_grid_rounds_up_inline_picture_lines
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-c8-doc-pin-inline-scope
+feature: doc.agent.guard
+intent: >-
+  A shape addressed by durable identity holds its own assigned frame, without holding another
+  shape in its paragraph or an unrelated insertion above its anchor. Same-field peer edits refuse.
+layer: gate
+source:
+  kind: probe
+  from: task card C8-doc-pin held-more comparison
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc
+      test: c8
+      filter: "sdk_precision::"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

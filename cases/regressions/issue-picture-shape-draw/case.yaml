@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-picture-shape-draw
+feature: doc.drawing.picture-shape
+intent: A picture cut to an ellipse leaves its frame's corners empty while the uncut picture fills them.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/render/render/src/lib.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-render
+      filter: pictures_are_cut_to_their_outline
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

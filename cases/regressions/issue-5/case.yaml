@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-5
+feature: doc.format.character
+intent: Colours in format.set, styles.modify and para.set are given as RRGGBB (auto for text) as documented; formatting picked at the caret stays in its story; Reset Character Formatting keeps the paragraph style while Clear All Formatting makes it Normal, as in Word; a drop cap stays on its paragraph and spans its lines at any line spacing; para.dialog answers a paragraph's formatting.
+layer: gate
+source:
+  kind: issue
+  from: Kition Doc regression suite
+  license: owned
+  note: Found while building the Kition Showcase samples (finding D5).
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      test: showcase_formatting
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

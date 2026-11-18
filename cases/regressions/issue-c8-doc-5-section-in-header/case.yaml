@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-c8-doc-5-section-in-header
+feature: doc.agent.guard
+intent: >-
+  A section command (orientation, margins, columns, page size) with the caret in a header or
+  footer acts on the section the caret came from, and is refused with no body place to go by.
+layer: gate
+tags: [agents, sections]
+source:
+  kind: probe
+  from: task card C8-doc-5 item 8 (the C8-doc-3 reading's engine defects)
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: "tests::a_section_command_in_a_header_acts_on_the_section_the_caret_came_from"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 300
+since: "2026-11-17"

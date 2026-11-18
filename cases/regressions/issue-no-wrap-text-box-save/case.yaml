@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-no-wrap-text-box-save
+feature: doc.layout.float-position
+intent: A text box with wrap none and no autofit is read as unwrapped text in a box of its own size and keeps saying so through a save.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/formats/docx/tests/fixtures.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-docx
+      filter: a_text_box_that_does_not_wrap_keeps_saying_so
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

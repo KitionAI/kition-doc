@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-picture-adjust-draw
+feature: doc.drawing.picture-adjust
+intent: "A picture is drawn with its colour adjustments: grey scale grey, washout light, partial opacity pale, as WPS prints it."
+layer: gate
+source:
+  kind: synthetic
+  from: crates/render/render/src/lib.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-render
+      filter: pictures_draw_with_their_colour_adjustments
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

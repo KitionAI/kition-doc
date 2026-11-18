@@ -1,0 +1,24 @@
+format: 1
+id: regressions/issue-c8-doc-7-search-split-style
+feature: doc.agent.guard
+intent: >-
+  Replacement text with a paragraph break holds the split style it resolves.
+  Unrelated custom metadata still merges, and changed next styles refuse.
+layer: gate
+tags: [agents, premises]
+source:
+  kind: probe
+  from: task card C8-doc-7 held-MORE replacement split style
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc
+      test: c8
+      filter: independent::replacement_paragraph_breaks_hold_the_split_style
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 300
+since: "2026-11-17"

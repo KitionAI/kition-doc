@@ -1,0 +1,45 @@
+format: 1
+id: doc.agent.draft/costs-paragraph
+feature: doc.agent.draft
+intent: >-
+  Over two messages the agent prepares its edits as a draft for the person to review: the draft has
+  the new paragraph in the right place and the retitled heading, and the file itself is untouched
+  (KHP Recover, A12–A14).
+layer: eval
+source:
+  kind: synthetic
+  from: repo:conformance/basic.docx
+  license: Apache-2.0
+  note: "A copy of the conformance fixture the doc engine writes (bindings/wasm/examples/checks.rs): a Heading 1 \"Quarterly report\" and two Normal paragraphs."
+input: [input/report.docx]
+steps:
+  - task:
+      turns:
+        - >-
+          As a draft for me to review (leave report.docx itself unchanged), add a paragraph right
+          after "Sales rose in every region." that says "Costs fell by a tenth."
+        - In the same draft, change the title to "Quarterly report 2026".
+      max_turns: 25
+  - inspect: { path: report.docx, args: { draft: true }, as: draft, missing_ok: true }
+  - inspect: { path: report.docx, as: after }
+expected:
+  - actual: out:draft
+    compare: values
+    value:
+      content.paragraphs.0.text: Quarterly report 2026
+      content.paragraphs.1.text: Sales rose in every region.
+      content.paragraphs.2.text: Costs fell by a tenth.
+      content.paragraphs.3.text: The team thanks everyone involved.
+  - actual: out:after
+    compare: values
+    collateral: true
+    value:
+      content.total: 3
+      content.paragraphs.0.text: Quarterly report
+solution:
+  - tool: doc_run
+    args: { path: report.docx, draft: true, steps: [{ command: para.insert, params: { after: 1, text: Costs fell by a tenth. } }] }
+  - tool: doc_run
+    args: { path: report.docx, draft: true, steps: [{ command: para.text, params: { index: 0, text: Quarterly report 2026 } }] }
+since: "2026-11-17"
+timeout_s: 600

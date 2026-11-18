@@ -1,0 +1,8660 @@
+{
+ "arrange.align": {
+  "description": "Aligns the selected floating object to the left, centre or right of the page margins."
+ },
+ "arrange.bounds": {
+  "description": "Moves or resizes the selected object to a width, height and top-left x, y on a page, in points."
+ },
+ "arrange.bringForward": {
+  "description": "Brings the selected floating object one step forward."
+ },
+ "arrange.group": {
+  "description": "Groups the selected pictures, shapes and text boxes into one object."
+ },
+ "arrange.nudge": {
+  "description": "Moves the selected object by dx and dy points."
+ },
+ "arrange.position": {
+  "description": "Positions the selected floating object at a preset place on the page (top left to bottom right) or at an offset."
+ },
+ "arrange.rotate": {
+  "description": "Rotates the selected object 90 degrees right or left, or flips it vertically or horizontally."
+ },
+ "arrange.rotation": {
+  "description": "Sets the exact clockwise rotation of the selected object in degrees, with optional flips."
+ },
+ "arrange.selectionPane": {
+  "description": "Lists the document's pictures, shapes and text boxes with their Selection Pane indexes.",
+  "output": {
+   "type": "array"
+  }
+ },
+ "arrange.sendBackward": {
+  "description": "Sends the selected floating object one step backward."
+ },
+ "arrange.ungroup": {
+  "description": "Splits the selected group back into its objects."
+ },
+ "arrange.wrap": {
+  "description": "Sets how text wraps around the selected object: inline, square, tight, through, top and bottom, behind or in front of text."
+ },
+ "caret.docEnd": {
+  "description": "Moves the caret to the end of the document; extend selects up to there.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "caret.docStart": {
+  "description": "Moves the caret to the start of the document; extend selects up to there.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "caret.down": {
+  "description": "Moves the caret to the line below; extend grows the selection; answers the new caret.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "caret.end": {
+  "description": "Moves the caret to the end of its line; extend grows the selection.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "caret.home": {
+  "description": "Moves the caret to the start of its line; extend grows the selection.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "caret.left": {
+  "description": "Moves the caret one character left (back in reading order); extend grows the selection; answers the new caret.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "caret.pageDown": {
+  "description": "Moves the caret down by one screen; extend grows the selection.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "caret.pageUp": {
+  "description": "Moves the caret up by one screen; extend grows the selection.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "caret.paraDown": {
+  "description": "Moves the caret to the start of the next paragraph; extend grows the selection.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "caret.paraUp": {
+  "description": "Moves the caret to the start of the previous paragraph; extend grows the selection.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "caret.pastCitation": {
+  "description": "Moves the caret past the citation it is in.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "caret.right": {
+  "description": "Moves the caret one character right; extend grows the selection; answers the new caret.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "caret.set": {
+  "description": "Puts the caret at a position (a document position, as document.selection answers) or at a point on a page, optionally extending the selection.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  },
+  "params": {
+   "pos": {
+    "additionalProperties": true,
+    "description": "a position as document.selection answers",
+    "properties": {
+     "off": {
+      "description": "character offset in the paragraph",
+      "type": "integer"
+     },
+     "path": {
+      "description": "paragraph path counted from 0",
+      "items": {
+       "type": "integer"
+      },
+      "type": "array"
+     },
+     "story": {
+      "description": "\"body\", or {\"part\": n} for a header, footer, note, comment or text box story",
+      "oneOf": [
+       {
+        "enum": [
+         "body"
+        ],
+        "type": "string"
+       },
+       {
+        "additionalProperties": false,
+        "properties": {
+         "part": {
+          "description": "header, footer, footnote, endnote, comment or text box story number",
+          "type": "integer"
+         }
+        },
+        "type": "object"
+       }
+      ]
+     }
+    },
+    "type": "object"
+   }
+  }
+ },
+ "caret.up": {
+  "description": "Moves the caret to the line above; extend grows the selection; answers the new caret.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "caret.wordLeft": {
+  "description": "Moves the caret to the start of the previous word; extend grows the selection.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "caret.wordRight": {
+  "description": "Moves the caret to the start of the next word; extend grows the selection.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "comment.add": {
+  "description": "Starts a comment thread on the selection with text and an author."
+ },
+ "comment.anchor": {
+  "description": "Answers the selection as a comment anchor for a host that keeps comment threads itself (Kit UI protocol section 7k): the paragraphs' object ids, the text range, the quoted text and the page; null for a caret.",
+  "output": {
+   "type": "json"
+  }
+ },
+ "comment.delete": {
+  "description": "Deletes a comment thread, or one reply in it."
+ },
+ "comment.goto": {
+  "description": "Moves the caret to a comment thread's anchor.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "comment.locate": {
+  "description": "Answers where each of a host's comment anchors is in the document now, after edits: whether it is found, the text it covers, its page, and the rectangles to highlight.",
+  "output": {
+   "type": "array"
+  }
+ },
+ "comment.reply": {
+  "description": "Adds a reply to a comment thread by its thread id."
+ },
+ "comment.resolve": {
+  "description": "Marks a comment thread as resolved, or reopens it."
+ },
+ "comment.threads": {
+  "description": "Lists the comment threads with their ids, anchors (object, range, quote, page position), comments and resolved state.",
+  "output": {
+   "type": "array"
+  }
+ },
+ "design.effects": {
+  "description": "Steps the theme's effects to the next preset."
+ },
+ "design.pageBorders": {
+  "description": "Puts a border around every page (box with width, colour and line style), or removes it."
+ },
+ "design.pageColor": {
+  "description": "Sets the page background colour as RRGGBB, or removes it with null.",
+  "params": {
+   "color": {
+    "oneOf": [
+     {
+      "description": "RRGGBB",
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   }
+  }
+ },
+ "design.paragraphSpacing": {
+  "description": "Applies a document-wide paragraph spacing preset (none, compact, tight, open, relaxed, double)."
+ },
+ "design.setDefault": {
+  "description": "Makes the current theme and style set the default for new documents.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "design.styleSet": {
+  "description": "Applies a style set (basic, lines, shaded, casual, centered, minimalist, title) that restyles headings and body text."
+ },
+ "design.theme": {
+  "description": "Applies a document theme by name, changing theme colours and fonts."
+ },
+ "design.themeColors": {
+  "description": "Steps the theme's colour palette to the next one."
+ },
+ "design.themeFonts": {
+  "description": "Sets the theme's heading and body fonts."
+ },
+ "design.themes": {
+  "description": "Lists the available document themes.",
+  "output": {
+   "items": {
+    "type": "string"
+   },
+   "type": "array"
+  }
+ },
+ "design.watermark": {
+  "description": "Adds a text watermark (diagonal or horizontal, with colour) behind every page, or removes it."
+ },
+ "document.inspect": {
+  "description": "Answers the document's structure: pages, sections, paragraphs by index with their styles and short text, the selection and counts; with text true it includes each paragraph's full text. Use document.text for all the text.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "blocks": {
+     "items": {
+      "additionalProperties": true,
+      "properties": {
+       "index": {
+        "type": "number"
+       },
+       "len": {
+        "type": "number"
+       },
+       "props": {
+        "additionalProperties": true,
+        "properties": {
+         "style": {
+          "type": "string"
+         }
+        },
+        "type": "object"
+       },
+       "runs": {
+        "items": {
+         "additionalProperties": true,
+         "properties": {
+          "end": {
+           "type": "number"
+          },
+          "props": {
+           "additionalProperties": true,
+           "properties": {
+            "font": {
+             "type": "string"
+            }
+           },
+           "type": "object"
+          },
+          "start": {
+           "type": "number"
+          }
+         },
+         "type": "object"
+        },
+        "type": "array"
+       },
+       "style": {
+        "type": "string"
+       },
+       "text": {
+        "type": "string"
+       },
+       "type": {
+        "type": "string"
+       }
+      },
+      "type": "object"
+     },
+     "type": "array"
+    },
+    "canRedo": {
+     "type": "boolean"
+    },
+    "canUndo": {
+     "type": "boolean"
+    },
+    "comments": {
+     "type": "number"
+    },
+    "pages": {
+     "type": "number"
+    },
+    "parts": {
+     "type": "array"
+    },
+    "properties": {
+     "additionalProperties": true,
+     "properties": {
+      "category": {
+       "type": "string"
+      },
+      "created": {
+       "type": "string"
+      },
+      "creator": {
+       "type": "string"
+      },
+      "description": {
+       "type": "string"
+      },
+      "keywords": {
+       "type": "string"
+      },
+      "lastModifiedBy": {
+       "type": "string"
+      },
+      "modified": {
+       "type": "string"
+      },
+      "revision": {
+       "type": "number"
+      },
+      "subject": {
+       "type": "string"
+      },
+      "title": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "sections": {
+     "items": {
+      "additionalProperties": true,
+      "properties": {
+       "endBlock": {
+        "type": "number"
+       },
+       "props": {
+        "additionalProperties": true,
+        "properties": {
+         "columns": {
+          "additionalProperties": true,
+          "properties": {
+           "count": {
+            "type": "number"
+           },
+           "separator": {
+            "type": "boolean"
+           },
+           "space": {
+            "type": "number"
+           },
+           "widths": {
+            "type": "array"
+           }
+          },
+          "type": "object"
+         },
+         "footer": {
+          "type": "number"
+         },
+         "footers": {
+          "additionalProperties": true,
+          "properties": {
+           "default": {
+            "type": "json"
+           },
+           "even": {
+            "type": "json"
+           },
+           "first": {
+            "type": "json"
+           }
+          },
+          "type": "object"
+         },
+         "gutter": {
+          "type": "number"
+         },
+         "header": {
+          "type": "number"
+         },
+         "headers": {
+          "additionalProperties": true,
+          "properties": {
+           "default": {
+            "type": "json"
+           },
+           "even": {
+            "type": "json"
+           },
+           "first": {
+            "type": "json"
+           }
+          },
+          "type": "object"
+         },
+         "landscape": {
+          "type": "boolean"
+         },
+         "lineNumbers": {
+          "type": "json"
+         },
+         "marginBottom": {
+          "type": "number"
+         },
+         "marginLeft": {
+          "type": "number"
+         },
+         "marginRight": {
+          "type": "number"
+         },
+         "marginTop": {
+          "type": "number"
+         },
+         "pageBorders": {
+          "type": "json"
+         },
+         "pageH": {
+          "type": "number"
+         },
+         "pageNumFormat": {
+          "type": "string"
+         },
+         "pageNumStart": {
+          "type": "json"
+         },
+         "pageW": {
+          "type": "number"
+         },
+         "rtl": {
+          "type": "boolean"
+         },
+         "start": {
+          "type": "string"
+         },
+         "titlePage": {
+          "type": "boolean"
+         },
+         "valign": {
+          "type": "string"
+         }
+        },
+        "type": "object"
+       }
+      },
+      "type": "object"
+     },
+     "type": "array"
+    },
+    "selection": {
+     "additionalProperties": true,
+     "properties": {
+      "anchor": {
+       "additionalProperties": true,
+       "properties": {
+        "off": {
+         "type": "number"
+        },
+        "path": {
+         "items": {
+          "type": "number"
+         },
+         "type": "array"
+        },
+        "story": {
+         "type": "string"
+        }
+       },
+       "type": "object"
+      },
+      "focus": {
+       "additionalProperties": true,
+       "properties": {
+        "off": {
+         "type": "number"
+        },
+        "path": {
+         "items": {
+          "type": "number"
+         },
+         "type": "array"
+        },
+        "story": {
+         "type": "string"
+        }
+       },
+       "type": "object"
+      },
+      "text": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "trackChanges": {
+     "type": "boolean"
+    },
+    "words": {
+     "type": "number"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "document.layout": {
+  "description": "Answers a summary of the laid-out pages: page count, size and which paragraphs fall on each page.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "caret": {
+     "additionalProperties": true,
+     "properties": {
+      "h": {
+       "type": "number"
+      },
+      "page": {
+       "type": "number"
+      },
+      "x": {
+       "type": "number"
+      },
+      "y": {
+       "type": "number"
+      }
+     },
+     "type": "object"
+    },
+    "ms": {
+     "type": "number"
+    },
+    "pages": {
+     "items": {
+      "additionalProperties": true,
+      "properties": {
+       "firstBlock": {
+        "type": "number"
+       },
+       "footer": {
+        "type": "json"
+       },
+       "h": {
+        "type": "number"
+       },
+       "header": {
+        "type": "json"
+       },
+       "lines": {
+        "type": "number"
+       },
+       "number": {
+        "type": "number"
+       },
+       "section": {
+        "type": "number"
+       },
+       "w": {
+        "type": "number"
+       }
+      },
+      "type": "object"
+     },
+     "type": "array"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "document.paragraph": {
+  "description": "Answers one paragraph's details by its path (index from document.inspect): text, runs with formatting, style and paragraph properties.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "paragraph": {
+     "additionalProperties": true,
+     "properties": {
+      "mark": {
+       "additionalProperties": true,
+       "properties": {
+        "font": {
+         "type": "string"
+        }
+       },
+       "type": "object"
+      },
+      "props": {
+       "additionalProperties": true,
+       "properties": {
+        "style": {
+         "type": "string"
+        }
+       },
+       "type": "object"
+      },
+      "runs": {
+       "items": {
+        "additionalProperties": true,
+        "properties": {
+         "len": {
+          "type": "number"
+         },
+         "props": {
+          "additionalProperties": true,
+          "properties": {
+           "font": {
+            "type": "string"
+           }
+          },
+          "type": "object"
+         }
+        },
+        "type": "object"
+       },
+       "type": "array"
+      },
+      "text": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "resolved": {
+     "additionalProperties": true,
+     "properties": {
+      "align": {
+       "type": "string"
+      },
+      "autoSpaceDe": {
+       "type": "boolean"
+      },
+      "autoSpaceDn": {
+       "type": "boolean"
+      },
+      "bidi": {
+       "type": "boolean"
+      },
+      "borders": {
+       "type": "json"
+      },
+      "contextualSpacing": {
+       "type": "boolean"
+      },
+      "dropCap": {
+       "type": "number"
+      },
+      "indentFirst": {
+       "type": "number"
+      },
+      "indentLeft": {
+       "type": "number"
+      },
+      "indentRight": {
+       "type": "number"
+      },
+      "keepLines": {
+       "type": "boolean"
+      },
+      "keepNext": {
+       "type": "boolean"
+      },
+      "kinsoku": {
+       "type": "boolean"
+      },
+      "lineSpacing": {
+       "additionalProperties": true,
+       "properties": {
+        "rule": {
+         "type": "string"
+        },
+        "value": {
+         "type": "number"
+        }
+       },
+       "type": "object"
+      },
+      "numbering": {
+       "type": "json"
+      },
+      "outlineLevel": {
+       "type": "number"
+      },
+      "overflowPunct": {
+       "type": "boolean"
+      },
+      "pageBreakBefore": {
+       "type": "boolean"
+      },
+      "shading": {
+       "type": "json"
+      },
+      "spaceAfter": {
+       "type": "number"
+      },
+      "spaceBefore": {
+       "type": "number"
+      },
+      "style": {
+       "type": "string"
+      },
+      "suppressHyphens": {
+       "type": "boolean"
+      },
+      "tabs": {
+       "type": "array"
+      },
+      "topLinePunct": {
+       "type": "boolean"
+      },
+      "widowControl": {
+       "type": "boolean"
+      },
+      "wordWrap": {
+       "type": "boolean"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  },
+  "params": {
+   "story": {
+    "description": "\"body\", or {\"part\": n} for a header, footer, note, comment or text box story",
+    "oneOf": [
+     {
+      "enum": [
+       "body"
+      ],
+      "type": "string"
+     },
+     {
+      "additionalProperties": false,
+      "properties": {
+       "part": {
+        "description": "header, footer, footnote, endnote, comment or text box story number",
+        "type": "integer"
+       }
+      },
+      "type": "object"
+     }
+    ]
+   }
+  }
+ },
+ "document.selection": {
+  "description": "Answers the selection: its anchor and focus positions, the selected text and the formatting there.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "format": {
+     "additionalProperties": true,
+     "properties": {
+      "bold": {
+       "type": "boolean"
+      },
+      "border": {
+       "type": "boolean"
+      },
+      "color": {
+       "type": "string"
+      },
+      "font": {
+       "type": "string"
+      },
+      "highlight": {
+       "type": "json"
+      },
+      "italic": {
+       "type": "boolean"
+      },
+      "size": {
+       "type": "number"
+      },
+      "strike": {
+       "type": "boolean"
+      },
+      "style": {
+       "type": "string"
+      },
+      "styleName": {
+       "type": "string"
+      },
+      "subscript": {
+       "type": "boolean"
+      },
+      "superscript": {
+       "type": "boolean"
+      },
+      "underline": {
+       "type": "boolean"
+      }
+     },
+     "type": "object"
+    },
+    "text": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "document.setText": {
+  "description": "Replaces the whole body with the given plain text, one paragraph per line, in the Normal style."
+ },
+ "document.text": {
+  "description": "Answers the document's whole body text as plain text, one paragraph per line; read this before editing, since inspect alone shows little content.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "text": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "draw.erase": {
+  "description": "Deletes the ink stroke at a point on a page."
+ },
+ "draw.eraser": {
+  "description": "Selects the ink eraser in the editor, or with a point deletes the ink stroke there.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "highlighter": {
+     "additionalProperties": true,
+     "properties": {
+      "color": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "width": {
+       "type": "number"
+      }
+     },
+     "type": "object"
+    },
+    "mode": {
+     "type": "string"
+    },
+    "pen": {
+     "additionalProperties": true,
+     "properties": {
+      "color": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "width": {
+       "type": "number"
+      }
+     },
+     "type": "object"
+    },
+    "pencil": {
+     "additionalProperties": true,
+     "properties": {
+      "color": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "width": {
+       "type": "number"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "draw.highlighter": {
+  "description": "Selects the highlighter ink tool in the editor with a colour and width.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "highlighter": {
+     "additionalProperties": true,
+     "properties": {
+      "color": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "width": {
+       "type": "number"
+      }
+     },
+     "type": "object"
+    },
+    "mode": {
+     "additionalProperties": true,
+     "properties": {
+      "pen": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "pen": {
+     "additionalProperties": true,
+     "properties": {
+      "color": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "width": {
+       "type": "number"
+      }
+     },
+     "type": "object"
+    },
+    "pencil": {
+     "additionalProperties": true,
+     "properties": {
+      "color": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "width": {
+       "type": "number"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "draw.pen": {
+  "description": "Selects the pen ink tool in the editor with a colour and width.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "highlighter": {
+     "additionalProperties": true,
+     "properties": {
+      "color": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "width": {
+       "type": "number"
+      }
+     },
+     "type": "object"
+    },
+    "mode": {
+     "additionalProperties": true,
+     "properties": {
+      "pen": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "pen": {
+     "additionalProperties": true,
+     "properties": {
+      "color": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "width": {
+       "type": "number"
+      }
+     },
+     "type": "object"
+    },
+    "pencil": {
+     "additionalProperties": true,
+     "properties": {
+      "color": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "width": {
+       "type": "number"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "draw.pencil": {
+  "description": "Selects the pencil ink tool in the editor with a colour and width.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "highlighter": {
+     "additionalProperties": true,
+     "properties": {
+      "color": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "width": {
+       "type": "number"
+      }
+     },
+     "type": "object"
+    },
+    "mode": {
+     "additionalProperties": true,
+     "properties": {
+      "pen": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "pen": {
+     "additionalProperties": true,
+     "properties": {
+      "color": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "width": {
+       "type": "number"
+      }
+     },
+     "type": "object"
+    },
+    "pencil": {
+     "additionalProperties": true,
+     "properties": {
+      "color": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "width": {
+       "type": "number"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "draw.select": {
+  "description": "Switches the editor back to selecting objects from an ink tool.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "highlighter": {
+     "additionalProperties": true,
+     "properties": {
+      "color": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "width": {
+       "type": "number"
+      }
+     },
+     "type": "object"
+    },
+    "mode": {
+     "type": "string"
+    },
+    "pen": {
+     "additionalProperties": true,
+     "properties": {
+      "color": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "width": {
+       "type": "number"
+      }
+     },
+     "type": "object"
+    },
+    "pencil": {
+     "additionalProperties": true,
+     "properties": {
+      "color": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "width": {
+       "type": "number"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "draw.shape": {
+  "description": "Selects a shape preset to draw next in the editor, or none.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "shape": {
+     "type": "json"
+    }
+   },
+   "type": "object"
+  },
+  "params": {
+   "preset": {
+    "oneOf": [
+     {
+      "description": "a DrawingML preset",
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   }
+  }
+ },
+ "draw.state": {
+  "description": "Answers the editor's current ink tool, colour and width.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "color": {
+     "type": "string"
+    },
+    "tool": {
+     "type": "string"
+    },
+    "width": {
+     "type": "number"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "draw.stroke": {
+  "description": "Draws one ink stroke through points on a page (page points, at most 5000) with a tool, colour and width."
+ },
+ "drawing.arrange": {
+  "description": "Moves floating drawing objects to the front, back, or one step in the stacking order."
+ },
+ "drawing.chart": {
+  "description": "Changes a chart by id: kind, title, legend, data labels, gridlines, axis titles and series.",
+  "params": {
+   "categories": {
+    "items": {
+     "oneOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "number"
+      }
+     ]
+    },
+    "type": "array"
+   },
+   "dataLabels": {
+    "type": "boolean"
+   },
+   "gridlines": {
+    "type": "boolean"
+   },
+   "kind": {
+    "description": "chart type",
+    "type": "string"
+   },
+   "legend": {
+    "oneOf": [
+     {
+      "enum": [
+       "top",
+       "bottom",
+       "left",
+       "right",
+       "topRight"
+      ],
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   },
+   "title": {
+    "oneOf": [
+     {
+      "description": "chart title",
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   },
+   "xTitle": {
+    "oneOf": [
+     {
+      "description": "horizontal axis title",
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   },
+   "yTitle": {
+    "oneOf": [
+     {
+      "description": "vertical axis title",
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   }
+  }
+ },
+ "drawing.connect": {
+  "description": "Draws a connector between two drawing objects, straight, bent or curved.",
+  "params": {
+   "fromSite": {
+    "oneOf": [
+     {
+      "description": "connection site index on the from shape",
+      "type": "integer"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   },
+   "toSite": {
+    "oneOf": [
+     {
+      "description": "connection site index on the to shape",
+      "type": "integer"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   }
+  }
+ },
+ "drawing.delete": {
+  "description": "Deletes drawing objects by their ids from drawing.describe."
+ },
+ "drawing.describe": {
+  "description": "Answers drawing objects (shapes, pictures, text boxes, charts, ink, groups) with ids, geometry, frame, fill, stroke and text; default: the selected shapes, else all.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "objects": {
+     "type": "array"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "drawing.erase": {
+  "description": "Deletes the ink strokes a path or a circle touches.",
+  "params": {
+   "path": {
+    "description": "[x, y] page points",
+    "items": {
+     "items": {
+      "type": "number"
+     },
+     "type": "array"
+    },
+    "type": "array"
+   }
+  }
+ },
+ "drawing.format": {
+  "description": "Changes the fill, stroke or geometry of drawing objects by id.",
+  "params": {
+   "fill": {
+    "description": "the shape's fill",
+    "oneOf": [
+     {
+      "description": "a colour: \"#rrggbb\" or a theme slot such as \"accent1\"; \"none\" for no fill",
+      "type": "string"
+     },
+     {
+      "additionalProperties": true,
+      "description": "{color}, {gradient} or {none: true}",
+      "type": "object"
+     }
+    ]
+   },
+   "geometry": {
+    "additionalProperties": true,
+    "description": "{preset, adjust?: {adj…: value}} or {paths: […]}",
+    "type": "object"
+   },
+   "stroke": {
+    "additionalProperties": true,
+    "description": "the outline: {color?, width? (pt), dash?} or {none: true}",
+    "type": "object"
+   }
+  }
+ },
+ "drawing.group": {
+  "description": "Groups two or more floating shapes and pictures on one page into a group."
+ },
+ "drawing.ink": {
+  "description": "Adds ink strokes (pen, pencil or highlighter) through points in page points."
+ },
+ "drawing.insert": {
+  "description": "Inserts a floating drawing object (shape, text box or chart) with geometry, a frame in page points, placement, fill, stroke and text; answers its id.",
+  "params": {
+   "fill": {
+    "description": "the shape's fill",
+    "oneOf": [
+     {
+      "description": "a colour: \"#rrggbb\" or a theme slot such as \"accent1\"; \"none\" for no fill",
+      "type": "string"
+     },
+     {
+      "additionalProperties": true,
+      "description": "{color}, {gradient} or {none: true}",
+      "type": "object"
+     }
+    ]
+   },
+   "stroke": {
+    "additionalProperties": true,
+    "description": "the outline: {color?, width? (pt), dash?} or {none: true}",
+    "type": "object"
+   }
+  }
+ },
+ "drawing.reconnect": {
+  "description": "Moves one end of a connector to another object's connection site or to a point."
+ },
+ "drawing.text": {
+  "description": "Replaces the text of a drawing object, as plain text or as formatted paragraphs."
+ },
+ "drawing.transform": {
+  "description": "Moves, resizes, rotates or flips drawing objects by id, to a frame or by offsets.",
+  "params": {
+   "flipH": {
+    "description": "flip horizontally",
+    "type": "boolean"
+   },
+   "flipV": {
+    "description": "flip vertically",
+    "type": "boolean"
+   },
+   "rotateBy": {
+    "oneOf": [
+     {
+      "description": "degrees to turn by",
+      "type": "number"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   }
+  }
+ },
+ "drawing.ungroup": {
+  "description": "Splits groups back into their objects."
+ },
+ "edit.advancedFind": {
+  "description": "Finds every occurrence of a text in the main text, the selection or the headers and footers, and answers them all.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "count": {
+     "type": "number"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "edit.clearClipboard": {
+  "description": "Empties the Office clipboard.",
+  "output": {
+   "type": "array"
+  }
+ },
+ "edit.clipboardItems": {
+  "description": "Lists the items on the Office clipboard, newest first.",
+  "output": {
+   "type": "array"
+  }
+ },
+ "edit.clipboardPane": {
+  "description": "Shows or hides the Office clipboard pane in the editor.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "count": {
+     "type": "number"
+    },
+    "value": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "edit.copy": {
+  "description": "Copies the selection to the clipboard without changing the document.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "text": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "edit.copyFormat": {
+  "description": "Copies the selection's character and paragraph formatting.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "edit.cut": {
+  "description": "Removes the selection and puts it on the clipboard."
+ },
+ "edit.deleteClipboardItem": {
+  "description": "Removes one item (0 = newest) from the Office clipboard.",
+  "output": {
+   "type": "array"
+  }
+ },
+ "edit.find": {
+  "description": "Finds the next occurrence of a text (with case, whole-word or regex options) after the caret and selects it; answers where it is.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "count": {
+     "type": "number"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "edit.findNext": {
+  "description": "Selects the next occurrence of the last search.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "count": {
+     "type": "number"
+    },
+    "index": {
+     "type": "number"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "edit.findPrevious": {
+  "description": "Selects the previous occurrence of the last search.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "count": {
+     "type": "number"
+    },
+    "index": {
+     "type": "number"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "edit.formatPainter": {
+  "description": "Picks up the selection's formatting for pasting onto other text; sticky keeps it for several pastes.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "active": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "edit.goto": {
+  "description": "Moves the caret to a page (numbered from 1), a bookmark, or a body paragraph or table by its document.inspect index (from 0).",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "edit.paste": {
+  "description": "Pastes the clipboard (or the given text) at the caret, keeping its formatting."
+ },
+ "edit.pasteAllClipboard": {
+  "description": "Pastes every item of the Office clipboard at the caret, oldest first."
+ },
+ "edit.pasteClipboardItem": {
+  "description": "Pastes one item of the Office clipboard (0 = newest) at the caret."
+ },
+ "edit.pasteFormat": {
+  "description": "Applies the formatting copied with edit.copyFormat to the selection."
+ },
+ "edit.pasteMerge": {
+  "description": "Pastes the clipboard (or the given text) at the caret, merging its formatting with the surrounding text."
+ },
+ "edit.pasteSpecial": {
+  "description": "Pastes given text, HTML or RTF (or the clipboard) at the caret in a chosen form: formatted, RTF, HTML or plain text."
+ },
+ "edit.pasteText": {
+  "description": "Pastes the clipboard (or the given text) at the caret as plain text, taking the formatting at the caret."
+ },
+ "edit.redo": {
+  "description": "Redoes the last undone step of the caller's own scope."
+ },
+ "edit.repeat": {
+  "description": "Repeats the last editing action (F4) at the caret or selection.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "edit.replace": {
+  "description": "Replaces the next occurrence of a text after the caret with another text."
+ },
+ "edit.replaceAll": {
+  "description": "Replaces every occurrence of a text in the document (case, whole-word or regex options) and answers how many changed."
+ },
+ "edit.undo": {
+  "description": "Undoes the last step of the caller's own scope (an agent undoes its own edits, not the person's)."
+ },
+ "equation.backspace": {
+  "description": "Deletes backwards in the equation at the caret."
+ },
+ "equation.convert": {
+  "description": "Converts the equation (or every equation) between professional (built up) and linear form."
+ },
+ "equation.delete": {
+  "description": "Deletes forwards in the equation at the caret."
+ },
+ "equation.display": {
+  "description": "Makes the equation a display equation on its own line, or inline."
+ },
+ "equation.edit": {
+  "description": "Puts the caret into the equation at the selection, optionally at a position inside it.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "display": {
+     "type": "boolean"
+    },
+    "editing": {
+     "type": "boolean"
+    },
+    "linear": {
+     "type": "string"
+    },
+    "pos": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "type": "array"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "equation.enter": {
+  "description": "Adds a new line in the equation at the caret."
+ },
+ "equation.exit": {
+  "description": "Leaves the equation, putting the caret after it (or before it).",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "equation.gallery": {
+  "description": "Lists the equation structures with their ids for equation.insertStructure.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "builtins": {
+     "items": {
+      "additionalProperties": true,
+      "properties": {
+       "id": {
+        "type": "string"
+       },
+       "label": {
+        "type": "string"
+       },
+       "linear": {
+        "type": "string"
+       }
+      },
+      "type": "object"
+     },
+     "type": "array"
+    },
+    "structures": {
+     "items": {
+      "additionalProperties": true,
+      "properties": {
+       "id": {
+        "type": "string"
+       },
+       "label": {
+        "type": "string"
+       },
+       "sections": {
+        "items": {
+         "additionalProperties": true,
+         "properties": {
+          "name": {
+           "type": "string"
+          },
+          "templates": {
+           "items": {
+            "additionalProperties": true,
+            "properties": {
+             "id": {
+              "type": "string"
+             },
+             "label": {
+              "type": "string"
+             },
+             "linear": {
+              "type": "string"
+             }
+            },
+            "type": "object"
+           },
+           "type": "array"
+          }
+         },
+         "type": "object"
+        },
+        "type": "array"
+       }
+      },
+      "type": "object"
+     },
+     "type": "array"
+    },
+    "symbols": {
+     "items": {
+      "additionalProperties": true,
+      "properties": {
+       "chars": {
+        "type": "string"
+       },
+       "name": {
+        "type": "string"
+       }
+      },
+      "type": "object"
+     },
+     "type": "array"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "equation.get": {
+  "description": "Answers the equation at the selection as linear format and LaTeX, with its structure.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "at": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "display": {
+     "type": "boolean"
+    },
+    "editing": {
+     "type": "boolean"
+    },
+    "latex": {
+     "type": "string"
+    },
+    "linear": {
+     "type": "string"
+    },
+    "linearForm": {
+     "type": "boolean"
+    },
+    "pos": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "type": "array"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "equation.inputFormat": {
+  "description": "Sets how typed equation input is read: Unicode linear format or LaTeX.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "format": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "equation.insertStructure": {
+  "description": "Inserts a structure (fraction, script, radical…) into the equation by gallery id, linear format or LaTeX."
+ },
+ "equation.insertSymbol": {
+  "description": "Inserts a math symbol into the equation at the caret."
+ },
+ "equation.justify": {
+  "description": "Sets the justification of a display equation (centred as a group, centred, left or right)."
+ },
+ "equation.move": {
+  "description": "Moves the caret inside the equation (left, right, up, down, home, end, next or previous slot).",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "display": {
+     "type": "boolean"
+    },
+    "editing": {
+     "type": "boolean"
+    },
+    "linear": {
+     "type": "string"
+    },
+    "pos": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "items": {
+         "type": "number"
+        },
+        "type": "array"
+       },
+       "type": "array"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "equation.normalText": {
+  "description": "Turns normal (non-math) text entry on or off in the equation.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "normalText": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "equation.number": {
+  "description": "Adds or removes a number on the display equation."
+ },
+ "equation.set": {
+  "description": "Replaces the equation at the selection with linear-format or LaTeX input."
+ },
+ "equation.structure": {
+  "description": "Applies an action to the structure at the equation caret (add a row, change a delimiter…), as equation.structureActions lists."
+ },
+ "equation.structureActions": {
+  "description": "Lists the actions available on the structure at the equation caret, for equation.structure.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "actions": {
+     "type": "array"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "equation.type": {
+  "description": "Types text into the equation at the caret; linear-format input builds structures."
+ },
+ "file.accessibility": {
+  "description": "Answers accessibility issues in the document (missing alt text, heading order, table headers…) with where they are.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "issues": {
+     "items": {
+      "additionalProperties": true,
+      "properties": {
+       "fix": {
+        "type": "string"
+       },
+       "issue": {
+        "type": "string"
+       },
+       "kind": {
+        "type": "string"
+       }
+      },
+      "type": "object"
+     },
+     "type": "array"
+    },
+    "ok": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "file.autosave": {
+  "description": "Toggles AutoSave for the document."
+ },
+ "file.close": {
+  "description": "Closes the document; unsaved changes are lost unless saved first."
+ },
+ "file.compatibility": {
+  "description": "Answers features that older Word versions cannot show.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "issues": {
+     "type": "array"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "file.encrypt": {
+  "description": "Sets or removes the password that Word documents are saved encrypted with.",
+  "params": {
+   "password": {
+    "oneOf": [
+     {
+      "description": "empty saves unencrypted",
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   }
+  }
+ },
+ "file.export": {
+  "description": "Answers the document as a PDF, or one page (1-based) as a PNG image at a scale in pixels per point, as base64 for the host to write as a new file; nothing is written and the document does not change.",
+  "output": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "format": {
+     "type": "string",
+     "enum": [
+      "pdf",
+      "png"
+     ]
+    },
+    "extension": {
+     "type": "string"
+    },
+    "mime": {
+     "type": "string"
+    },
+    "bytes": {
+     "type": "number"
+    },
+    "data": {
+     "type": "string",
+     "description": "The file's bytes, base64"
+    },
+    "width": {
+     "type": "number",
+     "description": "PNG only: pixels"
+    },
+    "height": {
+     "type": "number",
+     "description": "PNG only: pixels"
+    }
+   }
+  }
+ },
+ "file.exportPdf": {
+  "description": "Writes the document as a PDF to a path, without changing the document or its path.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "path": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "file.exportPng": {
+  "description": "Writes one page (1-based) as a PNG image to a path, at a scale in pixels per point.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "bytes": {
+     "type": "number"
+    },
+    "height": {
+     "type": "number"
+    },
+    "path": {
+     "type": "string"
+    },
+    "width": {
+     "type": "number"
+    }
+   },
+   "type": "object"
+  },
+  "params": {
+   "scale": {
+    "description": "pixels per point, 0.1 to 8 (default 2)",
+    "type": "number"
+   }
+  }
+ },
+ "file.info": {
+  "description": "Answers the document's file information: path, format, size, dates, properties, protection and page and word counts.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "comments": {
+     "type": "number"
+    },
+    "dirty": {
+     "type": "boolean"
+    },
+    "encrypted": {
+     "type": "boolean"
+    },
+    "layoutMs": {
+     "type": "number"
+    },
+    "pages": {
+     "type": "number"
+    },
+    "paragraphs": {
+     "type": "number"
+    },
+    "path": {
+     "type": "json"
+    },
+    "properties": {
+     "additionalProperties": true,
+     "properties": {
+      "category": {
+       "type": "string"
+      },
+      "created": {
+       "type": "string"
+      },
+      "creator": {
+       "type": "string"
+      },
+      "description": {
+       "type": "string"
+      },
+      "keywords": {
+       "type": "string"
+      },
+      "lastModifiedBy": {
+       "type": "string"
+      },
+      "modified": {
+       "type": "string"
+      },
+      "revision": {
+       "type": "number"
+      },
+      "subject": {
+       "type": "string"
+      },
+      "title": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "sections": {
+     "type": "number"
+    },
+    "trackChanges": {
+     "type": "boolean"
+    },
+    "words": {
+     "type": "number"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "file.inspect": {
+  "description": "Removes chosen kinds of hidden content (comments, revisions, properties, hidden text, headers) and answers what was found."
+ },
+ "file.new": {
+  "description": "Replaces the open document with a new one, blank or from a template (sample, letter, resume, report)."
+ },
+ "file.newFromTemplate": {
+  "description": "Creates a new document from a template file."
+ },
+ "file.open": {
+  "description": "Opens a document from a path, or from base64 data named by path, with a password for encrypted files.",
+  "params": {
+   "data": {
+    "description": "the file's bytes in base64",
+    "type": "string"
+   }
+  }
+ },
+ "file.options": {
+  "description": "Answers the editor's options (user name, proofing, autocorrect).",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "file.print": {
+  "description": "Answers the document as the PDF the editor hands to the system print dialog.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "file.properties": {
+  "description": "Sets document properties (title, subject, author, keywords, comments, category, custom properties) saved with the file.",
+  "params": {
+   "author": {
+    "type": "string"
+   },
+   "category": {
+    "type": "string"
+   },
+   "comments": {
+    "type": "string"
+   },
+   "keywords": {
+    "type": "string"
+   },
+   "subject": {
+    "type": "string"
+   }
+  }
+ },
+ "file.protect": {
+  "description": "Marks the document as protected in a mode (read only, comments, tracked changes), or unprotects it."
+ },
+ "file.recover": {
+  "description": "Answers the unsaved documents that can be recovered.",
+  "output": {
+   "type": "array"
+  }
+ },
+ "file.save": {
+  "description": "Saves the document to its path or a new path (docx by default; the extension picks the format), optionally encrypting it with a password."
+ },
+ "file.saveAs": {
+  "description": "Saves the document under a new path, which becomes its path; optionally encrypted with a password."
+ },
+ "file.saveTemplate": {
+  "description": "Saves the document as a template to a path.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "path": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "file.setAuthor": {
+  "description": "Sets the user name recorded as the author of new tracked changes and comments.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "name": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "file.share": {
+  "description": "Answers how to share the document.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "hint": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "file.versions": {
+  "description": "Saves a labelled version of the document or restores an earlier one, and answers the version list.",
+  "params": {
+   "save": {
+    "description": "label for the saved version",
+    "type": "string"
+   }
+  }
+ },
+ "format.allCaps": {
+  "description": "Toggles showing the selection in capital letters, without changing the letters stored."
+ },
+ "format.bold": {
+  "description": "Sets bold on the selection (or the word at the caret); without value it toggles."
+ },
+ "format.border": {
+  "description": "Sets a border around the selected characters; without value it toggles."
+ },
+ "format.changeCase": {
+  "description": "Changes the letters of the selection to sentence, lower, upper or title case, or toggles case."
+ },
+ "format.charStyle": {
+  "description": "Applies a character style to the selection."
+ },
+ "format.clear": {
+  "description": "Clears all formatting from the selection, as Word's Clear All Formatting: its character formatting goes and its paragraphs become Normal (format.resetChar keeps the paragraph style)."
+ },
+ "format.color": {
+  "description": "Sets the text colour of the selection as RRGGBB hex, or auto."
+ },
+ "format.doubleStrikethrough": {
+  "description": "Toggles double strikethrough on the selection."
+ },
+ "format.doubleUnderline": {
+  "description": "Toggles double underline on the selection."
+ },
+ "format.emboss": {
+  "description": "Toggles the emboss text effect on the selection."
+ },
+ "format.engrave": {
+  "description": "Toggles the engrave text effect on the selection."
+ },
+ "format.font": {
+  "description": "Sets the font family of the selection."
+ },
+ "format.fontDialog": {
+  "description": "Answers the selection's character formatting as the Font dialog shows it.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "format.growFont": {
+  "description": "Steps the selection's font size up to the next size in the size list."
+ },
+ "format.growFont1": {
+  "description": "Makes the selection's font one point larger."
+ },
+ "format.hidden": {
+  "description": "Toggles hidden text on the selection; hidden text does not show or print unless marks are shown."
+ },
+ "format.highlight": {
+  "description": "Highlights the selection with a highlighter colour (yellow, brightGreen, turquoise…), or removes it with none."
+ },
+ "format.italic": {
+  "description": "Sets italic on the selection; without value it toggles."
+ },
+ "format.outline": {
+  "description": "Toggles the outline text effect on the selection."
+ },
+ "format.position": {
+  "description": "Raises or lowers the selected characters from the baseline by points."
+ },
+ "format.scale": {
+  "description": "Stretches or squeezes the selected characters horizontally by a percentage."
+ },
+ "format.set": {
+  "description": "Sets several character properties of the selection in one call (font, size, colour, bold, italic, underline…); the general form of the format.* commands.",
+  "params": {
+   "props": {
+    "additionalProperties": true,
+    "description": "character properties as format.state answers them (font, size, bold, italic, color…); colours are \"RRGGBB\" (color also \"auto\")",
+    "type": "object"
+   }
+  }
+ },
+ "format.shading": {
+  "description": "Sets the background shading of the selected characters as RRGGBB, or removes it with null.",
+  "params": {
+   "color": {
+    "oneOf": [
+     {
+      "description": "RRGGBB",
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   }
+  }
+ },
+ "format.shadow": {
+  "description": "Toggles the shadow text effect on the selection."
+ },
+ "format.shrinkFont": {
+  "description": "Steps the selection's font size down to the previous size in the size list."
+ },
+ "format.shrinkFont1": {
+  "description": "Makes the selection's font one point smaller."
+ },
+ "format.size": {
+  "description": "Sets the font size in points of the selection."
+ },
+ "format.smallCaps": {
+  "description": "Toggles small capitals on the selection."
+ },
+ "format.spacing": {
+  "description": "Expands or condenses the spacing between the selected characters by points."
+ },
+ "format.state": {
+  "description": "Answers the character and paragraph formatting at the selection (font, size, bold, italic, style, alignment…), as the ribbon shows it.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "bold": {
+     "type": "boolean"
+    },
+    "border": {
+     "type": "boolean"
+    },
+    "color": {
+     "type": "string"
+    },
+    "font": {
+     "type": "string"
+    },
+    "highlight": {
+     "type": "json"
+    },
+    "italic": {
+     "type": "boolean"
+    },
+    "size": {
+     "type": "number"
+    },
+    "strike": {
+     "type": "boolean"
+    },
+    "style": {
+     "type": "string"
+    },
+    "styleName": {
+     "type": "string"
+    },
+    "subscript": {
+     "type": "boolean"
+    },
+    "superscript": {
+     "type": "boolean"
+    },
+    "underline": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "format.strikethrough": {
+  "description": "Sets strikethrough on the selection; without value it toggles."
+ },
+ "format.subscript": {
+  "description": "Toggles subscript on the selection."
+ },
+ "format.superscript": {
+  "description": "Toggles superscript on the selection."
+ },
+ "format.underline": {
+  "description": "Sets underline on the selection with a style (single, double, thick, dotted, wave, words…); without value it toggles."
+ },
+ "format.wordUnderline": {
+  "description": "Toggles underlining of words only (not the spaces) on the selection."
+ },
+ "hf.next": {
+  "description": "Moves to the header or footer of the next section.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "additionalProperties": true,
+       "properties": {
+        "part": {
+         "type": "number"
+        }
+       },
+       "type": "object"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "additionalProperties": true,
+       "properties": {
+        "part": {
+         "type": "number"
+        }
+       },
+       "type": "object"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "hf.position": {
+  "description": "Sets the distance of the header and footer from the page edge in points."
+ },
+ "hf.previous": {
+  "description": "Moves to the header or footer of the previous section.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "additionalProperties": true,
+       "properties": {
+        "part": {
+         "type": "number"
+        }
+       },
+       "type": "object"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "additionalProperties": true,
+       "properties": {
+        "part": {
+         "type": "number"
+        }
+       },
+       "type": "object"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "insert.autoText": {
+  "description": "Saves the selection as an AutoText entry or inserts one by name."
+ },
+ "insert.blankPage": {
+  "description": "Inserts an empty page at the caret."
+ },
+ "insert.bookmark": {
+  "description": "Adds a named bookmark at the selection, for edit.goto and cross-references."
+ },
+ "insert.chart": {
+  "description": "Inserts a chart (column, bar, line, pie…) with categories and series values at the caret."
+ },
+ "insert.closeHeader": {
+  "description": "Leaves the header, footer or note and returns the caret to where it was in the body (after a note's reference mark).",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "insert.coverPage": {
+  "description": "Inserts a one-page cover at the start of the document with a title, subtitle, author and, when given, a date (no date otherwise); title, subtitle and author default to the document's Title, Subject and Author properties. The caret stays where it was."
+ },
+ "insert.crossReference": {
+  "description": "Inserts a cross-reference to a heading, bookmark, figure or table, showing its text, number or page."
+ },
+ "insert.dateTime": {
+  "description": "Inserts the current date or time at the caret in a format, as fixed text or as a field that updates."
+ },
+ "insert.docProperty": {
+  "description": "Inserts a document property (Title, Author, Subject…) as a field at the caret."
+ },
+ "insert.dropCap": {
+  "description": "Makes the first letter of the paragraph at the caret a drop cap over a number of lines (0 removes it)."
+ },
+ "insert.editFooter": {
+  "description": "Moves the caret into the footer of the current section for editing."
+ },
+ "insert.editHeader": {
+  "description": "Moves the caret into the header of the current section for editing."
+ },
+ "insert.equation": {
+  "description": "Inserts an equation at the caret from linear format, LaTeX or a built-in equation (Pythagoras, quadratic…), and puts the caret in it."
+ },
+ "insert.field": {
+  "description": "Inserts a field code (PAGE, DATE, REF…) at the caret with an optional result text."
+ },
+ "insert.footer": {
+  "description": "Sets the footer of the current section from text or a preset layout."
+ },
+ "insert.header": {
+  "description": "Sets the header of the current section from text or a preset layout."
+ },
+ "insert.horizontalLine": {
+  "description": "Inserts a horizontal line paragraph at the caret."
+ },
+ "insert.link": {
+  "description": "Turns the selection into a hyperlink to a URL, or inserts linked text at the caret."
+ },
+ "insert.object": {
+  "description": "Inserts the contents of a file as an object at the caret."
+ },
+ "insert.pageBreak": {
+  "description": "Inserts a page break at the caret so the following text starts on a new page."
+ },
+ "insert.pageNumber": {
+  "description": "Inserts a page number field at the top or bottom of the page or at the caret, aligned left, centre or right (at the caret: the caret's paragraph, when align is given), optionally as Page x of y."
+ },
+ "insert.picture": {
+  "description": "Inserts a picture from a path or base64 data at the caret, with a width in points and alternative text.",
+  "params": {
+   "data": {
+    "description": "the picture's bytes in base64",
+    "type": "string"
+   }
+  }
+ },
+ "insert.quickParts": {
+  "description": "Saves the selection as a named building block, inserts one, or deletes one, and answers the list."
+ },
+ "insert.removeFooter": {
+  "description": "Removes the footer of the current section."
+ },
+ "insert.removeHeader": {
+  "description": "Removes the header of the current section."
+ },
+ "insert.removeLink": {
+  "description": "Removes the hyperlink at the caret or selection, keeping its text."
+ },
+ "insert.shape": {
+  "description": "Inserts a floating shape (rectangle, ellipse, triangle, arrow, star…) at the caret with a size, fill and text."
+ },
+ "insert.signatureLine": {
+  "description": "Inserts a signature line with the signer's name and title at the caret."
+ },
+ "insert.spreadsheet": {
+  "description": "Inserts a table from CSV text at the caret."
+ },
+ "insert.symbol": {
+  "description": "Inserts a character at the caret, optionally in its own symbol font."
+ },
+ "insert.table": {
+  "description": "Inserts a table with the given rows and columns at the caret, optionally with a table style; the caret moves into its first cell."
+ },
+ "insert.textBox": {
+  "description": "Inserts a floating text box at the caret with text and a size."
+ },
+ "insert.textFromFile": {
+  "description": "Inserts the text of a file at the caret."
+ },
+ "insert.artText": {
+  "description": "Inserts decorative art text, optionally warped by a preset.",
+  "params": {
+   "warp": {
+    "oneOf": [
+     {
+      "description": "a warp preset such as textArchUp, textWave1, textInflate",
+      "type": "string"
+     },
+     {
+      "additionalProperties": true,
+      "description": "{preset, adjust?}",
+      "type": "object"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   }
+  }
+ },
+ "layout.break": {
+  "description": "Inserts a page, column or text-wrapping break, or a section break (next page, continuous, even or odd page), at the caret."
+ },
+ "layout.columns": {
+  "description": "Sets the number of text columns (1 to 12) of the current section, with spacing, a separator line or set widths.",
+  "params": {
+   "count": {
+    "description": "1 to 12",
+    "type": "integer"
+   }
+  }
+ },
+ "layout.differentFirstPage": {
+  "description": "Toggles a different header and footer on the first page of the current section."
+ },
+ "layout.differentOddEven": {
+  "description": "Toggles different headers and footers on odd and even pages."
+ },
+ "layout.hyphenation": {
+  "description": "Toggles automatic hyphenation for the document."
+ },
+ "layout.lineNumbers": {
+  "description": "Turns line numbers in the margin off, continuous, or restarting each page or section."
+ },
+ "layout.linkToPrevious": {
+  "description": "Toggles linking the current section's header (or footer) to the previous section's."
+ },
+ "layout.margins": {
+  "description": "Sets the page margins of the current section from a preset or in points per side."
+ },
+ "layout.orientation": {
+  "description": "Sets the current section's page orientation to portrait or landscape."
+ },
+ "layout.pageNumberFormat": {
+  "description": "Sets the page number format (1, i, I, a, A) and starting number of the current section."
+ },
+ "layout.pageSetup": {
+  "description": "Changes the current section's page setup in one call: only the fields given (size, orientation, margins, columns, vertical alignment…) change, the others keep their values.",
+  "params": {
+   "section": {
+    "additionalProperties": true,
+    "description": "the section fields to change, named as layout.section answers them (pageW, marginLeft, valign…); fields not given are kept, unknown ones are refused",
+    "type": "object"
+   }
+  }
+ },
+ "layout.section": {
+  "description": "Answers the current section's page properties: size, orientation, margins, columns and header settings.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "columns": {
+     "additionalProperties": true,
+     "properties": {
+      "count": {
+       "type": "number"
+      },
+      "separator": {
+       "type": "boolean"
+      },
+      "space": {
+       "type": "number"
+      },
+      "widths": {
+       "type": "array"
+      }
+     },
+     "type": "object"
+    },
+    "footer": {
+     "type": "number"
+    },
+    "footers": {
+     "additionalProperties": true,
+     "properties": {
+      "default": {
+       "type": "json"
+      },
+      "even": {
+       "type": "json"
+      },
+      "first": {
+       "type": "json"
+      }
+     },
+     "type": "object"
+    },
+    "gutter": {
+     "type": "number"
+    },
+    "header": {
+     "type": "number"
+    },
+    "headers": {
+     "additionalProperties": true,
+     "properties": {
+      "default": {
+       "type": "json"
+      },
+      "even": {
+       "type": "json"
+      },
+      "first": {
+       "type": "json"
+      }
+     },
+     "type": "object"
+    },
+    "landscape": {
+     "type": "boolean"
+    },
+    "lineNumbers": {
+     "type": "json"
+    },
+    "marginBottom": {
+     "type": "number"
+    },
+    "marginLeft": {
+     "type": "number"
+    },
+    "marginRight": {
+     "type": "number"
+    },
+    "marginTop": {
+     "type": "number"
+    },
+    "pageBorders": {
+     "type": "json"
+    },
+    "pageH": {
+     "type": "number"
+    },
+    "pageNumFormat": {
+     "type": "string"
+    },
+    "pageNumStart": {
+     "type": "json"
+    },
+    "pageW": {
+     "type": "number"
+    },
+    "rtl": {
+     "type": "boolean"
+    },
+    "start": {
+     "type": "string"
+    },
+    "titlePage": {
+     "type": "boolean"
+    },
+    "valign": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "layout.size": {
+  "description": "Sets the current section's paper size: by name (Letter, A4…), keeping the orientation, or as a width and height in points, kept as given (wider than tall is landscape)."
+ },
+ "layout.verticalAlign": {
+  "description": "Sets the current section's vertical alignment of text on its pages: top, center or bottom."
+ },
+ "list.define": {
+  "description": "Defines a new multilevel list (number format, text, start, indents per level) and applies it to the selected paragraphs; a number format it can't draw is refused.",
+  "params": {
+   "num": {
+    "description": "list id to change in place (default: a new list)",
+    "type": "integer"
+   }
+  }
+ },
+ "list.get": {
+  "description": "Answers a list's definition (each level's format, text and indents); default: the list at the caret.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "levels": {
+     "items": {
+      "additionalProperties": true,
+      "properties": {
+       "align": {
+        "type": "string"
+       },
+       "alignedAt": {
+        "type": "number"
+       },
+       "bold": {
+        "type": "boolean"
+       },
+       "color": {
+        "type": "json"
+       },
+       "follow": {
+        "type": "string"
+       },
+       "font": {
+        "type": "string"
+       },
+       "format": {
+        "type": "string"
+       },
+       "indentAt": {
+        "type": "number"
+       },
+       "italic": {
+        "type": "boolean"
+       },
+       "legal": {
+        "type": "boolean"
+       },
+       "restartAfter": {
+        "type": "json"
+       },
+       "start": {
+        "type": "number"
+       },
+       "style": {
+        "type": "json"
+       },
+       "tabAt": {
+        "type": "json"
+       },
+       "text": {
+        "type": "string"
+       }
+      },
+      "type": "object"
+     },
+     "type": "array"
+    },
+    "num": {
+     "type": "number"
+    }
+   },
+   "type": "object"
+  },
+  "params": {
+   "num": {
+    "description": "list id (default: the caret's list)",
+    "type": "integer"
+   }
+  }
+ },
+ "mailings.addressBlock": {
+  "description": "Inserts an address block merge field at the caret."
+ },
+ "mailings.checkErrors": {
+  "description": "Checks the merge for missing fields or recipients and answers the problems.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "ok": {
+     "type": "boolean"
+    },
+    "records": {
+     "type": "number"
+    },
+    "unknownFields": {
+     "type": "array"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "mailings.editRecipients": {
+  "description": "Replaces the mail merge recipient rows or fields.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "fields": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "records": {
+     "type": "number"
+    }
+   },
+   "type": "object"
+  },
+  "params": {
+   "rows": {
+    "description": "[{field: value}] or [[value]]",
+    "items": {
+     "oneOf": [
+      {
+       "additionalProperties": true,
+       "description": "a row by field name",
+       "type": "object"
+      },
+      {
+       "type": "array"
+      }
+     ]
+    },
+    "type": "array"
+   }
+  }
+ },
+ "mailings.envelopes": {
+  "description": "Turns the document into an envelope with a delivery and a return address and a size."
+ },
+ "mailings.findRecipient": {
+  "description": "Moves the merge preview to a recipient."
+ },
+ "mailings.finish": {
+  "description": "Merges the document with every recipient (or a range of records) into one merged document, optionally saved to a path."
+ },
+ "mailings.greetingLine": {
+  "description": "Inserts a greeting line merge field at the caret."
+ },
+ "mailings.highlightFields": {
+  "description": "Toggles highlighting of merge fields in the editor.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "value": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "mailings.insertField": {
+  "description": "Inserts a merge field for a recipient field at the caret."
+ },
+ "mailings.labels": {
+  "description": "Turns the document into a sheet of labels with text or the recipients, in rows and columns."
+ },
+ "mailings.matchFields": {
+  "description": "Answers how the document's merge fields match the recipient fields.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "address": {
+     "additionalProperties": true,
+     "properties": {
+      "address": {
+       "type": "json"
+      },
+      "city": {
+       "type": "json"
+      },
+      "company": {
+       "type": "json"
+      },
+      "country": {
+       "type": "json"
+      },
+      "firstName": {
+       "type": "json"
+      },
+      "lastName": {
+       "type": "json"
+      },
+      "postal": {
+       "type": "json"
+      },
+      "state": {
+       "type": "json"
+      },
+      "title": {
+       "type": "json"
+      }
+     },
+     "type": "object"
+    },
+    "fields": {
+     "type": "array"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "mailings.next": {
+  "description": "Shows the next recipient's data in the merge preview."
+ },
+ "mailings.preview": {
+  "description": "Toggles previewing the merge results with a recipient's data in place of the fields."
+ },
+ "mailings.previous": {
+  "description": "Shows the previous recipient's data in the merge preview."
+ },
+ "mailings.recipients": {
+  "description": "Sets the mail merge recipients from CSV text, a file, or rows, with their field names.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "fields": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    },
+    "records": {
+     "type": "number"
+    }
+   },
+   "type": "object"
+  },
+  "params": {
+   "rows": {
+    "description": "[{field: value}] or [[value]]",
+    "items": {
+     "oneOf": [
+      {
+       "additionalProperties": true,
+       "description": "a row by field name",
+       "type": "object"
+      },
+      {
+       "type": "array"
+      }
+     ]
+    },
+    "type": "array"
+   }
+  }
+ },
+ "mailings.rules": {
+  "description": "Inserts a merge rule field (IF, SKIPIF, NEXT, MERGEREC) at the caret.",
+  "params": {
+   "else": {
+    "description": "text otherwise",
+    "type": "string"
+   },
+   "field": {
+    "description": "merge field name",
+    "type": "string"
+   },
+   "then": {
+    "description": "text when the comparison holds",
+    "type": "string"
+   },
+   "value": {
+    "description": "value to compare with",
+    "type": "string"
+   }
+  }
+ },
+ "mailings.start": {
+  "description": "Starts a mail merge of a kind (letters, emails, envelopes, labels, directory) or turns it off with normal.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "kind": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "para.addSpaceBefore": {
+  "description": "Adds 12 points of space before the selected paragraphs."
+ },
+ "para.align": {
+  "description": "Sets the alignment of the selected paragraphs by name, as seen on the page (left, center, right, justify, distribute) or in reading order (start, end)."
+ },
+ "para.alignCenter": {
+  "description": "Centres the selected paragraphs."
+ },
+ "para.alignLeft": {
+  "description": "Aligns the selected paragraphs to the left."
+ },
+ "para.alignRight": {
+  "description": "Aligns the selected paragraphs to the right."
+ },
+ "para.asianTypography": {
+  "description": "Sets East Asian typography options of the selected paragraphs: line-breaking rules, word wrap and punctuation compression."
+ },
+ "para.borders": {
+  "description": "Applies a paragraph border (bottom, top, box, inside, none…) to the selected paragraphs, with width and colour.",
+  "params": {
+   "sides": {
+    "additionalProperties": true,
+    "description": "borders per side",
+    "properties": {
+     "bottom": {
+      "additionalProperties": true,
+      "description": "the bottom border",
+      "properties": {
+       "color": {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       "style": {
+        "type": "string"
+       },
+       "width": {
+        "description": "points",
+        "type": "number"
+       }
+      },
+      "type": "object"
+     },
+     "left": {
+      "additionalProperties": true,
+      "description": "the left border",
+      "properties": {
+       "color": {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       "style": {
+        "type": "string"
+       },
+       "width": {
+        "description": "points",
+        "type": "number"
+       }
+      },
+      "type": "object"
+     },
+     "right": {
+      "additionalProperties": true,
+      "description": "the right border",
+      "properties": {
+       "color": {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       "style": {
+        "type": "string"
+       },
+       "width": {
+        "description": "points",
+        "type": "number"
+       }
+      },
+      "type": "object"
+     },
+     "top": {
+      "additionalProperties": true,
+      "description": "the top border",
+      "properties": {
+       "color": {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       "style": {
+        "type": "string"
+       },
+       "width": {
+        "description": "points",
+        "type": "number"
+       }
+      },
+      "type": "object"
+     }
+    },
+    "type": "object"
+   }
+  }
+ },
+ "para.bullets": {
+  "description": "Makes the selected paragraphs a bulleted list (with a bullet kind or character), or removes the bullets with off.",
+  "params": {
+   "kind": {
+    "description": "\"bullet\", or a single bullet character",
+    "type": "string"
+   }
+  }
+ },
+ "para.defineBullet": {
+  "description": "Defines a bullet character and applies it to the selected list paragraphs."
+ },
+ "para.defineNumber": {
+  "description": "Defines a number format (decimal, Roman, letters), number text and start, and applies it to the selected list."
+ },
+ "para.dialog": {
+  "description": "Answers a paragraph's formatting as the Paragraph dialog shows it: the caret's paragraph, or the one at path. props is in the form para.set takes; direct holds only the paragraph's own settings.",
+  "output": {
+   "type": "object",
+   "additionalProperties": true,
+   "properties": {
+    "props": {
+     "type": "object",
+     "additionalProperties": true
+    },
+    "direct": {
+     "type": "object",
+     "additionalProperties": true
+    },
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   }
+  }
+ },
+ "para.distribute": {
+  "description": "Distributes the characters of the selected paragraphs evenly across the line."
+ },
+ "para.double": {
+  "description": "Sets double line spacing on the selected paragraphs."
+ },
+ "para.hangingIndent": {
+  "description": "Adds a hanging indent to the selected paragraphs, or increases it."
+ },
+ "para.heading1": {
+  "description": "Applies the Heading 1 style to the selected paragraphs."
+ },
+ "para.heading2": {
+  "description": "Applies the Heading 2 style to the selected paragraphs."
+ },
+ "para.heading3": {
+  "description": "Applies the Heading 3 style to the selected paragraphs."
+ },
+ "para.indent": {
+  "description": "Increases the left indent of the selected paragraphs by one step."
+ },
+ "para.indents": {
+  "description": "Sets the left, right and first-line indents of the selected paragraphs in points (a negative first line is hanging)."
+ },
+ "para.insert": {
+  "description": "Inserts a new paragraph with text after or before the paragraph at an index (as document.inspect numbers them), keeping the neighbouring style."
+ },
+ "para.justify": {
+  "description": "Justifies the selected paragraphs between the margins."
+ },
+ "para.keepLines": {
+  "description": "Toggles keeping all lines of the selected paragraphs on one page."
+ },
+ "para.keepNext": {
+  "description": "Toggles keep-with-next on the selected paragraphs so they stay on the page with the following one."
+ },
+ "para.lineSpacing": {
+  "description": "Sets the line spacing of the selected paragraphs as a multiple, as at least some points, or as exactly some points."
+ },
+ "para.listLevel": {
+  "description": "Sets the list level (0 to 8) of the selected list paragraphs.",
+  "params": {
+   "level": {
+    "description": "0 to 8",
+    "type": "integer"
+   }
+  }
+ },
+ "para.ltr": {
+  "description": "Makes the selected paragraphs left to right (true) or right to left (false)."
+ },
+ "para.multilevel": {
+  "description": "Applies a multilevel list (legal or outline numbering) to the selected paragraphs."
+ },
+ "para.normal": {
+  "description": "Applies the Normal style to the selected paragraphs."
+ },
+ "para.numbering": {
+  "description": "Makes the selected paragraphs a numbered list in a format (1., 1), A., a., i., outline), or removes numbering with off."
+ },
+ "para.oneAndHalf": {
+  "description": "Sets 1.5 line spacing on the selected paragraphs."
+ },
+ "para.outdent": {
+  "description": "Decreases the left indent of the selected paragraphs by one step."
+ },
+ "para.outlineLevel": {
+  "description": "Steps the outline level of the selected paragraphs."
+ },
+ "para.pageBreakBefore": {
+  "description": "Toggles a page break before the selected paragraphs."
+ },
+ "para.removeHanging": {
+  "description": "Reduces the hanging indent of the selected paragraphs."
+ },
+ "para.removeSpaceAfter": {
+  "description": "Removes the space after the selected paragraphs."
+ },
+ "para.restartNumbering": {
+  "description": "Restarts the numbering of the list at the caret from 1."
+ },
+ "para.rtl": {
+  "description": "Makes the selected paragraphs right to left (true) or left to right (false)."
+ },
+ "para.set": {
+  "description": "Sets several paragraph properties of the selected paragraphs in one call (alignment, indents, spacing, line spacing, keep options…).",
+  "params": {
+   "props": {
+    "additionalProperties": true,
+    "description": "paragraph properties as para.dialog answers them (alignment, indents, spacing…); colours (shading, border colors) are \"RRGGBB\"",
+    "type": "object"
+   }
+  }
+ },
+ "para.setNumberingValue": {
+  "description": "Sets the number of the list item at the caret, renumbering the items after it."
+ },
+ "para.shading": {
+  "description": "Sets the background shading of the selected paragraphs as RRGGBB, or removes it with null.",
+  "params": {
+   "color": {
+    "oneOf": [
+     {
+      "description": "RRGGBB",
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   }
+  }
+ },
+ "para.single": {
+  "description": "Sets single line spacing on the selected paragraphs."
+ },
+ "para.sort": {
+  "description": "Sorts the selected paragraphs alphabetically, ascending or descending."
+ },
+ "para.spacing": {
+  "description": "Sets the space before and after the selected paragraphs in points."
+ },
+ "para.style": {
+  "description": "Applies a paragraph style (by name or id, such as Heading 1 or Quote) to the selected paragraphs; styles.list names them."
+ },
+ "para.tabs": {
+  "description": "Replaces, sets or clears tab stops (position, alignment, leader) of the selected paragraphs."
+ },
+ "para.text": {
+  "description": "Replaces the text of the paragraph at an index, keeping its style and paragraph formatting."
+ },
+ "para.widowControl": {
+  "description": "Toggles widow and orphan control on the selected paragraphs."
+ },
+ "picture.altText": {
+  "description": "Sets the alternative text of the selected picture."
+ },
+ "picture.border": {
+  "description": "Sets the border colour and width of the selected picture."
+ },
+ "picture.change": {
+  "description": "Replaces the selected picture's image from a path or base64 data, keeping its size and position.",
+  "params": {
+   "data": {
+    "description": "the new picture's bytes in base64",
+    "type": "string"
+   }
+  }
+ },
+ "picture.color": {
+  "description": "Recolours the selected picture (grayscale, sepia, washout, black and white, saturation, tint)."
+ },
+ "picture.compress": {
+  "description": "Downsamples the selected picture to at most a number of pixels to make the file smaller."
+ },
+ "picture.corrections": {
+  "description": "Adjusts the selected picture's brightness, contrast and sharpness (-100 to 100)."
+ },
+ "picture.crop": {
+  "description": "Crops the selected picture by fractions (0 to 0.45) of its width and height from each side."
+ },
+ "picture.effects": {
+  "description": "Applies an artistic effect (blur, sharpen, invert, posterize, pixelate) to the selected picture."
+ },
+ "picture.removeBackground": {
+  "description": "Removes the selected picture's background colour within a tolerance."
+ },
+ "picture.reset": {
+  "description": "Removes every adjustment from the selected picture."
+ },
+ "picture.size": {
+  "description": "Sets the selected picture's width and height in points or a scale percentage, keeping the aspect ratio when asked."
+ },
+ "picture.style": {
+  "description": "Applies a picture style (simple frame, thick frame, rounded, soft edge, shadow) to the selected picture."
+ },
+ "picture.transparency": {
+  "description": "Sets the selected picture's transparency from 0 to 100 percent."
+ },
+ "presence.caret": {
+  "description": "Answers the caret and selection as object-model positions (object, field, offset), for showing it to collaborators.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "type": "json"
+    },
+    "caret": {
+     "type": "json"
+    },
+    "page": {
+     "type": "number"
+    },
+    "selection": {
+     "type": "array"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "presence.locate": {
+  "description": "Answers page positions for given object-model caret positions, for drawing collaborators' carets.",
+  "output": {
+   "type": "array"
+  }
+ },
+ "readAloud.next": {
+  "description": "Moves reading aloud to the next sentence.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "count": {
+     "type": "number"
+    },
+    "current": {
+     "type": "json"
+    },
+    "error": {
+     "type": "json"
+    },
+    "index": {
+     "type": "number"
+    },
+    "open": {
+     "type": "boolean"
+    },
+    "rate": {
+     "type": "number"
+    },
+    "skipCitations": {
+     "type": "boolean"
+    },
+    "state": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "readAloud.playPause": {
+  "description": "Pauses or resumes reading aloud.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "count": {
+     "type": "number"
+    },
+    "current": {
+     "additionalProperties": true,
+     "properties": {
+      "end": {
+       "additionalProperties": true,
+       "properties": {
+        "off": {
+         "type": "number"
+        },
+        "path": {
+         "items": {
+          "type": "number"
+         },
+         "type": "array"
+        },
+        "story": {
+         "type": "string"
+        }
+       },
+       "type": "object"
+      },
+      "start": {
+       "additionalProperties": true,
+       "properties": {
+        "off": {
+         "type": "number"
+        },
+        "path": {
+         "items": {
+          "type": "number"
+         },
+         "type": "array"
+        },
+        "story": {
+         "type": "string"
+        }
+       },
+       "type": "object"
+      },
+      "text": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "error": {
+     "type": "json"
+    },
+    "index": {
+     "type": "number"
+    },
+    "open": {
+     "type": "boolean"
+    },
+    "rate": {
+     "type": "number"
+    },
+    "skipCitations": {
+     "type": "boolean"
+    },
+    "state": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "readAloud.previous": {
+  "description": "Moves reading aloud to the previous sentence.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "count": {
+     "type": "number"
+    },
+    "current": {
+     "type": "json"
+    },
+    "error": {
+     "type": "json"
+    },
+    "index": {
+     "type": "number"
+    },
+    "open": {
+     "type": "boolean"
+    },
+    "rate": {
+     "type": "number"
+    },
+    "skipCitations": {
+     "type": "boolean"
+    },
+    "state": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "readAloud.skipCitations": {
+  "description": "Sets whether reading aloud skips citations and the bibliography.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "count": {
+     "type": "number"
+    },
+    "current": {
+     "type": "json"
+    },
+    "error": {
+     "type": "json"
+    },
+    "index": {
+     "type": "number"
+    },
+    "open": {
+     "type": "boolean"
+    },
+    "rate": {
+     "type": "number"
+    },
+    "skipCitations": {
+     "type": "boolean"
+    },
+    "state": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "readAloud.speed": {
+  "description": "Sets the reading-aloud speed from 0.5 to 3 (1 is normal).",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "count": {
+     "type": "number"
+    },
+    "current": {
+     "type": "json"
+    },
+    "error": {
+     "type": "json"
+    },
+    "index": {
+     "type": "number"
+    },
+    "open": {
+     "type": "boolean"
+    },
+    "rate": {
+     "type": "number"
+    },
+    "skipCitations": {
+     "type": "boolean"
+    },
+    "state": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "readAloud.status": {
+  "description": "Answers whether reading aloud is running, its speed and the sentence it is on.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "count": {
+     "type": "number"
+    },
+    "current": {
+     "type": "json"
+    },
+    "error": {
+     "type": "json"
+    },
+    "index": {
+     "type": "number"
+    },
+    "open": {
+     "type": "boolean"
+    },
+    "rate": {
+     "type": "number"
+    },
+    "skipCitations": {
+     "type": "boolean"
+    },
+    "state": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "readAloud.stop": {
+  "description": "Stops reading the document aloud.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "count": {
+     "type": "number"
+    },
+    "current": {
+     "type": "json"
+    },
+    "error": {
+     "type": "json"
+    },
+    "index": {
+     "type": "number"
+    },
+    "open": {
+     "type": "boolean"
+    },
+    "rate": {
+     "type": "number"
+    },
+    "skipCitations": {
+     "type": "boolean"
+    },
+    "state": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "references.addText": {
+  "description": "Sets the table-of-contents level of the paragraphs at the selection (0 keeps them out).",
+  "params": {
+   "level": {
+    "description": "0 (left out) or 1 to 9",
+    "type": "integer"
+   }
+  }
+ },
+ "references.bibliography": {
+  "description": "Inserts a bibliography of the cited sources at the caret with a title."
+ },
+ "references.caption": {
+  "description": "Inserts a numbered caption (Figure, Table, Equation) with text at the caret or below the selected object."
+ },
+ "references.citation": {
+  "description": "Inserts a citation of a source (by tag, adding the source when given) at the caret, with pages.",
+  "params": {
+   "source": {
+    "additionalProperties": true,
+    "description": "a bibliography source",
+    "properties": {
+     "author": {
+      "type": "string"
+     },
+     "city": {
+      "type": "string"
+     },
+     "journal": {
+      "type": "string"
+     },
+     "kind": {
+      "type": "string"
+     },
+     "publisher": {
+      "type": "string"
+     },
+     "tag": {
+      "type": "string"
+     },
+     "title": {
+      "type": "string"
+     },
+     "url": {
+      "type": "string"
+     },
+     "volume": {
+      "type": "string"
+     },
+     "year": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   }
+  }
+ },
+ "references.citationStyle": {
+  "description": "Sets the citation and bibliography style (APA, MLA, Chicago, IEEE)."
+ },
+ "references.endnote": {
+  "description": "Inserts an endnote reference at the caret with the note's text; with text the caret stays after the reference, without it goes into the note (insert.closeHeader returns to the reference)."
+ },
+ "references.footnote": {
+  "description": "Inserts a footnote reference at the caret with the note's text; with text the caret stays after the reference, without it goes into the note (insert.closeHeader returns to the reference)."
+ },
+ "references.index": {
+  "description": "Inserts an index of the marked entries at the caret."
+ },
+ "references.markCitation": {
+  "description": "Marks the selection (or a given text) as a citation for the table of authorities."
+ },
+ "references.markEntry": {
+  "description": "Marks the selection (or a given entry text) as an index entry."
+ },
+ "references.nextFootnote": {
+  "description": "Moves to the next footnote reference and answers it.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "references.noteOptions": {
+  "description": "Sets footnote and endnote number formats, starting numbers and placement.",
+  "params": {
+   "endnoteFormat": {
+    "enum": [
+     "decimal",
+     "lowerRoman",
+     "upperRoman",
+     "lowerLetter",
+     "upperLetter"
+    ],
+    "type": "string"
+   }
+  }
+ },
+ "references.notes": {
+  "description": "Lists the footnotes and endnotes with their numbers and text.",
+  "output": {
+   "type": "array"
+  }
+ },
+ "references.removeToc": {
+  "description": "Removes the table of contents."
+ },
+ "references.researcher": {
+  "description": "Opens the Researcher pane in the editor.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "available": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "references.sources": {
+  "description": "Adds or removes a bibliography source and answers the source list.",
+  "params": {
+   "add": {
+    "additionalProperties": true,
+    "description": "a bibliography source",
+    "properties": {
+     "author": {
+      "type": "string"
+     },
+     "city": {
+      "type": "string"
+     },
+     "journal": {
+      "type": "string"
+     },
+     "kind": {
+      "type": "string"
+     },
+     "publisher": {
+      "type": "string"
+     },
+     "tag": {
+      "type": "string"
+     },
+     "title": {
+      "type": "string"
+     },
+     "url": {
+      "type": "string"
+     },
+     "volume": {
+      "type": "string"
+     },
+     "year": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   },
+   "remove": {
+    "description": "tag of the source to remove",
+    "type": "string"
+   }
+  }
+ },
+ "references.tableOfAuthorities": {
+  "description": "Inserts a table of authorities from the marked citations at the caret."
+ },
+ "references.tableOfFigures": {
+  "description": "Inserts a table of figures (or tables, or equations) built from captions at the caret."
+ },
+ "references.toc": {
+  "description": "Inserts a table of contents at the caret built from headings down to a level, with a title.",
+  "params": {
+   "levels": {
+    "description": "heading levels to include, 1 to 9 (default 3)",
+    "type": "integer"
+   }
+  }
+ },
+ "references.updateFields": {
+  "description": "Updates the fields in the selection (or the whole document): page numbers, dates, cross-references, tables of contents."
+ },
+ "references.updateFigures": {
+  "description": "Rebuilds the table of figures from the current captions."
+ },
+ "references.updateIndex": {
+  "description": "Rebuilds the index from the marked entries."
+ },
+ "references.updateToc": {
+  "description": "Rebuilds the table of contents from the current headings and page numbers."
+ },
+ "review.accept": {
+  "description": "Accepts the tracked change at the caret or in the selection."
+ },
+ "review.acceptAll": {
+  "description": "Accepts every tracked change in the document."
+ },
+ "review.addToDictionary": {
+  "description": "Adds a word (default: the word at the caret) to the dictionary so it is no longer flagged.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "added": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "review.applySuggestion": {
+  "description": "Replaces the flagged word at the caret with a suggestion text."
+ },
+ "review.changes": {
+  "description": "Lists the tracked changes with their kind, author, date and text.",
+  "output": {
+   "type": "array"
+  }
+ },
+ "review.combine": {
+  "description": "Combines another document's tracked changes and comments into this one."
+ },
+ "review.comments": {
+  "description": "Lists the document's comments with their ids, authors, text and the text they are on.",
+  "output": {
+   "type": "array"
+  }
+ },
+ "review.compare": {
+  "description": "Compares the document with a revised version (a file or text) and marks the differences as tracked changes."
+ },
+ "review.deleteComment": {
+  "description": "Deletes a comment by id, the comment at the caret, or all comments."
+ },
+ "review.editComment": {
+  "description": "Replaces the text of a comment by its id."
+ },
+ "review.editor": {
+  "description": "Answers the Editor pane's summary of spelling, grammar and refinement issues.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "done": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "review.hideInk": {
+  "description": "Hides or shows ink in the editor.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "value": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "review.ignoreAll": {
+  "description": "Ignores every occurrence of the flagged word at the caret in this document.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "ignored": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "review.issues": {
+  "description": "Lists every spelling and grammar issue in the document with its position and suggestions.",
+  "output": {
+   "type": "array"
+  }
+ },
+ "review.language": {
+  "description": "Sets the proofing language of the selection, or marks it not to be proofed."
+ },
+ "review.markup": {
+  "description": "Steps how revisions display in the editor (simple, all markup, no markup, original).",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "showMarkup": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "review.newComment": {
+  "description": "Adds a comment with text on the selection (or the word at the caret)."
+ },
+ "review.nextChange": {
+  "description": "Moves to the next tracked change and answers it.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "review.nextComment": {
+  "description": "Moves to the next comment and answers it.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "review.previousChange": {
+  "description": "Moves to the previous tracked change and answers it.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "review.previousComment": {
+  "description": "Moves to the previous comment and answers it.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "review.proofing": {
+  "description": "Toggles checking spelling as you type in the editor.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "value": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "review.readAloud": {
+  "description": "Starts reading the document aloud from the caret, optionally skipping citations.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "count": {
+     "type": "number"
+    },
+    "current": {
+     "additionalProperties": true,
+     "properties": {
+      "end": {
+       "additionalProperties": true,
+       "properties": {
+        "off": {
+         "type": "number"
+        },
+        "path": {
+         "items": {
+          "type": "number"
+         },
+         "type": "array"
+        },
+        "story": {
+         "type": "string"
+        }
+       },
+       "type": "object"
+      },
+      "start": {
+       "additionalProperties": true,
+       "properties": {
+        "off": {
+         "type": "number"
+        },
+        "path": {
+         "items": {
+          "type": "number"
+         },
+         "type": "array"
+        },
+        "story": {
+         "type": "string"
+        }
+       },
+       "type": "object"
+      },
+      "text": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "error": {
+     "type": "json"
+    },
+    "index": {
+     "type": "number"
+    },
+    "open": {
+     "type": "boolean"
+    },
+    "rate": {
+     "type": "number"
+    },
+    "skipCitations": {
+     "type": "boolean"
+    },
+    "state": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "review.reject": {
+  "description": "Rejects the tracked change at the caret or in the selection."
+ },
+ "review.rejectAll": {
+  "description": "Rejects every tracked change in the document."
+ },
+ "review.reply": {
+  "description": "Replies to a comment by its id."
+ },
+ "review.resolveComment": {
+  "description": "Marks the comment at the caret as resolved."
+ },
+ "review.restrict": {
+  "description": "Restricts editing to read only, comments, tracked changes or forms, or removes the restriction."
+ },
+ "review.showMarkup": {
+  "description": "Toggles showing revision markup in the editor.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "value": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "review.spelling": {
+  "description": "Answers the first spelling or grammar issue from the caret onward, with suggestions; changes nothing.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "done": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "review.suggestions": {
+  "description": "Answers spelling suggestions for the word at the caret or at a position.",
+  "output": {
+   "oneOf": [
+    {
+     "additionalProperties": true,
+     "properties": {
+      "end": {
+       "additionalProperties": true,
+       "properties": {
+        "off": {
+         "type": "number"
+        },
+        "path": {
+         "items": {
+          "type": "number"
+         },
+         "type": "array"
+        },
+        "story": {
+         "type": "string"
+        }
+       },
+       "type": "object"
+      },
+      "kind": {
+       "type": "string"
+      },
+      "message": {
+       "type": "string"
+      },
+      "start": {
+       "additionalProperties": true,
+       "properties": {
+        "off": {
+         "type": "number"
+        },
+        "path": {
+         "items": {
+          "type": "number"
+         },
+         "type": "array"
+        },
+        "story": {
+         "type": "string"
+        }
+       },
+       "type": "object"
+      },
+      "suggestions": {
+       "items": {
+        "type": "string"
+       },
+       "type": "array"
+      },
+      "text": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    {
+     "description": "no spelling or grammar issue there",
+     "type": "null"
+    }
+   ]
+  },
+  "params": {
+   "pos": {
+    "additionalProperties": true,
+    "description": "a position as document.selection answers (or {\"block\", \"off\"?} in the body)",
+    "properties": {
+     "off": {
+      "description": "character offset in the paragraph",
+      "type": "integer"
+     },
+     "path": {
+      "description": "paragraph path counted from 0",
+      "items": {
+       "type": "integer"
+      },
+      "type": "array"
+     },
+     "story": {
+      "description": "\"body\", or {\"part\": n} for a header, footer, note, comment or text box story",
+      "oneOf": [
+       {
+        "enum": [
+         "body"
+        ],
+        "type": "string"
+       },
+       {
+        "additionalProperties": false,
+        "properties": {
+         "part": {
+          "description": "header, footer, footnote, endnote, comment or text box story number",
+          "type": "integer"
+         }
+        },
+        "type": "object"
+       }
+      ]
+     }
+    },
+    "type": "object"
+   }
+  }
+ },
+ "review.thesaurus": {
+  "description": "Answers synonyms for the word at the caret.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "synonyms": {
+     "type": "array"
+    },
+    "word": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "review.trackChanges": {
+  "description": "Turns Track Changes on or off; without value it toggles. Tracked edits are kept as revisions to accept or reject."
+ },
+ "review.trackingOptions": {
+  "description": "Sets which revisions show in the editor (comments, ink, insertions and deletions, formatting, balloons).",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "balloons": {
+     "type": "string"
+    },
+    "changedLines": {
+     "type": "string"
+    },
+    "changedLinesColor": {
+     "type": "string"
+    },
+    "comments": {
+     "type": "boolean"
+    },
+    "deleteColor": {
+     "type": "string"
+    },
+    "deleteMark": {
+     "type": "string"
+    },
+    "formatting": {
+     "type": "boolean"
+    },
+    "ink": {
+     "type": "boolean"
+    },
+    "insertColor": {
+     "type": "string"
+    },
+    "insertMark": {
+     "type": "string"
+    },
+    "insertionsDeletions": {
+     "type": "boolean"
+    },
+    "trackFormatting": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "review.wordCount": {
+  "description": "Answers the document's (or selection's) pages, words, characters, paragraphs and lines, optionally counting text boxes; each Chinese or Japanese character counts as a word, as in Word.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "characters": {
+     "type": "number"
+    },
+    "charactersWithSpaces": {
+     "type": "number"
+    },
+    "includeTextBoxes": {
+     "type": "boolean"
+    },
+    "lines": {
+     "type": "number"
+    },
+    "pages": {
+     "type": "number"
+    },
+    "paragraphs": {
+     "type": "number"
+    },
+    "words": {
+     "type": "number"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "select.addObject": {
+  "description": "Adds an object (by position or Selection Pane index) to the object selection.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "selected": {
+     "items": {
+      "additionalProperties": true,
+      "properties": {
+       "off": {
+        "type": "number"
+       },
+       "path": {
+        "items": {
+         "type": "number"
+        },
+        "type": "array"
+       },
+       "story": {
+        "type": "string"
+       }
+      },
+      "type": "object"
+     },
+     "type": "array"
+    }
+   },
+   "type": "object"
+  },
+  "params": {
+   "pos": {
+    "additionalProperties": true,
+    "description": "a position as document.selection answers (or {\"block\", \"off\"?} in the body)",
+    "properties": {
+     "off": {
+      "description": "character offset in the paragraph",
+      "type": "integer"
+     },
+     "path": {
+      "description": "paragraph path counted from 0",
+      "items": {
+       "type": "integer"
+      },
+      "type": "array"
+     },
+     "story": {
+      "description": "\"body\", or {\"part\": n} for a header, footer, note, comment or text box story",
+      "oneOf": [
+       {
+        "enum": [
+         "body"
+        ],
+        "type": "string"
+       },
+       {
+        "additionalProperties": false,
+        "properties": {
+         "part": {
+          "description": "header, footer, footnote, endnote, comment or text box story number",
+          "type": "integer"
+         }
+        },
+        "type": "object"
+       }
+      ]
+     }
+    },
+    "type": "object"
+   }
+  }
+ },
+ "select.all": {
+  "description": "Selects the whole body of the document (Ctrl+A).",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "select.collapse": {
+  "description": "Collapses the selection to the caret.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "select.column": {
+  "description": "Makes a rectangular (column) selection between two positions or two page points, as Alt+drag does.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "columnMode": {
+     "type": "boolean"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "rows": {
+     "items": {
+      "type": "string"
+     },
+     "type": "array"
+    }
+   },
+   "type": "object"
+  },
+  "params": {
+   "anchor": {
+    "additionalProperties": true,
+    "description": "a position as document.selection answers",
+    "properties": {
+     "off": {
+      "description": "character offset in the paragraph",
+      "type": "integer"
+     },
+     "path": {
+      "description": "paragraph path counted from 0",
+      "items": {
+       "type": "integer"
+      },
+      "type": "array"
+     },
+     "story": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   },
+   "focus": {
+    "additionalProperties": true,
+    "description": "a position as document.selection answers",
+    "properties": {
+     "off": {
+      "description": "character offset in the paragraph",
+      "type": "integer"
+     },
+     "path": {
+      "description": "paragraph path counted from 0",
+      "items": {
+       "type": "integer"
+      },
+      "type": "array"
+     },
+     "story": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   }
+  }
+ },
+ "select.extend": {
+  "description": "Turns on extend mode in the editor, so caret moves grow the selection.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "select.line": {
+  "description": "Selects the line the caret is on.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "select.objects": {
+  "description": "Selects an object by its Selection Pane index, or every object.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "select.paragraph": {
+  "description": "Selects the paragraph at the caret.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "select.range": {
+  "description": "Selects from an anchor position to a focus position (positions as document.selection answers).",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  },
+  "params": {
+   "anchor": {
+    "additionalProperties": true,
+    "description": "a position as document.selection answers",
+    "properties": {
+     "off": {
+      "description": "character offset in the paragraph",
+      "type": "integer"
+     },
+     "path": {
+      "description": "paragraph path counted from 0",
+      "items": {
+       "type": "integer"
+      },
+      "type": "array"
+     },
+     "story": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   },
+   "focus": {
+    "additionalProperties": true,
+    "description": "a position as document.selection answers",
+    "properties": {
+     "off": {
+      "description": "character offset in the paragraph",
+      "type": "integer"
+     },
+     "path": {
+      "description": "paragraph path counted from 0",
+      "items": {
+       "type": "integer"
+      },
+      "type": "array"
+     },
+     "story": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   }
+  }
+ },
+ "select.sentence": {
+  "description": "Selects the sentence at the caret.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "select.similar": {
+  "description": "Selects all text with the same formatting as the selection.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "runs": {
+     "type": "number"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "select.text": {
+  "description": "Finds a text in the document and selects its first (or nth) occurrence; the usual way to target words before formatting them.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "select.word": {
+  "description": "Selects the word at the caret.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "shape.change": {
+  "description": "Changes the selected shape to another preset kind, keeping its size and text."
+ },
+ "shape.effects": {
+  "description": "Sets shadow, glow, soft edge and reflection effects on the selected shape.",
+  "params": {
+   "glow": {
+    "oneOf": [
+     {
+      "description": "glow size in points",
+      "type": "number"
+     },
+     {
+      "enum": [
+       "none"
+      ],
+      "type": "string"
+     },
+     {
+      "additionalProperties": true,
+      "description": "{color? (\"RRGGBB\"), size? (pt), transparency? (%)}",
+      "type": "object"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   },
+   "shadow": {
+    "oneOf": [
+     {
+      "description": "a shadow preset name, or \"none\"",
+      "type": "string"
+     },
+     {
+      "description": "true: the default shadow, false: none",
+      "type": "boolean"
+     },
+     {
+      "additionalProperties": true,
+      "description": "{preset?, color? (\"RRGGBB\"), transparency? (%), blur? (pt), distance? (pt), angle? (deg)}",
+      "type": "object"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   },
+   "softEdge": {
+    "oneOf": [
+     {
+      "description": "soft edge radius in points",
+      "type": "number"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   }
+  }
+ },
+ "shape.fill": {
+  "description": "Sets the selected shape's fill colour as RRGGBB, or removes the fill with null.",
+  "params": {
+   "color": {
+    "oneOf": [
+     {
+      "description": "RRGGBB",
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   }
+  }
+ },
+ "shape.outline": {
+  "description": "Sets the selected shape's outline colour and width, or removes it with null.",
+  "params": {
+   "color": {
+    "oneOf": [
+     {
+      "description": "RRGGBB",
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   }
+  }
+ },
+ "styles.addToGallery": {
+  "description": "Adds the selection's style to the Styles gallery."
+ },
+ "styles.apply": {
+  "description": "Opens the Apply Styles box in the editor, or applies a style by name when given.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "pane": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "styles.create": {
+  "description": "Creates a new paragraph style, based on another style or on the selection's formatting."
+ },
+ "styles.delete": {
+  "description": "Deletes a custom style; paragraphs that used it fall back to its base style."
+ },
+ "styles.inspect": {
+  "description": "Answers the formatting layers at the selection: paragraph style, direct paragraph formatting, character style and direct character formatting.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "character": {
+     "additionalProperties": true,
+     "properties": {
+      "direct": {
+       "items": {
+        "additionalProperties": true,
+        "properties": {
+         "prop": {
+          "type": "string"
+         },
+         "value": {
+          "type": "string"
+         }
+        },
+        "type": "object"
+       },
+       "type": "array"
+      },
+      "style": {
+       "type": "json"
+      },
+      "styleName": {
+       "type": "json"
+      }
+     },
+     "type": "object"
+    },
+    "paragraph": {
+     "additionalProperties": true,
+     "properties": {
+      "direct": {
+       "type": "array"
+      },
+      "style": {
+       "type": "string"
+      },
+      "styleName": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "styles.inspector": {
+  "description": "Shows or hides the Style Inspector pane in the editor.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "character": {
+     "additionalProperties": true,
+     "properties": {
+      "direct": {
+       "items": {
+        "additionalProperties": true,
+        "properties": {
+         "prop": {
+          "type": "string"
+         },
+         "value": {
+          "type": "string"
+         }
+        },
+        "type": "object"
+       },
+       "type": "array"
+      },
+      "style": {
+       "type": "json"
+      },
+      "styleName": {
+       "type": "json"
+      }
+     },
+     "type": "object"
+    },
+    "pane": {
+     "type": "boolean"
+    },
+    "paragraph": {
+     "additionalProperties": true,
+     "properties": {
+      "direct": {
+       "type": "array"
+      },
+      "style": {
+       "type": "string"
+      },
+      "styleName": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "styles.inspectorClear": {
+  "description": "Clears one formatting layer at the selection (paragraph style, paragraph formatting, character style or character formatting)."
+ },
+ "styles.list": {
+  "description": "Lists the styles shown in the Styles gallery with their names and ids.",
+  "output": {
+   "items": {
+    "additionalProperties": true,
+    "properties": {
+     "basedOn": {
+      "type": "json"
+     },
+     "id": {
+      "type": "string"
+     },
+     "kind": {
+      "type": "string"
+     },
+     "name": {
+      "type": "string"
+     },
+     "quick": {
+      "type": "boolean"
+     }
+    },
+    "type": "object"
+   },
+   "type": "array"
+  }
+ },
+ "styles.manage": {
+  "description": "Lists the document's styles with their id, name, type and whether they show in the gallery, sorted as recommended or alphabetically.",
+  "output": {
+   "items": {
+    "additionalProperties": true,
+    "properties": {
+     "basedOn": {
+      "type": "json"
+     },
+     "builtIn": {
+      "type": "boolean"
+     },
+     "format": {
+      "type": "json"
+     },
+     "hidden": {
+      "type": "boolean"
+     },
+     "id": {
+      "type": "string"
+     },
+     "inGallery": {
+      "type": "boolean"
+     },
+     "name": {
+      "type": "string"
+     },
+     "priority": {
+      "type": "json"
+     },
+     "type": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   },
+   "type": "array"
+  }
+ },
+ "styles.modify": {
+  "description": "Changes a style's character or paragraph properties, its name or its next style; every paragraph using it changes.",
+  "params": {
+   "chr": {
+    "additionalProperties": true,
+    "description": "character properties as format.state answers them (font, size, bold, italic, color…); colours are \"RRGGBB\" (color also \"auto\")",
+    "type": "object"
+   },
+   "para": {
+    "additionalProperties": true,
+    "description": "paragraph properties as para.dialog answers them (alignment, indents, spacing…); colours (shading, border colors) are \"RRGGBB\"",
+    "type": "object"
+   }
+  }
+ },
+ "styles.pane": {
+  "description": "Shows or hides the Styles pane in the editor.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "styles.setVisibility": {
+  "description": "Shows or hides a style in the Styles gallery and the style lists."
+ },
+ "styles.updateToMatch": {
+  "description": "Updates a style (default: the selection's) to match the selection's formatting."
+ },
+ "table.autofit": {
+  "description": "Autofits the table at the caret to its contents, to the window, or fixes its column widths."
+ },
+ "table.borderPainter": {
+  "description": "Toggles the border painter tool in the editor."
+ },
+ "table.borders": {
+  "description": "Applies borders (all, outside, inside, none, a single side) to the selected cells' edges, with width and colour; with the whole table selected, or only a caret in it, to the table."
+ },
+ "table.cellAlign": {
+  "description": "Sets the text alignment inside the selected table cells (top left to bottom right)."
+ },
+ "table.cellMargins": {
+  "description": "Sets the default cell margins of the table at the caret in points."
+ },
+ "table.columnWidth": {
+  "description": "Sets the width in points of the caret cell's column."
+ },
+ "table.deleteCells": {
+  "description": "Deletes the selected cells of the table, shifting the others."
+ },
+ "table.deleteColumn": {
+  "description": "Deletes the selected columns of the table at the caret."
+ },
+ "table.deleteRow": {
+  "description": "Deletes the selected rows of the table at the caret."
+ },
+ "table.deleteStyle": {
+  "description": "Deletes a custom table style; default: the current table's style."
+ },
+ "table.deleteTable": {
+  "description": "Deletes the whole table at the caret."
+ },
+ "table.distributeColumns": {
+  "description": "Gives the selected table columns equal widths."
+ },
+ "table.distributeRows": {
+  "description": "Gives the selected table rows equal heights."
+ },
+ "table.draw": {
+  "description": "Draws a table or a cell border as a pen stroke between two points on a page.",
+  "params": {
+   "story": {
+    "description": "\"body\", or {\"part\": n} for a header, footer, note, comment or text box story",
+    "oneOf": [
+     {
+      "enum": [
+       "body"
+      ],
+      "type": "string"
+     },
+     {
+      "additionalProperties": false,
+      "properties": {
+       "part": {
+        "description": "header, footer, footnote, endnote, comment or text box story number",
+        "type": "integer"
+       }
+      },
+      "type": "object"
+     }
+    ]
+   }
+  }
+ },
+ "table.eraser": {
+  "description": "Removes the border between two cells within 4 points of a point on a page, merging them."
+ },
+ "table.formula": {
+  "description": "Inserts a formula field into the table cell at the caret and answers its result: arithmetic (+ - * / ^ %, comparisons), cell references and ranges (B2, B2:C4, B:B, 3:3), ABOVE, BELOW, LEFT and RIGHT, the functions SUM, AVERAGE, COUNT, MAX, MIN, PRODUCT, ABS, INT, MOD, ROUND, SIGN, IF, AND, OR and NOT, and a \\# number picture (=SUM(ABOVE) \\# \"£#,##0.00\"). Cells read as numbers allow currency signs and thousands separators (£1,360.50). Update Field (F9) computes it again."
+ },
+ "table.fromText": {
+  "description": "Converts the selected text, separated by tabs or commas, into a table."
+ },
+ "table.insertColumnLeft": {
+  "description": "Inserts a column to the left of the caret's column in its table."
+ },
+ "table.insertColumnRight": {
+  "description": "Inserts a column to the right of the caret's column in its table."
+ },
+ "table.insertRowAbove": {
+  "description": "Inserts a row above the row at the caret in its table."
+ },
+ "table.insertRowBelow": {
+  "description": "Inserts a row below the row at the caret in its table."
+ },
+ "table.look": {
+  "description": "Turns the table style options of the table at the caret on or off: header row, total row, banded rows and columns, first and last column."
+ },
+ "table.merge": {
+  "description": "Merges the selected table cells into one cell."
+ },
+ "table.modifyStyle": {
+  "description": "Changes a table style's name, base style or region formatting; default: the current table's style.",
+  "params": {
+   "bandedColumns": {
+    "additionalProperties": true,
+    "description": "a table style region's shortcuts",
+    "properties": {
+     "bold": {
+      "type": "boolean"
+     },
+     "borderColor": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "borderWidth": {
+      "description": "points",
+      "type": "number"
+     },
+     "borders": {
+      "description": "true: single lines, false: none, null: inherit",
+      "oneOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "color": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "fill": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "font": {
+      "type": "string"
+     },
+     "italic": {
+      "type": "boolean"
+     },
+     "size": {
+      "description": "points",
+      "type": "number"
+     }
+    },
+    "type": "object"
+   },
+   "bandedRows": {
+    "additionalProperties": true,
+    "description": "a table style region's shortcuts",
+    "properties": {
+     "bold": {
+      "type": "boolean"
+     },
+     "borderColor": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "borderWidth": {
+      "description": "points",
+      "type": "number"
+     },
+     "borders": {
+      "description": "true: single lines, false: none, null: inherit",
+      "oneOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "color": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "fill": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "font": {
+      "type": "string"
+     },
+     "italic": {
+      "type": "boolean"
+     },
+     "size": {
+      "description": "points",
+      "type": "number"
+     }
+    },
+    "type": "object"
+   },
+   "firstColumn": {
+    "additionalProperties": true,
+    "description": "a table style region's shortcuts",
+    "properties": {
+     "bold": {
+      "type": "boolean"
+     },
+     "borderColor": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "borderWidth": {
+      "description": "points",
+      "type": "number"
+     },
+     "borders": {
+      "description": "true: single lines, false: none, null: inherit",
+      "oneOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "color": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "fill": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "font": {
+      "type": "string"
+     },
+     "italic": {
+      "type": "boolean"
+     },
+     "size": {
+      "description": "points",
+      "type": "number"
+     }
+    },
+    "type": "object"
+   },
+   "headerRow": {
+    "additionalProperties": true,
+    "description": "a table style region's shortcuts",
+    "properties": {
+     "bold": {
+      "type": "boolean"
+     },
+     "borderColor": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "borderWidth": {
+      "description": "points",
+      "type": "number"
+     },
+     "borders": {
+      "description": "true: single lines, false: none, null: inherit",
+      "oneOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "color": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "fill": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "font": {
+      "type": "string"
+     },
+     "italic": {
+      "type": "boolean"
+     },
+     "size": {
+      "description": "points",
+      "type": "number"
+     }
+    },
+    "type": "object"
+   },
+   "lastColumn": {
+    "additionalProperties": true,
+    "description": "a table style region's shortcuts",
+    "properties": {
+     "bold": {
+      "type": "boolean"
+     },
+     "borderColor": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "borderWidth": {
+      "description": "points",
+      "type": "number"
+     },
+     "borders": {
+      "description": "true: single lines, false: none, null: inherit",
+      "oneOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "color": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "fill": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "font": {
+      "type": "string"
+     },
+     "italic": {
+      "type": "boolean"
+     },
+     "size": {
+      "description": "points",
+      "type": "number"
+     }
+    },
+    "type": "object"
+   },
+   "lastRow": {
+    "additionalProperties": true,
+    "description": "a table style region's shortcuts",
+    "properties": {
+     "bold": {
+      "type": "boolean"
+     },
+     "borderColor": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "borderWidth": {
+      "description": "points",
+      "type": "number"
+     },
+     "borders": {
+      "description": "true: single lines, false: none, null: inherit",
+      "oneOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "color": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "fill": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "font": {
+      "type": "string"
+     },
+     "italic": {
+      "type": "boolean"
+     },
+     "size": {
+      "description": "points",
+      "type": "number"
+     }
+    },
+    "type": "object"
+   },
+   "para": {
+    "additionalProperties": true,
+    "description": "paragraph properties as para.dialog answers them (alignment, indents, spacing…)",
+    "type": "object"
+   },
+   "wholeTable": {
+    "additionalProperties": true,
+    "description": "a table style region's shortcuts",
+    "properties": {
+     "bold": {
+      "type": "boolean"
+     },
+     "borderColor": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "borderWidth": {
+      "description": "points",
+      "type": "number"
+     },
+     "borders": {
+      "description": "true: single lines, false: none, null: inherit",
+      "oneOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "color": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "fill": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "font": {
+      "type": "string"
+     },
+     "italic": {
+      "type": "boolean"
+     },
+     "size": {
+      "description": "points",
+      "type": "number"
+     }
+    },
+    "type": "object"
+   }
+  }
+ },
+ "table.newStyle": {
+  "description": "Creates a table style with formatting for the whole table and its regions (header row, last row, banded rows…).",
+  "params": {
+   "bandedColumns": {
+    "additionalProperties": true,
+    "description": "a table style region's shortcuts",
+    "properties": {
+     "bold": {
+      "type": "boolean"
+     },
+     "borderColor": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "borderWidth": {
+      "description": "points",
+      "type": "number"
+     },
+     "borders": {
+      "description": "true: single lines, false: none, null: inherit",
+      "oneOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "color": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "fill": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "font": {
+      "type": "string"
+     },
+     "italic": {
+      "type": "boolean"
+     },
+     "size": {
+      "description": "points",
+      "type": "number"
+     }
+    },
+    "type": "object"
+   },
+   "bandedRows": {
+    "additionalProperties": true,
+    "description": "a table style region's shortcuts",
+    "properties": {
+     "bold": {
+      "type": "boolean"
+     },
+     "borderColor": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "borderWidth": {
+      "description": "points",
+      "type": "number"
+     },
+     "borders": {
+      "description": "true: single lines, false: none, null: inherit",
+      "oneOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "color": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "fill": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "font": {
+      "type": "string"
+     },
+     "italic": {
+      "type": "boolean"
+     },
+     "size": {
+      "description": "points",
+      "type": "number"
+     }
+    },
+    "type": "object"
+   },
+   "firstColumn": {
+    "additionalProperties": true,
+    "description": "a table style region's shortcuts",
+    "properties": {
+     "bold": {
+      "type": "boolean"
+     },
+     "borderColor": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "borderWidth": {
+      "description": "points",
+      "type": "number"
+     },
+     "borders": {
+      "description": "true: single lines, false: none, null: inherit",
+      "oneOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "color": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "fill": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "font": {
+      "type": "string"
+     },
+     "italic": {
+      "type": "boolean"
+     },
+     "size": {
+      "description": "points",
+      "type": "number"
+     }
+    },
+    "type": "object"
+   },
+   "headerRow": {
+    "additionalProperties": true,
+    "description": "a table style region's shortcuts",
+    "properties": {
+     "bold": {
+      "type": "boolean"
+     },
+     "borderColor": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "borderWidth": {
+      "description": "points",
+      "type": "number"
+     },
+     "borders": {
+      "description": "true: single lines, false: none, null: inherit",
+      "oneOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "color": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "fill": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "font": {
+      "type": "string"
+     },
+     "italic": {
+      "type": "boolean"
+     },
+     "size": {
+      "description": "points",
+      "type": "number"
+     }
+    },
+    "type": "object"
+   },
+   "lastColumn": {
+    "additionalProperties": true,
+    "description": "a table style region's shortcuts",
+    "properties": {
+     "bold": {
+      "type": "boolean"
+     },
+     "borderColor": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "borderWidth": {
+      "description": "points",
+      "type": "number"
+     },
+     "borders": {
+      "description": "true: single lines, false: none, null: inherit",
+      "oneOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "color": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "fill": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "font": {
+      "type": "string"
+     },
+     "italic": {
+      "type": "boolean"
+     },
+     "size": {
+      "description": "points",
+      "type": "number"
+     }
+    },
+    "type": "object"
+   },
+   "lastRow": {
+    "additionalProperties": true,
+    "description": "a table style region's shortcuts",
+    "properties": {
+     "bold": {
+      "type": "boolean"
+     },
+     "borderColor": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "borderWidth": {
+      "description": "points",
+      "type": "number"
+     },
+     "borders": {
+      "description": "true: single lines, false: none, null: inherit",
+      "oneOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "color": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "fill": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "font": {
+      "type": "string"
+     },
+     "italic": {
+      "type": "boolean"
+     },
+     "size": {
+      "description": "points",
+      "type": "number"
+     }
+    },
+    "type": "object"
+   },
+   "para": {
+    "additionalProperties": true,
+    "description": "paragraph properties as para.dialog answers them (alignment, indents, spacing…); colours (shading, border colors) are \"RRGGBB\"; as in Word, a paragraph style that sets a property itself (Normal included) wins over the table style's",
+    "type": "object"
+   },
+   "wholeTable": {
+    "additionalProperties": true,
+    "description": "a table style region's shortcuts",
+    "properties": {
+     "bold": {
+      "type": "boolean"
+     },
+     "borderColor": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "borderWidth": {
+      "description": "points",
+      "type": "number"
+     },
+     "borders": {
+      "description": "true: single lines, false: none, null: inherit",
+      "oneOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "color": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "fill": {
+      "oneOf": [
+       {
+        "description": "RRGGBB",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "font": {
+      "type": "string"
+     },
+     "italic": {
+      "type": "boolean"
+     },
+     "size": {
+      "description": "points",
+      "type": "number"
+     }
+    },
+    "type": "object"
+   }
+  }
+ },
+ "table.properties": {
+  "description": "Sets the properties of the table at the caret: alignment, width, indent, row and cell options.",
+  "params": {
+   "cellWidth": {
+    "description": "the caret cell's preferred width in points; null clears it (automatic)",
+    "oneOf": [
+     {
+      "description": "the caret cell's preferred width in points",
+      "type": "number"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   },
+   "rowHeight": {
+    "description": "the row height in points; null clears it (automatic)",
+    "oneOf": [
+     {
+      "description": "the row height in points",
+      "type": "number"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   },
+   "width": {
+    "description": "the table's preferred width in points; null clears it (automatic)",
+    "oneOf": [
+     {
+      "description": "the table's preferred width in points",
+      "type": "number"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   }
+  }
+ },
+ "table.quick": {
+  "description": "Inserts a ready-made table (calendar, tabular list or matrix) at the caret."
+ },
+ "table.repeatHeader": {
+  "description": "Toggles repeating the selected header rows at the top of every page the table runs onto."
+ },
+ "table.rowHeight": {
+  "description": "Sets the height in points of the selected rows (every row when the table is selected; else the caret's), as at least or exactly that height."
+ },
+ "table.selectCell": {
+  "description": "Selects the cell at the caret.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "table.selectRow": {
+  "description": "Selects the row at the caret.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "table.selectTable": {
+  "description": "Selects the whole table at the caret.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "table.shading": {
+  "description": "Sets the shading of the selected table cells as RRGGBB, or removes it.",
+  "params": {
+   "color": {
+    "oneOf": [
+     {
+      "description": "RRGGBB",
+      "type": "string"
+     },
+     {
+      "type": "null"
+     }
+    ]
+   }
+  }
+ },
+ "table.sort": {
+  "description": "Sorts the rows of the table at the caret by a column (0-based), ascending or descending, optionally keeping a header row."
+ },
+ "table.split": {
+  "description": "Splits the table cell at the caret into a number of columns."
+ },
+ "table.splitTable": {
+  "description": "Splits the table into two tables above the caret's row."
+ },
+ "table.style": {
+  "description": "Applies a table style to the table at the caret."
+ },
+ "table.textDirection": {
+  "description": "Sets the text direction of the selected table cells (horizontal, rotated down or up)."
+ },
+ "table.toText": {
+  "description": "Converts the table at the caret to text with tabs, commas or paragraphs between cells."
+ },
+ "table.viewGridlines": {
+  "description": "Shows or hides gridlines for table cells without borders in the editor.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "value": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "text.backTab": {
+  "description": "Shift+Tab at the caret: promotes a list item one level, or moves to the previous table cell."
+ },
+ "text.backspace": {
+  "description": "Deletes the selection, or the character before the caret (Backspace)."
+ },
+ "text.columnBreak": {
+  "description": "Inserts a column break at the caret so the following text starts in the next column."
+ },
+ "text.delete": {
+  "description": "Deletes the selection, or the character after the caret (Delete)."
+ },
+ "text.deleteWordBack": {
+  "description": "Deletes from the caret back to the start of the previous word."
+ },
+ "text.deleteWordForward": {
+  "description": "Deletes from the caret to the start of the next word."
+ },
+ "text.insert": {
+  "description": "Types text at the caret, replacing the selection, with the formatting at the caret; use para.insert or para.text to write whole paragraphs by index."
+ },
+ "text.lineBreak": {
+  "description": "Inserts a line break (Shift+Enter) at the caret, staying in the same paragraph."
+ },
+ "text.nbHyphen": {
+  "description": "Inserts a nonbreaking hyphen at the caret, which a line never breaks at."
+ },
+ "text.nbsp": {
+  "description": "Inserts a nonbreaking space at the caret, which keeps the words on each side on one line."
+ },
+ "text.newParagraph": {
+  "description": "Splits the paragraph at the caret into two (Enter); the new paragraph takes the style's next style."
+ },
+ "text.optionalHyphen": {
+  "description": "Inserts an optional hyphen at the caret, shown only where the line breaks at it."
+ },
+ "text.pageBreak": {
+  "description": "Inserts a page break at the caret so the following text starts on a new page."
+ },
+ "text.tab": {
+  "description": "Inserts a tab at the caret; in a list item it demotes the item one level, in a table it moves to the next cell."
+ },
+ "tools.autocorrect": {
+  "description": "Turns AutoCorrect on or off, or adds a replacement (from, to), and answers the AutoCorrect list.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "enabled": {
+     "type": "boolean"
+    },
+    "entries": {
+     "type": "number"
+    },
+    "user": {
+     "type": "array"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "tools.macros": {
+  "description": "Runs, defines or deletes a macro (a named list of command steps) and answers the macro list.",
+  "output": {
+   "additionalProperties": true,
+   "type": "object"
+  }
+ },
+ "tools.recordMacro": {
+  "description": "Starts recording commands into a named macro; calling it again stops and saves the recording.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "name": {
+     "type": "string"
+    },
+    "recording": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.commentsPane": {
+  "description": "Shows or hides the Comments pane in the editor.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "value": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.darkMode": {
+  "description": "Switches the editor between dark and light page colours.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "value": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.draft": {
+  "description": "Switches the editor to Draft view.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "mode": {
+     "type": "string"
+    },
+    "readMode": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.focus": {
+  "description": "Switches the editor to Focus mode, hiding the ribbon.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "value": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.gridlines": {
+  "description": "Shows or hides the page gridlines in the editor.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "value": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.immersive": {
+  "description": "Switches the editor to focused reading: Read Mode with Focus.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "value": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.marks": {
+  "description": "Shows or hides formatting marks (paragraph marks, spaces, tabs) in the editor.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "value": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.multiplePages": {
+  "description": "Zooms the editor to show several pages side by side.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "fit": {
+     "type": "string"
+    },
+    "zoom": {
+     "type": "number"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.navigationPane": {
+  "description": "Shows or hides the Navigation pane (headings) in the editor.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "value": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.newWindow": {
+  "description": "Opens a second editor window on the same document.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.onePage": {
+  "description": "Zooms the editor to show one whole page.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "fit": {
+     "type": "string"
+    },
+    "zoom": {
+     "type": "number"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.outline": {
+  "description": "Switches the editor to Outline view, showing headings by level.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.pageWidth": {
+  "description": "Zooms the editor to the page width.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "fit": {
+     "type": "string"
+    },
+    "zoom": {
+     "type": "number"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.printLayout": {
+  "description": "Switches the editor to Print Layout, showing pages as they print.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "mode": {
+     "type": "string"
+    },
+    "readMode": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.readMode": {
+  "description": "Switches the editor to Read Mode.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "mode": {
+     "type": "string"
+    },
+    "readMode": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.ruler": {
+  "description": "Shows or hides the ruler in the editor.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "value": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.sideToSide": {
+  "description": "Sets page movement in the editor to side-to-side.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "pageMovement": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.split": {
+  "description": "Splits the editor window into two panes on the same document, or removes the split.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.state": {
+  "description": "Answers the editor's view settings: view mode, zoom, panes, marks, ruler and gridlines.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "clipboardPane": {
+     "type": "boolean"
+    },
+    "commentsPane": {
+     "type": "boolean"
+    },
+    "darkMode": {
+     "type": "boolean"
+    },
+    "draw": {
+     "additionalProperties": true,
+     "properties": {
+      "highlighter": {
+       "additionalProperties": true,
+       "properties": {
+        "color": {
+         "items": {
+          "type": "number"
+         },
+         "type": "array"
+        },
+        "width": {
+         "type": "number"
+        }
+       },
+       "type": "object"
+      },
+      "mode": {
+       "type": "string"
+      },
+      "pen": {
+       "additionalProperties": true,
+       "properties": {
+        "color": {
+         "items": {
+          "type": "number"
+         },
+         "type": "array"
+        },
+        "width": {
+         "type": "number"
+        }
+       },
+       "type": "object"
+      },
+      "pencil": {
+       "additionalProperties": true,
+       "properties": {
+        "color": {
+         "items": {
+          "type": "number"
+         },
+         "type": "array"
+        },
+        "width": {
+         "type": "number"
+        }
+       },
+       "type": "object"
+      }
+     },
+     "type": "object"
+    },
+    "fit": {
+     "type": "string"
+    },
+    "focusMode": {
+     "type": "boolean"
+    },
+    "gridlines": {
+     "type": "boolean"
+    },
+    "hideInk": {
+     "type": "boolean"
+    },
+    "marks": {
+     "type": "boolean"
+    },
+    "mode": {
+     "type": "string"
+    },
+    "multiPage": {
+     "type": "boolean"
+    },
+    "navPane": {
+     "type": "boolean"
+    },
+    "proofing": {
+     "type": "boolean"
+    },
+    "readMode": {
+     "type": "boolean"
+    },
+    "ruler": {
+     "type": "boolean"
+    },
+    "showMarkup": {
+     "type": "boolean"
+    },
+    "styleInspector": {
+     "type": "boolean"
+    },
+    "stylesPane": {
+     "type": "boolean"
+    },
+    "tableGridlines": {
+     "type": "boolean"
+    },
+    "trackChangesPane": {
+     "type": "boolean"
+    },
+    "webWidth": {
+     "type": "number"
+    },
+    "zoom": {
+     "type": "number"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.stylesPane": {
+  "description": "Shows or hides the Styles pane in the editor.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "value": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.vertical": {
+  "description": "Sets page movement in the editor to vertical scrolling.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "pageMovement": {
+     "type": "string"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.webLayout": {
+  "description": "Switches the editor to Web Layout, without page breaks.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "mode": {
+     "type": "string"
+    },
+    "readMode": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.zoom": {
+  "description": "Sets the editor zoom to a percentage (10 to 500) or to page width, one page or multiple pages.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "fit": {
+     "type": "string"
+    },
+    "zoom": {
+     "type": "number"
+    }
+   },
+   "type": "object"
+  },
+  "params": {
+   "value": {
+    "oneOf": [
+     {
+      "description": "percent from 10 to 500",
+      "type": "number"
+     },
+     {
+      "enum": [
+       "pageWidth",
+       "onePage",
+       "multiplePages"
+      ],
+      "type": "string"
+     }
+    ]
+   }
+  }
+ },
+ "view.zoom100": {
+  "description": "Sets the editor zoom to 100%.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "fit": {
+     "type": "string"
+    },
+    "zoom": {
+     "type": "number"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.zoomIn": {
+  "description": "Zooms the editor in one step.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "fit": {
+     "type": "string"
+    },
+    "zoom": {
+     "type": "number"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "view.zoomOut": {
+  "description": "Zooms the editor out one step.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "fit": {
+     "type": "string"
+    },
+    "zoom": {
+     "type": "number"
+    }
+   },
+   "type": "object"
+  }
+ },
+ "format.resetChar": {
+  "description": "Removes the selection's own character formatting (or the formatting picked at the caret), keeping the paragraph's style and paragraph formatting, as Word's Ctrl+Space."
+ }
+}

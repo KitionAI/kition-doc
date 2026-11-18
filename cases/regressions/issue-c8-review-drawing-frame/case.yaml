@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-review-drawing-frame
+feature: doc.agent.guard
+intent: Formatting a drawing or replacing its text holds frame validity for both writer routes; unrelated titles and ordinary valid reflow apply.
+layer: gate
+tags: [agents]
+source: { kind: probe, from: C8-expectations review doc, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::formatting_and_replacing_drawing_text_rest_on_the_frame_they_validate" }
+expected:
+  - { actual: "out:cargo-test", compare: exit, value: 0 }
+timeout_s: 60
+since: "2026-11-17"

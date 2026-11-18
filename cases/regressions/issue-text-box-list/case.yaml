@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-text-box-list
+feature: doc.lists.bullets-numbering
+intent: A list in a text box that fits its text numbers 1, 2 like WPS for Mac (luan's rich text box), the measuring of the box before its layout not advancing the list counters.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_list_in_a_text_box_that_fits_its_text_counts_from_one
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

@@ -1,0 +1,24 @@
+format: 1
+id: regressions/issue-c8-doc-6-comment-ids
+feature: doc.agent.guard
+intent: >-
+  A comment has a tool id (comment:<w16cid:durableId>, kept in commentsIds.xml; derived from what
+  the comment is when a file has none) and a thread its first comment's (thread:<id>); the comment
+  commands take either and rest on the thread and comments they read. Another agent's or another
+  program's reply to a thread refuses the agent's deletion of the thread; another comment
+  elsewhere does not.
+layer: gate
+tags: [agents, comments]
+source:
+  kind: probe
+  from: task card C8-doc-6 (comments without a tool id)
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::a_thread_command_rests_on_the_thread_by_its_tool_id" }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

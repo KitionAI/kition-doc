@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-c8-doc-6-compare-body
+feature: doc.agent.guard
+intent: >-
+  Compare and Combine rest on the top-level body paragraphs they clone, while
+  a concurrent document-title edit passes the premise guard. Their existing
+  file-command gate still disables execution for agents, including text calls.
+layer: gate
+source:
+  kind: probe
+  from: task card C8-doc-6
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::comparing_rests" }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

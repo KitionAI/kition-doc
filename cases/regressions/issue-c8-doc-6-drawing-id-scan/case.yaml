@@ -1,0 +1,15 @@
+format: 1
+id: regressions/issue-c8-doc-6-drawing-id-scan
+feature: doc.agent.guard
+intent: >-
+  A drawing insertion holds the id scan it consumes, including drawings
+  another writer adds elsewhere, without holding unrelated document properties.
+layer: gate
+source: { kind: probe, from: task card C8-doc-6, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::inserting_a_drawing_rests" }
+expected:
+  - { actual: out:cargo-test, compare: exit, value: 0 }
+timeout_s: 600
+since: "2026-11-17"

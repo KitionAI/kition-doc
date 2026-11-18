@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-text-box-fit-height
+feature: doc.layout.float-position
+intent: A text box that fits its wrapped text (a:spAutoFit with wrap="square") keeps its width and takes its text's height, so text set top and bottom of it flows below it, as WPS sizes it.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_text_box_that_fits_its_wrapped_text_takes_its_height
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

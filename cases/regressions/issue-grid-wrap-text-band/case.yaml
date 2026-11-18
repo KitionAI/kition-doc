@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-grid-wrap-text-band
+feature: doc.layout.float-position
+intent: On a line grid a line wraps around a floating object wherever its rows meet the object, even where its text (centred in the rows) doesn't, and a line pushed below an object starts right at its foot, as WPS for Mac lays it out.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_gridded_line_wraps_only_where_its_text_meets_an_object
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

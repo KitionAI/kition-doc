@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-character-horizontal-scale
+feature: doc.render.character-scale
+intent: Compress or stretch glyph outlines horizontally with character width while retaining height, placed origins, text extraction and independent character spacing.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/render/render/src/tests_character_scale.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-render
+      filter: character_scale_
+  - cargo-test:
+      package: kition-doc-pdf
+      filter: character_scale_
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

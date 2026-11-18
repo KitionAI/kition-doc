@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-review-discarded-table
+feature: doc.agent.guard
+intent: Converting a range to a table refuses changes to an intervening table's discarded properties, and applies after an unrelated title change, for both writer routes.
+layer: gate
+tags: [agents, tables]
+source: { kind: probe, from: C8-expectations review doc, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::text_to_table_rests_on_the_existing_table_properties_it_discards" }
+expected:
+  - { actual: "out:cargo-test", compare: exit, value: 0 }
+timeout_s: 60
+since: "2026-11-17"

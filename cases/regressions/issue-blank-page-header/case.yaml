@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-blank-page-header
+feature: doc.layout.section-pages
+intent: The blank page inserted so a section starts on an odd or even page shows no header or footer, as WPS prints it, while the pages around it keep theirs.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_blank_page_before_an_odd_page_section_has_no_header
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

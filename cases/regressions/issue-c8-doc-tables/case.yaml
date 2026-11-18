@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-c8-doc-tables
+feature: doc.agent.guard
+intent: >-
+  Against an independent writer, seed 0x9e3779b97f4a7c15, 50 rounds of 12 changes x 5 write forms: no write applied wrongly and none refused falsely; 50 unrelated changes: premise refuses none, epoch all.
+layer: gate
+tags: [headless, guard]
+source:
+  kind: synthetic
+  from: C8-land-14-doc
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "tables::" }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

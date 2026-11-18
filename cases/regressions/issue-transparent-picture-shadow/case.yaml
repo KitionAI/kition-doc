@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-transparent-picture-shadow
+feature: doc.drawing.picture-shape
+intent: A picture with see-through pixels casts no shadow from its frame (WPS's follows its pixels), so the page beyond its corner stays white.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/render/render/src/lib.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-render
+      filter: a_transparent_picture_casts_no_frame_shadow
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

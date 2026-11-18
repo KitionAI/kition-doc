@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-10
+feature: doc.tables.edit
+intent: Table borders apply to the selected cells and row height to every selected row; Chinese text stands upright in top-to-bottom cells; a footnote written by the command leaves the caret after its reference, and text there is not superscript; list.define refuses formats it cannot draw and draws ideographDigital; the word count counts each Chinese character as a word; an underscore tab leader is one line.
+layer: gate
+source:
+  kind: issue
+  from: Kition Doc regression suite
+  license: owned
+  note: Found while building the Kition Showcase samples (finding D10).
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      test: showcase_text
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-review-comment-format
+feature: doc.agent.guard
+intent: Replacing comment text refuses a stale change to the comment formatting it discards and applies after an unrelated body change, for both writer routes.
+layer: gate
+tags: [agents, comments]
+source: { kind: probe, from: C8-expectations review doc, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::replacing_comment_text_rests_on_the_formatting_it_discards" }
+expected:
+  - { actual: "out:cargo-test", compare: exit, value: 0 }
+timeout_s: 60
+since: "2026-11-17"

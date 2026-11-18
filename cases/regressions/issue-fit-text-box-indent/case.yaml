@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-fit-text-box-indent
+feature: doc.layout.float-position
+intent: A text box that fits its text never wraps it, its lines' indents counted in its width (a footer page number box with a first-line indent stays on one line, as WPS draws it).
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_text_box_that_fits_its_text_keeps_an_indented_line_whole
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

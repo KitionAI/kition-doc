@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-c8-doc-ids
+feature: doc.agent.guard
+intent: >-
+  Every paragraph and table row has a stable tool id kept in the file (w14:paraId), the same on every read, kept by a save, new for a new paragraph; a drawing object is named by its number.
+layer: gate
+tags: [headless, guard]
+source:
+  kind: synthetic
+  from: C8-land-14-doc
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "ids::" }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

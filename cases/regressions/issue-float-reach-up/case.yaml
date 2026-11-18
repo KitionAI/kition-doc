@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-float-reach-up
+feature: doc.layout.float-position
+intent: A floating object whose wrap area reaches above its paragraph's top pushes aside the earlier lines it meets on its page, as the lines after its anchor, as WPS for Mac wraps text around luan's turned text boxes.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: text_above_an_anchor_wraps_around_a_float_reaching_up_to_it
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

@@ -1,0 +1,26 @@
+format: 1
+id: regressions/issue-c8-doc-refusals-cell-path
+feature: doc.agent.guard
+intent: >-
+  An indexed cell range reports relocation after a preceding paragraph is joined,
+  even when the replica keeps the merged piece. Moving a paragraph wholly before
+  the table and unrelated text edits merge; actual insertions before the cell
+  still refuse without writes.
+layer: gate
+tags: [agents, premises]
+source:
+  kind: probe
+  from: task card C8-doc-refusals matrix F5
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc
+      test: c8
+      filter: matrix::cell_paths_report_join_relocation
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

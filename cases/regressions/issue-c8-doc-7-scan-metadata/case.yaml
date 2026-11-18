@@ -1,0 +1,24 @@
+format: 1
+id: regressions/issue-c8-doc-7-scan-metadata
+feature: doc.agent.guard
+intent: >-
+  Body operations merge unrelated custom metadata, and core-property writes
+  hold only their assigned fields. Necessary content and field changes still refuse.
+layer: gate
+tags: [agents, premises]
+source:
+  kind: probe
+  from: task card C8-doc-7 held-MORE scan metadata
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc
+      test: c8
+      filter: independent::document_operations_do_not_hold_unrelated_metadata
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 300
+since: "2026-11-17"

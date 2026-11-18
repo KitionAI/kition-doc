@@ -1,0 +1,20 @@
+format: 1
+id: doc.review.host-comments/anchors-through-edits
+feature: doc.review.host-comments
+intent: A selection becomes a host comment anchor (replica ids, a range and its quote), and the anchor is found again on its words after typing before and inside it, paragraphs added and deleted, a page break, Word's own comments, a co-editor's edits, and without a replica.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/engine/tests/comment_anchors.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      test: comment_anchors
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 120
+since: "2026-11-17"

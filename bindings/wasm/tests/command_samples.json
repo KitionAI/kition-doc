@@ -1,0 +1,327 @@
+{
+ "caret.set": {
+  "params": {
+   "pos": {
+    "path": [
+     1
+    ],
+    "off": 3,
+    "story": "body"
+   }
+  }
+ },
+ "select.range": {
+  "params": {
+   "anchor": {
+    "path": [
+     0
+    ],
+    "off": 0,
+    "story": "body"
+   },
+   "focus": {
+    "path": [
+     1
+    ],
+    "off": 5,
+    "story": "body"
+   }
+  }
+ },
+ "select.text": {
+  "params": {
+   "text": "Sales"
+  }
+ },
+ "edit.deleteClipboardItem": {
+  "setup": [
+   [
+    "select.all",
+    {}
+   ],
+   [
+    "edit.copy",
+    {}
+   ]
+  ],
+  "params": {
+   "index": 0
+  }
+ },
+ "edit.findNext": {
+  "setup": [
+   [
+    "edit.find",
+    {
+     "text": "e"
+    }
+   ]
+  ],
+  "params": {}
+ },
+ "edit.findPrevious": {
+  "setup": [
+   [
+    "edit.find",
+    {
+     "text": "e"
+    }
+   ],
+   [
+    "edit.findNext",
+    {}
+   ]
+  ],
+  "params": {}
+ },
+ "list.get": {
+  "setup": [
+   [
+    "para.bullets",
+    {}
+   ]
+  ],
+  "params": {}
+ },
+ "equation.edit": {
+  "setup": [
+   [
+    "insert.equation",
+    {
+     "linear": "a^2+b^2=c^2"
+    }
+   ],
+   [
+    "equation.exit",
+    {
+     "before": true
+    }
+   ]
+  ],
+  "params": {}
+ },
+ "equation.exit": {
+  "setup": [
+   [
+    "insert.equation",
+    {
+     "linear": "a^2+b^2=c^2"
+    }
+   ]
+  ],
+  "params": {}
+ },
+ "equation.move": {
+  "setup": [
+   [
+    "insert.equation",
+    {
+     "linear": "a^2+b^2=c^2"
+    }
+   ]
+  ],
+  "params": {
+   "dir": "left"
+  }
+ },
+ "equation.get": {
+  "setup": [
+   [
+    "insert.equation",
+    {
+     "linear": "a^2+b^2=c^2"
+    }
+   ]
+  ],
+  "params": {}
+ },
+ "equation.structureActions": {
+  "setup": [
+   [
+    "insert.equation",
+    {
+     "linear": "a^2+b^2=c^2"
+    }
+   ]
+  ],
+  "params": {}
+ },
+ "table.selectTable": {
+  "setup": [
+   [
+    "insert.table",
+    {
+     "rows": 2,
+     "cols": 2
+    }
+   ]
+  ],
+  "params": {}
+ },
+ "table.selectRow": {
+  "setup": [
+   [
+    "insert.table",
+    {
+     "rows": 2,
+     "cols": 2
+    }
+   ]
+  ],
+  "params": {}
+ },
+ "table.selectCell": {
+  "setup": [
+   [
+    "insert.table",
+    {
+     "rows": 2,
+     "cols": 2
+    }
+   ]
+  ],
+  "params": {}
+ },
+ "comment.goto": {
+  "skip": "needs the thread id a comment.add call answers"
+ },
+ "review.addToDictionary": {
+  "params": {
+   "word": "Kition"
+  }
+ },
+ "file.export": {
+  "params": {
+   "format": "png",
+   "scale": 0.5
+  }
+ },
+ "file.exportPdf": {
+  "params": {
+   "path": "$tmp/out.pdf"
+  }
+ },
+ "file.exportPng": {
+  "params": {
+   "path": "$tmp/out.png"
+  }
+ },
+ "file.setAuthor": {
+  "params": {
+   "name": "Ada"
+  }
+ },
+ "mailings.recipients": {
+  "params": {
+   "csv": "Name,City\nAda,Paris"
+  }
+ },
+ "mailings.editRecipients": {
+  "setup": [
+   [
+    "mailings.recipients",
+    {
+     "csv": "Name\nAda"
+    }
+   ]
+  ],
+  "params": {
+   "rows": [
+    {
+     "Name": "Bo"
+    }
+   ]
+  }
+ },
+ "select.addObject": {
+  "setup": [
+   [
+    "insert.shape",
+    {
+     "kind": "rectangle"
+    }
+   ]
+  ],
+  "params": {
+   "index": 0
+  }
+ },
+ "select.objects": {
+  "setup": [
+   [
+    "insert.shape",
+    {
+     "kind": "rectangle"
+    }
+   ]
+  ],
+  "params": {
+   "index": 0
+  }
+ },
+ "edit.repeat": {
+  "setup": [
+   [
+    "text.insert",
+    {
+     "text": "a"
+    }
+   ]
+  ],
+  "params": {}
+ },
+ "file.saveTemplate": {
+  "params": {
+   "path": "$tmp/t.dotx"
+  }
+ },
+ "hf.next": {
+  "setup": [
+   [
+    "insert.editHeader",
+    {}
+   ]
+  ],
+  "params": {}
+ },
+ "hf.previous": {
+  "setup": [
+   [
+    "insert.editHeader",
+    {}
+   ]
+  ],
+  "params": {}
+ },
+ "readAloud.speed": {
+  "params": {
+   "value": 1.5
+  }
+ },
+ "caret.pastCitation": {
+  "skip": "needs a citation in the document, which basic.docx has none of"
+ },
+ "review.suggestions": {
+  "setup": [
+   [
+    "caret.docEnd",
+    {}
+   ],
+   [
+    "text.insert",
+    {
+     "text": " recieve"
+    }
+   ]
+  ],
+  "params": {
+   "pos": {
+    "path": [
+     2
+    ],
+    "off": 37,
+    "story": "body"
+   }
+  }
+ }
+}

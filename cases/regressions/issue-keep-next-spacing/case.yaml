@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-keep-next-spacing
+feature: doc.layout.paragraph-spacing
+intent: Keep-with-next reserves the collapsed paragraph gap as well as the following line, so spacing cannot strand a heading on the previous page.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: keep_next_reserves_collapsed_spacing
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

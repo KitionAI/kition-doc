@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-unwrapped-float-past-page
+feature: doc.layout.float-position
+intent: An object in front of or behind the text, positioned from its paragraph, stays where its offset puts it even past the page's foot; only objects text wraps around move up to end at the page's bottom edge, as WPS for Mac places them.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_float_text_doesnt_wrap_around_may_run_past_the_page
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

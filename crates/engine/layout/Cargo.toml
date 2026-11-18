@@ -1,0 +1,28 @@
+[package]
+name = "kition-doc-layout"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Kition Doc layout: shaping, line breaking, tabs, lists, tables, pagination, headers/footers, hit testing"
+
+[lints]
+workspace = true
+
+[dependencies]
+kition-doc-geom = { workspace = true }
+kition-doc-doc = { workspace = true }
+kition-office-core = { workspace = true }
+kurbo = { workspace = true }
+kition-doc-fonts = { workspace = true }
+kition-doc-proof = { workspace = true }
+unicode-bidi = { workspace = true }
+unicode-linebreak = { workspace = true }
+unicode-segmentation = { workspace = true }
+unicode-script = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+log = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+# The browser clock (`SystemTime::now()`/`Instant::now()` panic on wasm32).
+js-sys = "0.3"

@@ -1,0 +1,24 @@
+format: 1
+id: regressions/issue-c8-doc-5-replace-anchors
+feature: doc.agent.guard
+intent: >-
+  A regular expression that does not name the object character U+FFFC never matches a picture's,
+  shape's or equation's anchor, so Replace All with `.+` cannot delete an equation or picture
+  with the text around it.
+layer: gate
+tags: [agents, find]
+source:
+  kind: probe
+  from: task card C8-doc-5 item 8 (the C8-doc-3 reading's engine defects)
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: "tests::a_pattern_does_not_match_object_anchors_it_does_not_name"
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 300
+since: "2026-11-17"

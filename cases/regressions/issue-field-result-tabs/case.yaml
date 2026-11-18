@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-field-result-tabs
+feature: doc.layout.field-tabs
+intent: Lay out field-result tabs through paragraph stops and leaders while retaining font runs, Unicode glyph text and atomic document editing positions across wraps.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests_field_tabs.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: field_result_tabs_
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

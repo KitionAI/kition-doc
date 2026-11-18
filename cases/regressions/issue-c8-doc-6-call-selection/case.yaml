@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-c8-doc-6-call-selection
+feature: doc.agent.guard
+intent: >-
+  A built-in equation structure name does not suppress its caret premise, and
+  a list's forward scan holds the table rows it visits. Header controls hold
+  the body section selected by their current handlers.
+layer: gate
+source:
+  kind: probe
+  from: task card C8-doc-6
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::an_equation_structure_name" }
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::restarting_a_list" }
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::header_controls" }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-17"

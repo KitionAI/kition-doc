@@ -1,0 +1,26 @@
+format: 1
+id: regressions/issue-tight-wrap-outline
+feature: doc.layout.float-position
+intent: A tight or through wrap follows its object's whole wrap polygon (read and written back point by point), pictures and shapes as well as charts and diagrams, each line keeping clear of the polygon's span over the line's text with the distance from text added, as WPS for Mac sets luan's tight and through pictures (maintainer-approved change from older WPS references, which kept text clear of a picture's whole frame).
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: a_tight_wrap_follows_its_polygon_where_it_meets_a_lines_text
+  - cargo-test:
+      package: kition-doc-layout
+      filter: tight_wrap_follows_a_diagrams_polygon_and_a_pictures_frame
+  - cargo-test:
+      package: kition-doc-docx
+      filter: wrap_polygon_bounds_round_trip
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

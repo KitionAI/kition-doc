@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-c8-doc2-matrix
+feature: doc.agent.guard
+intent: >-
+  The guard's matrix (9 address forms x 14 colleague changes x same server / outside, 252 cells, expectations written before the first run): what is left wrong, refused falsely or refused for another reason only falls (at C8-doc-2's end 2 / 12 / 7, before it 16 / 19 / 24).
+layer: gate
+tags: [headless, guard]
+source:
+  kind: synthetic
+  from: C8-doc-2
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "matrix::" }
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 1200
+since: "2026-11-17"

@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-review-deleted-comment
+feature: doc.agent.guard
+intent: Deleting a reply refuses stale metadata assignments as well as text and formatting changes, for both writer routes, and applies after an unrelated title change.
+layer: gate
+tags: [agents, comments]
+source: { kind: probe, from: C8-expectations review doc, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::deleting_" }
+expected:
+  - { actual: "out:cargo-test", compare: exit, value: 0 }
+timeout_s: 60
+since: "2026-11-17"

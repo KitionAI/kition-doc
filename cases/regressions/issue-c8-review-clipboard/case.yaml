@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-review-clipboard
+feature: doc.agent.guard
+intent: A multiline clipboard paste refuses a stale change to copied destination paragraph properties and applies after an unrelated paragraph change, for both writer routes.
+layer: gate
+tags: [agents, clipboard]
+source: { kind: probe, from: C8-expectations review doc, license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-doc, test: c8, filter: "independent::a_plain_clipboard_paste_rests_on_the_properties_its_lines_copy" }
+expected:
+  - { actual: "out:cargo-test", compare: exit, value: 0 }
+timeout_s: 60
+since: "2026-11-17"

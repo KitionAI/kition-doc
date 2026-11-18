@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-c8-doc-7-list-properties
+feature: doc.agent.guard
+intent: >-
+  List property operations merge caret text changes while assigned numbering changes still refuse.
+layer: gate
+tags: [agents, premises]
+source:
+  kind: probe
+  from: task card C8-doc-7 held-MORE list-properties
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc
+      test: c8
+      filter: independent::list_properties_do_not_hold_caret_characters
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 300
+since: "2026-11-17"

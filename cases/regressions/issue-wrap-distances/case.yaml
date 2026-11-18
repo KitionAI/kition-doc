@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-wrap-distances
+feature: doc.layout.float-position
+intent: Square and top-and-bottom wraps keep text clear of an object's effects (wp:effectExtent) as well as its frame and distances from text; a tight or through outline keeps its distance from text at the sides only, as WPS for Mac wraps luan's text boxes.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: wrap_areas_take_effects_but_outlines_only_their_side_distance
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

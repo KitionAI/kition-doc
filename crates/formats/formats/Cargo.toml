@@ -1,0 +1,21 @@
+[package]
+name = "kition-doc-formats"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Kition Doc import/export: plain text, Markdown, HTML, RTF, OpenDocument Text and LaTeX"
+
+[lints]
+workspace = true
+
+[dependencies]
+kition-doc-doc = { workspace = true }
+kition-office-core = { workspace = true }
+kition-doc-geom = { workspace = true }
+image = { workspace = true }
+quick-xml = { workspace = true }
+zip = { workspace = true }
+log = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }

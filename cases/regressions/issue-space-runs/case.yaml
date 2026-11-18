@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-space-runs
+feature: doc.layout.east-asian-spacing
+intent: With balanced single-byte and double-byte widths, every space of a run of two or more is half an em, between Latin letters too and all along a run beside Chinese, while a single space between Latin letters keeps its font's width, as WPS for Mac sets them (synthetic references; luan's currency table wraps its padded cells as WPS does).
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: balanced_widths_make_every_space_of_a_run_half_an_em
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-blurred-group-text
+feature: doc.drawing.blurred-group
+intent: A group holding a blurred shadow prints its text boxes' letters as ink, not text, as WPS prints the group as one picture; a sharp shadow keeps the text.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: group_with_a_blurred_effect_prints_its_text_as_letters
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

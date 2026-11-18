@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-column-start-spacing
+feature: doc.layout.paragraph-spacing
+intent: Leading paragraph spacing must not turn an empty column into occupied content and create a blank page before an oversized line or an orphan.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/layout/src/tests_column_start.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-layout
+      filter: column_start_spacing_
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

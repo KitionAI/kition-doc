@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-nondrawable-font
+feature: doc.layout.east-asian-font
+intent: Fonts with character maps and metrics but no supported outline tables cannot replace drawable faces and silently erase text.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/support/fonts/src/tests_sysfonts.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-fonts
+      filter: nondrawable_font
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 60
+since: "2026-11-17"

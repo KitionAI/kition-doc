@@ -1,0 +1,25 @@
+format: 1
+id: regressions/issue-c8-doc-7-reference-metadata
+feature: doc.agent.guard
+intent: >-
+  Note number formats and hyphenation merge an unrelated page orientation edit,
+  while a colleague's change of their assigned setting refuses changed.
+  Same-server and outside saves retain the complete merge or unchanged refused bytes.
+layer: gate
+tags: [agents, premises]
+source:
+  kind: probe
+  from: task card C8-doc-7 held-MORE M3
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc
+      test: c8
+      filter: independent::reference_metadata_does_not_hold_the_document_body
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 300
+since: "2026-11-17"

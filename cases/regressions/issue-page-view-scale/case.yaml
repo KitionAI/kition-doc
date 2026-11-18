@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-page-view-scale
+feature: doc.editor.page-view
+intent: Wide windows open at a readable page scale rather than enlarging the text and caret to fill the window; narrow windows still fit the paper.
+layer: gate
+source:
+  kind: probe
+  from: web/tests/page-view.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/page-view.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+timeout_s: 60
+since: "2026-11-17"

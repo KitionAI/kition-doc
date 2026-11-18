@@ -1,0 +1,27 @@
+format: 1
+id: regressions/issue-save-unchanged-same-bytes
+feature: doc.file.documents
+intent: >-
+  Saving with nothing new writes the same bytes: the save stamp (dcterms:modified, lastModifiedBy,
+  revision) changes only when the document changed since it was last saved or opened. A second
+  Save and a file opened and saved untouched (plainly or with its stored replica)
+  write the previous bytes; an edit stamps the next save once.
+layer: gate
+source:
+  kind: synthetic
+  from: crates/engine/engine/src/tests.rs, bindings/wasm/src/collab.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: saving_with_nothing_new_writes_the_same_bytes
+  - cargo-test:
+      package: kition-doc-kit
+      filter: saving_with_nothing_new_writes_the_same_bytes
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 120
+since: "2026-11-17"
