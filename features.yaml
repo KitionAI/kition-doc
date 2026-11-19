@@ -1,6 +1,6 @@
 format: 1
 kit: doc
-updated: "2026-11-17"
+updated: "2026-11-19"
 gate_budget_s: 600
 protected: []
 features:
@@ -319,6 +319,15 @@ features:
     paths: [web/src/App.tsx, web/src/FindBar.tsx, web/src/doc.ts, web/src/ribbon/HomeTab.tsx, web/src/ribbon/InsertTab.tsx, web/src/ribbon/LayoutTab.tsx, web/src/ribbon/ViewTab.tsx, web/src/ribbon/ExportGroup.tsx, bindings/wasm/src/lib.rs, web/tests/modes.mjs, web/tests/focus-escape.mjs]
     cases: [doc.editor.display-modes/mode-smoke, regressions/issue-focus-escape]
     since: "2026-11-17"
+  - id: doc.editor.host-theme
+    title: "The editor follows the host's light or dark theme, live: the pasteboard the engine paints around the pages is the host's canvas color, and the pages stay white"
+    dimension: [platform]
+    priority: P1
+    status: has
+    paths: [web/src/backdrop.ts, web/src/engine.ts, web/src/App.tsx, web/tests/backdrop.mjs]
+    gap: "Export, print and previews never take the host's canvas color by design. The rulers and the navigation pane are not checked in the dark scheme yet."
+    cases: [regressions/issue-dark-backdrop]
+    since: "2026-11-19"
   - id: doc.editor.page-view
     title: Document pages open at a readable scale with corner guides at their body margins
     dimension: [function, fidelity, data-safety]

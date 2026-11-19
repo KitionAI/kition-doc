@@ -21,6 +21,7 @@ import {
   type RasterView,
 } from '@kition/kit-editor'
 import { engineManifest } from './engine'
+import { useEngineBackdrop } from './backdrop'
 import { CATALOGS } from './strings'
 import { CONTEXT_TABS, EXPORT_COMMANDS, HOST_FILE_COMMANDS, DOC_PRIMARY, describe, pageWidthArea } from './doc'
 import { FindBar } from './FindBar'
@@ -100,6 +101,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   // other Escape is left untaken, so in Focus it leaves Focus.
   const tools = useEngineTools(session.tool, doc != null, change, { initial: 'text', hostTools: {}, escapable: () => state?.escape === true })
   const canvas = useRef<KitCanvasHandle>(null)
+  useEngineBackdrop(doc, canvas)
   const viewMemory = useRef<RasterView | null>(null)
   const [zoom, setZoom] = useState(1)
   const [canvasHeight, setCanvasHeight] = useState(0)

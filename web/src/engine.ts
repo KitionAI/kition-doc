@@ -1,10 +1,11 @@
 import type { KitModuleManifest } from '@kition/kit-editor'
+import { canvasColor } from './backdrop'
 import kit from '../../kit.json'
 
 /** The engine, from this package's own folder, on the host's canvas color. Called after the theme is applied. */
 /** `commentOnly`: a commenter's session (Kit UI protocol `document.comments`): the engine writes only comments. */
 export function engineManifest(commentOnly = false): KitModuleManifest {
-  const canvas = getComputedStyle(document.documentElement).getPropertyValue('--kit-canvas').trim()
+  const canvas = canvasColor()
   return {
     kitId: 'kit.doc',
     base: new URL('./engine/', document.baseURI).href,
@@ -14,7 +15,7 @@ export function engineManifest(commentOnly = false): KitModuleManifest {
     // thumbnails and agents get them as printed.
     setup: [
       { method: 'setEditing', args: [true] },
-      ...(/^#[0-9a-f]{6}$/i.test(canvas) ? [{ method: 'setBackdrop', args: [canvas] }] : []),
+      ...(canvas ? [{ method: 'setBackdrop', args: [canvas] }] : []),
       ...(commentOnly ? [{ method: 'setCommentOnly', args: [true] }] : []),
     ],
     // The web build embeds no CJK face: Chinese, and the metric-compatible stand-ins for Office's
