@@ -12,7 +12,8 @@
     "module": "kition_doc_kit",
     "class": "DocDocument",
     "contract": 2,
-    "crate": "kition-doc-kit"
+    "crate": "kition-doc-kit",
+    "editorState": ["/page", "/selected", "/story", "/equation", "/shape", "/shapes", "/chart", "/escape"]
   },
   "formats": [
     {
