@@ -19,7 +19,7 @@ const alone = window.setTimeout(() => {
 const PHRASES = import.meta.glob('./i18n/upstream/*.tsv', { query: '?raw', import: 'default' })
 
 // `comment-anchors` (Kit UI protocol section 7k): with a host that keeps comment threads, the kit anchors them (`HostComments.tsx`).
-void connectHost({ id: 'kit.doc', version: '0.1.1', capabilities: ['ai', 'replica', 'presence', 'comment-anchors'], brand: manifest.ui.brand, display: manifest.ui.display }).then(async (host) => {
+void connectHost({ id: 'kit.doc', version: '0.1.2', capabilities: ['ai', 'replica', 'presence', 'comment-anchors'], brand: manifest.ui.brand, display: manifest.ui.display }).then(async (host) => {
   window.clearTimeout(alone)
   const phrase = await loadPhrases(PHRASES, host.init.locale)
   // No StrictMode: its doubled effects would open the document twice, in two engine workers.
