@@ -1,5 +1,5 @@
-import type { KitCommentAnchor, KitShownThread } from '@kition/kit-ui-protocol'
-import type { RasterRect } from '@kition/kit-editor'
+import type { KitCommentAnchor, KitShownThread } from '@kition/sdk/protocol'
+import type { RasterRect } from '@kition/sdk/editor'
 
 /**
  * Comment threads a host keeps itself (Kit UI protocol 2.6 section 7k, capability

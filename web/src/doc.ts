@@ -1,4 +1,4 @@
-import type { KitEngineInfo, RasterRect } from '@kition/kit-editor'
+import type { KitEngineInfo, RasterRect } from '@kition/sdk/editor'
 
 /** What the editor reads from the engine's `inspect()`. */
 export type DocInfo = {

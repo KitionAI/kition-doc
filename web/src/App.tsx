@@ -19,7 +19,7 @@ import {
   type Phrases,
   type RasterRect,
   type RasterView,
-} from '@kition/kit-editor'
+} from '@kition/sdk/editor'
 import { engineManifest } from './engine'
 import { useEngineBackdrop } from './backdrop'
 import { CATALOGS } from './strings'

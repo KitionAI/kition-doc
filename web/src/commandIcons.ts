@@ -3,8 +3,8 @@
  * the neutral command mark otherwise): its own vocabulary, by command id. Registered once, when the
  * editor loads (`main.tsx`); ribbons and menus built from engine commands draw them.
  */
-import { registerCommandIcons } from '@kition/kit-editor'
-import { ALargeSmallIcon, ArrowLeftRightIcon, BookmarkIcon, CaseLowerIcon, CaseUpperIcon, ContactIcon, EraserIcon, EyeOffIcon, GaugeIcon, HighlighterIcon, LibraryIcon, LinkIcon, ListChecksIcon, MailIcon, MoveIcon, PackageIcon, PuzzleIcon, QuoteIcon, RepeatIcon, RotateCwIcon, StampIcon, StarIcon, StrikethroughIcon, TerminalIcon, TypeIcon, UnderlineIcon, WandSparklesIcon } from '@kition/tessera-icons/react'
+import { registerCommandIcons } from '@kition/sdk/editor'
+import { ALargeSmallIcon, ArrowLeftRightIcon, BookmarkIcon, CaseLowerIcon, CaseUpperIcon, ContactIcon, EraserIcon, EyeOffIcon, GaugeIcon, HighlighterIcon, LibraryIcon, LinkIcon, ListChecksIcon, MailIcon, MoveIcon, PackageIcon, PuzzleIcon, QuoteIcon, RepeatIcon, RotateCwIcon, StampIcon, StarIcon, StrikethroughIcon, TerminalIcon, TypeIcon, UnderlineIcon, WandSparklesIcon } from '@kition/tessera/icons/react'
 
 registerCommandIcons({
   "arrange.position": MoveIcon,

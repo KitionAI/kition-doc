@@ -11,8 +11,8 @@ import {
   type HostConnection,
   type RasterDecoration,
   type RasterRect,
-} from '@kition/kit-editor'
-import { MessageSquarePlusIcon as MessageSquarePlus, XIcon as X } from '@kition/tessera-icons/react'
+} from '@kition/sdk/editor'
+import { MessageSquarePlusIcon as MessageSquarePlus, XIcon as X } from '@kition/tessera/icons/react'
 
 /**
  * Comment threads (Kition platform rule M23): kit-editor's `CommentsPanel` over the engine's
@@ -21,7 +21,7 @@ import { MessageSquarePlusIcon as MessageSquarePlus, XIcon as X } from '@kition/
  * follow typing; the replica keeps the threads beside the content (`kdm-model`'s `comments`).
  */
 
-/** `@kition/kdm`'s comment thread and anchor, as kit-editor's panel takes them. */
+/** `@kition/sdk/kdm`'s comment thread and anchor, as kit-editor's panel takes them. */
 export type CommentThread = CommentsPanelProps['threads'][number]
 type CommentAnchor = NonNullable<CommentsPanelProps['pendingAnchor']>
 

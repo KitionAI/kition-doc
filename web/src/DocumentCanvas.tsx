@@ -1,6 +1,6 @@
 import { useId, useLayoutEffect, useRef, useState, type ComponentProps, type ReactNode, type RefObject } from 'react'
-import { KitDocumentCanvas, useKitEditor, type KitCanvasView, type RasterRect, type RasterView } from '@kition/kit-editor'
-import { Scrollbar } from '@kition/tessera-ui'
+import { KitDocumentCanvas, useKitEditor, type KitCanvasView, type RasterRect, type RasterView } from '@kition/sdk/editor'
+import { Scrollbar } from '@kition/tessera/ui'
 import { initialPageView } from './pageView'
 
 /** Place the first page at reading scale before mounting the canvas; retain later user views. */

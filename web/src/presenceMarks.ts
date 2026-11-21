@@ -1,4 +1,4 @@
-import type { KitPeerPresence, KitPresence, KitPresenceCaret, PresenceRect, RasterRect } from '@kition/kit-editor'
+import type { KitPeerPresence, KitPresence, KitPresenceCaret, PresenceRect, RasterRect } from '@kition/sdk/editor'
 
 /**
  * Presence (Kit UI protocol section 7e) in a word processor: the person's caret is a replica text

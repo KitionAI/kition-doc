@@ -1,4 +1,4 @@
-import { BookBookmarkIcon as BookMarked, CalendarClockIcon as CalendarClock, FileTextIcon as FileText, FilePlusCornerIcon as FilePlus2, ImageIcon as Image, LinkIcon as Link, MessageSquarePlusIcon as MessageSquarePlus, OmegaIcon as Omega, PanelBottomIcon as PanelBottom, PanelTopIcon as PanelTop, PilcrowIcon as Pilcrow, HashIcon as Hash, SigmaIcon as Sigma, SignatureIcon as Signature, FaceSlightlySmilingIcon as Smile, TableIcon as Table, TextCursorInputIcon as TextCursorInput, TypeIcon as Type, WorkflowIcon as Workflow, SeparatorHorizontalIcon as SeparatorHorizontal, BoxIcon as Box, CaseUpperIcon as CaseUpper, PuzzleIcon as Puzzle } from '@kition/tessera-icons/react'
+import { BookBookmarkIcon as BookMarked, CalendarClockIcon as CalendarClock, FileTextIcon as FileText, FilePlusCornerIcon as FilePlus2, ImageIcon as Image, LinkIcon as Link, MessageSquarePlusIcon as MessageSquarePlus, OmegaIcon as Omega, PanelBottomIcon as PanelBottom, PanelTopIcon as PanelTop, PilcrowIcon as Pilcrow, HashIcon as Hash, SigmaIcon as Sigma, SignatureIcon as Signature, FaceSlightlySmilingIcon as Smile, TableIcon as Table, TextCursorInputIcon as TextCursorInput, TypeIcon as Type, WorkflowIcon as Workflow, SeparatorHorizontalIcon as SeparatorHorizontal, BoxIcon as Box, CaseUpperIcon as CaseUpper, PuzzleIcon as Puzzle } from '@kition/tessera/icons/react'
 import {
   CommandButton,
   CommandItem,
@@ -14,7 +14,7 @@ import {
   base64,
   useHostPick,
   useKitEditor,
-} from '@kition/kit-editor'
+} from '@kition/sdk/editor'
 
 const SYMBOLS = ['©', '®', '™', '§', '¶', '€', '£', '¥', '°', '±', '≠', '≤', '≥', '÷', '×', '∞', 'µ', 'α', 'β', 'π', 'Ω', '∑', '√', '→', '←', '✓', '★', '♥', '—', '…']
 

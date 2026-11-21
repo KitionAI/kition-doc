@@ -1,5 +1,5 @@
-import { Columns2Icon as Columns2, FileDigitIcon as FileDigit, RulerIcon as Ruler, RectangleHorizontalIcon as RectangleHorizontal, ScalingIcon as Scaling, SeparatorHorizontalIcon as SeparatorHorizontal, TextWrapIcon as WrapText } from '@kition/tessera-icons/react'
-import { CommandButton, CommandItem, CommandTab, RibbonGroup, RibbonMenu, RibbonStack, useKitEditor } from '@kition/kit-editor'
+import { Columns2Icon as Columns2, FileDigitIcon as FileDigit, RulerIcon as Ruler, RectangleHorizontalIcon as RectangleHorizontal, ScalingIcon as Scaling, SeparatorHorizontalIcon as SeparatorHorizontal, TextWrapIcon as WrapText } from '@kition/tessera/icons/react'
+import { CommandButton, CommandItem, CommandTab, RibbonGroup, RibbonMenu, RibbonStack, useKitEditor } from '@kition/sdk/editor'
 import { DOC_PRIMARY } from '../doc'
 
 const MARGINS: Array<[string, string]> = [

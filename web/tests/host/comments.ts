@@ -4,8 +4,8 @@
  * shown back with `comments/show`), hears `comments/activated`, and keeps the document's replica.
  * `?role=viewer` or `?role=commenter` opens the document read-only as that person would.
  */
-import { mountKit, type KitConnection } from '@kition/kit-host'
-import type { KitCommentAnchor, KitShownThread, StoredReplica } from '@kition/kit-ui-protocol'
+import { mountKit, type KitConnection } from '@kition/sdk/host'
+import type { KitCommentAnchor, KitShownThread, StoredReplica } from '@kition/sdk/protocol'
 
 declare global {
   interface Window {

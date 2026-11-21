@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
-import { ChevronDownIcon as ChevronDown, ChevronUpIcon as ChevronUp, XIcon as X } from '@kition/tessera-icons/react'
-import { Button, IconButton, useKitEditor } from '@kition/kit-editor'
+import { ChevronDownIcon as ChevronDown, ChevronUpIcon as ChevronUp, XIcon as X } from '@kition/tessera/icons/react'
+import { Button, IconButton, useKitEditor } from '@kition/sdk/editor'
 
 /** Find and replace under the ribbon (the engine's `edit.find`, `edit.findNext`, `edit.replace`). */
 export function FindBar({ replacing, onClose }: { replacing: boolean; onClose: () => void }) {

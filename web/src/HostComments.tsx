@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { IconButton, toast, type HostConnection, type KitCanvasView, type RasterDecoration, type RasterRect } from '@kition/kit-editor'
-import type { KitShownThread } from '@kition/kit-ui-protocol'
-import { MessageSquareIcon as MessageSquare, MessageSquarePlusIcon as MessageSquarePlus } from '@kition/tessera-icons/react'
+import { IconButton, toast, type HostConnection, type KitCanvasView, type RasterDecoration, type RasterRect } from '@kition/sdk/editor'
+import type { KitShownThread } from '@kition/sdk/protocol'
+import { MessageSquareIcon as MessageSquare, MessageSquarePlusIcon as MessageSquarePlus } from '@kition/tessera/icons/react'
 import { anchorOf, foundList, hostMarks, locatedList, markerPlaces, selectionLine, type HostMark, type LocatedAnchor, type PlacedLine } from './hostAnchors'
 
 /** A marker's size and its distance from the page's right edge, in CSS pixels. */

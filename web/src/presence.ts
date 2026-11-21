@@ -1,4 +1,4 @@
-import { drawPresence, peerColor, type RasterDecoration, type RemoteCaret } from '@kition/kit-editor'
+import { drawPresence, peerColor, type RasterDecoration, type RemoteCaret } from '@kition/sdk/editor'
 import type { PeerMark } from './presenceMarks'
 
 export { peerMarks, placesOf, sharedPresence, type PlacedCaret, type SharedCaret } from './presenceMarks'

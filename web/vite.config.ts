@@ -7,15 +7,16 @@ export default defineConfig({
   base: './',
   plugins: [react()],
   resolve: {
-    // @kition/kit-editor may be linked from kition-sdk (KITION_LINK=1); one React for the page.
+    // @kition/sdk may be linked from kition-sdk (KITION_LINK=1); one React for the page.
     dedupe: ['react', 'react-dom'],
-    // kit-editor's engine worker reads replicas with @kition/kdm (the object model, a commenter's
-    // comments). loro-crdt's browser entry loads its WebAssembly itself, as a build picks it; the
-    // development entry Vite's server would pick imports it as a module, which needs a plugin.
+    // The editor's engine worker reads replicas with @kition/sdk/kdm (the object model, a
+    // commenter's comments). loro-crdt's browser entry loads its WebAssembly itself, as a build
+    // picks it; the development entry Vite's server would pick imports it as a module, which needs
+    // a plugin.
     alias: [{ find: /^loro-crdt$/, replacement: 'loro-crdt/browser' }],
   },
   // loro-crdt stays unbundled, so its WebAssembly is found next to it.
-  optimizeDeps: { exclude: ['@kition/kit-editor', '@kition/kit-host', '@kition/kit-ui-protocol', '@kition/kit-dev-host', 'loro-crdt'] },
+  optimizeDeps: { exclude: ['@kition/sdk', 'loro-crdt'] },
   worker: { format: 'es' },
   server: {
     port: 5181,

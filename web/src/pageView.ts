@@ -1,4 +1,4 @@
-import type { RasterRect, RasterView } from '@kition/kit-editor'
+import type { RasterRect, RasterView } from '@kition/sdk/editor'
 
 const PAGE_GAP = 20
 

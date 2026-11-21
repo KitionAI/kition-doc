@@ -1,4 +1,4 @@
-import { TextAlignCenterIcon as AlignCenter, TextAlignJustifyIcon as AlignJustify, TextAlignStartIcon as AlignLeft, TextAlignEndIcon as AlignRight, ArrowDownAZIcon as ArrowDownAZ, BaselineIcon as Baseline, BoldIcon as Bold, CaseSensitiveIcon as CaseSensitive, ClipboardPasteIcon as ClipboardPaste, CopyIcon as Copy, EraserIcon as Eraser, HighlighterIcon as Highlighter, ListIndentDecreaseIcon as IndentDecrease, ListIndentIncreaseIcon as IndentIncrease, ItalicIcon as Italic, ListIcon as List, ListOrderedIcon as ListOrdered, ListTreeIcon as ListTree, PaintBucketIcon as PaintBucket, PaintbrushIcon as Paintbrush, PilcrowIcon as Pilcrow, ReplaceIcon as Replace, ScissorsIcon as Scissors, SearchIcon as Search, SquareDashedIcon as SquareDashed, StrikethroughIcon as Strikethrough, SubscriptIcon as Subscript, SuperscriptIcon as Superscript, TypeIcon as Type, UnderlineIcon as Underline, UnfoldVerticalIcon as UnfoldVertical, Grid2x2Icon as Grid2x2, MousePointer2Icon as MousePointer2, AArrowUpIcon as AArrowUp, AArrowDownIcon as AArrowDown, HeadingIcon as Heading } from '@kition/tessera-icons/react'
+import { TextAlignCenterIcon as AlignCenter, TextAlignJustifyIcon as AlignJustify, TextAlignStartIcon as AlignLeft, TextAlignEndIcon as AlignRight, ArrowDownAZIcon as ArrowDownAZ, BaselineIcon as Baseline, BoldIcon as Bold, CaseSensitiveIcon as CaseSensitive, ClipboardPasteIcon as ClipboardPaste, CopyIcon as Copy, EraserIcon as Eraser, HighlighterIcon as Highlighter, ListIndentDecreaseIcon as IndentDecrease, ListIndentIncreaseIcon as IndentIncrease, ItalicIcon as Italic, ListIcon as List, ListOrderedIcon as ListOrdered, ListTreeIcon as ListTree, PaintBucketIcon as PaintBucket, PaintbrushIcon as Paintbrush, PilcrowIcon as Pilcrow, ReplaceIcon as Replace, ScissorsIcon as Scissors, SearchIcon as Search, SquareDashedIcon as SquareDashed, StrikethroughIcon as Strikethrough, SubscriptIcon as Subscript, SuperscriptIcon as Superscript, TypeIcon as Type, UnderlineIcon as Underline, UnfoldVerticalIcon as UnfoldVertical, Grid2x2Icon as Grid2x2, MousePointer2Icon as MousePointer2, AArrowUpIcon as AArrowUp, AArrowDownIcon as AArrowDown, HeadingIcon as Heading } from '@kition/tessera/icons/react'
 import {
   ColorGrid,
   CommandButton,
@@ -12,7 +12,7 @@ import {
   RibbonStack,
   useEngineQuery,
   useKitEditor,
-} from '@kition/kit-editor'
+} from '@kition/sdk/editor'
 import { FONTS, SIZES, type FormatState, type StyleEntry, type ViewState } from '../doc'
 
 const hex = (color: string) => color.replace(/^#/, '').toUpperCase()

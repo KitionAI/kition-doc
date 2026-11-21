@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { FileOutputIcon as FileOutput, ImageDownIcon as ImageDown } from '@kition/tessera-icons/react'
-import { RibbonButton, RibbonGroup, toast, useKitEditor } from '@kition/kit-editor'
+import { FileOutputIcon as FileOutput, ImageDownIcon as ImageDown } from '@kition/tessera/icons/react'
+import { RibbonButton, RibbonGroup, toast, useKitEditor } from '@kition/sdk/editor'
 import { exportThroughHost, type ExportFormat } from '../exportFile'
 
 /**

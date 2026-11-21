@@ -1,5 +1,5 @@
-import { BookOpenIcon as BookOpen, FileTextIcon as FileText, GlobeIcon as Globe, Grid3x3Icon as Grid3x3, ListTreeIcon as ListTree, MaximizeIcon as Maximize, PanelLeftIcon as PanelLeft, RulerIcon as Ruler, ScanSearchIcon as ScanSearch, StretchHorizontalIcon as StretchHorizontal, FileIcon as File, NotebookTextIcon as NotebookText } from '@kition/tessera-icons/react'
-import { CommandButton, RibbonButton, RibbonGroup, RibbonStack, useEngineQuery, useKitEditor } from '@kition/kit-editor'
+import { BookOpenIcon as BookOpen, FileTextIcon as FileText, GlobeIcon as Globe, Grid3x3Icon as Grid3x3, ListTreeIcon as ListTree, MaximizeIcon as Maximize, PanelLeftIcon as PanelLeft, RulerIcon as Ruler, ScanSearchIcon as ScanSearch, StretchHorizontalIcon as StretchHorizontal, FileIcon as File, NotebookTextIcon as NotebookText } from '@kition/tessera/icons/react'
+import { CommandButton, RibbonButton, RibbonGroup, RibbonStack, useEngineQuery, useKitEditor } from '@kition/sdk/editor'
 import type { ViewState } from '../doc'
 
 export function ViewTab({ onZoom }: { onZoom: (to: 'pageWidth' | 'onePage' | number) => void }) {
