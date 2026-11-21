@@ -2,7 +2,6 @@
 // Inserts a chart from the shared Insert › Chart menu, changes its type and elements from the
 // shared Chart Design controls, edits its data in the grid, undoes, saves to .docx, reopens, edits
 // it again, and checks that a commenter cannot change it.
-import './platform.mjs'
 import assert from 'node:assert/strict'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'

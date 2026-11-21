@@ -1,5 +1,4 @@
 // Paper stays near the ribbon in short and tall windows, without editing the document.
-import './platform.mjs'
 import assert from 'node:assert/strict'
 import { chromium, webkit } from 'playwright'
 import { createServer } from 'vite'

@@ -1,5 +1,4 @@
 // The editor in each display mode, through the development host: node tests/modes.mjs [chromium|webkit]
-import './platform.mjs'
 import { chromium, webkit } from 'playwright'
 import { createServer } from 'vite'
 import { runModeSmoke } from '@kition/kit-dev-host/mode-smoke'

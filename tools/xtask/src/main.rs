@@ -151,6 +151,32 @@ fn cmd_wasm() -> Result<(), String> {
     if failed == 0 { Ok(()) } else { Err(format!("{failed} crate(s) failed the wasm check")) }
 }
 
+/// The Python the layout comparison runs with: `KITION_GOLDEN_PYTHON`, or a virtual environment in
+/// `target/golden-venv` with `tools/requirements-golden.txt` installed (Pillow, numpy, pypdf), made
+/// the first time and again when the requirements change, so a machine with only `python3` (a CI
+/// runner) runs the comparison too.
+fn golden_python() -> Result<PathBuf, String> {
+    if let Ok(python) = std::env::var("KITION_GOLDEN_PYTHON") {
+        return Ok(python.into());
+    }
+    let venv = root().join("target/golden-venv");
+    let python = venv.join("bin/python");
+    let requirements = root().join("tools/requirements-golden.txt");
+    let wanted = std::fs::read_to_string(&requirements).map_err(|e| format!("{}: {e}", requirements.display()))?;
+    let installed = venv.join("requirements-golden.txt");
+    if python.exists() && std::fs::read_to_string(&installed).is_ok_and(|had| had == wanted) {
+        return Ok(python);
+    }
+    let mut make = Command::new("python3");
+    make.arg("-m").arg("venv").arg(&venv);
+    run(make, "python3 -m venv target/golden-venv")?;
+    let mut install = Command::new(&python);
+    install.args(["-m", "pip", "install", "--quiet", "-r"]).arg(&requirements);
+    run(install, "pip install -r tools/requirements-golden.txt")?;
+    std::fs::write(&installed, wanted).map_err(|e| format!("{}: {e}", installed.display()))?;
+    Ok(python)
+}
+
 fn cmd_ci() -> Result<(), String> {
     type Step = (&'static str, Box<dyn Fn() -> Result<(), String>>);
     let steps: Vec<Step> = vec![
@@ -181,8 +207,7 @@ fn cmd_ci() -> Result<(), String> {
         (
             "layout-comparison",
             Box::new(|| {
-                let python = std::env::var("KITION_GOLDEN_PYTHON").unwrap_or_else(|_| "python3".into());
-                let mut command = Command::new(python);
+                let mut command = Command::new(golden_python()?);
                 command.current_dir(root()).args(["-m", "unittest", "discover", "-s", "tools", "-p", "test_golden*.py"]);
                 run(command, "Python WPS layout comparison tests")
             }),

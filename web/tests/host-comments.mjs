@@ -4,7 +4,6 @@
 // instead of writing a Word comment; the host's thread comes back as a marker beside its line that
 // follows the text through edits and page breaks; clicking it sends `comments/activated`. The
 // file's own Word comments stay the kit's. A viewer gets markers but no Comment; a commenter both.
-import './platform.mjs'
 import { chromium, webkit } from 'playwright'
 import { createServer } from 'vite'
 

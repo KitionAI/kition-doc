@@ -2,7 +2,6 @@
 // Inserts a shape from the shared Insert controls, moves, resizes and turns it with the pointer,
 // formats it from the shared Shape Format controls, undoes, saves to .docx, reopens, edits it
 // again, and checks that a commenter cannot change it.
-import './platform.mjs'
 import assert from 'node:assert/strict'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
