@@ -2,6 +2,7 @@
 // Escape collapses it and stays in Focus; with nothing to cancel, Escape leaves Focus. The find bar
 // is the kit's own bar, so Focus hides it and leaving Focus shows it again.
 // node tests/focus-escape.mjs [chromium|webkit]
+import './platform.mjs'
 import assert from 'node:assert/strict'
 import { chromium, webkit } from 'playwright'
 import { createServer } from 'vite'

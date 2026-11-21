@@ -1,5 +1,6 @@
 // The editor's flow in a real browser, through the development host: node tests/flow.mjs [chromium|webkit]
 // Starts the Vite dev server itself, opens dev.html in Chinese, and prints PASS or FAIL per step.
+import './platform.mjs'
 import { chromium, webkit } from 'playwright'
 import { createServer } from 'vite'
 

@@ -94,9 +94,28 @@ pub struct DocDocument {
     validating_reread: bool,
     planning: bool,
     selection_active: bool,
+    /// The chart the last `drawing.insert` made, with the selection it left: the caret after the
+    /// chart (so typing follows it), where the chart is still the object at the caret and the
+    /// editor shows its Chart Design until the selection moves.
+    pub(crate) inserted_chart: Option<(u32, kition_doc_engine::Selection)>,
 }
 
 impl DocDocument {
+    /// Remembers the chart `command` inserted (`drawing.insert` of `kind: "chart"`), if it did.
+    pub(crate) fn note_inserted_chart(&mut self, command: &str, params: &Value, answer: &Value) {
+        let chart = command == "drawing.insert" && params.get("kind").and_then(Value::as_str) == Some("chart");
+        if let Some(uid) = answer.get("id").and_then(Value::as_str).and_then(|id| id.parse::<u32>().ok()).filter(|_| chart) {
+            self.inserted_chart = Some((uid, self.session.borrow().sel.clone()));
+        }
+    }
+
+    /// The chart just inserted while the caret is still where its insertion left it.
+    fn chart_just_inserted(&self) -> Option<u32> {
+        let (uid, sel) = self.inserted_chart.as_ref()?;
+        let session = self.session.borrow();
+        (session.sel == *sel && session.doc.find_shape(*uid).is_some()).then_some(*uid)
+    }
+
     /// `params` with every position that names its paragraph by id (`{para, off}`,
     /// C8-land-14-doc) written as the engine reads positions.
     /// An agent (the headless kit: [`files::serve_hosted`]) cannot see the session's clipboard: a
@@ -155,6 +174,7 @@ impl DocDocument {
             validating_reread: false,
             planning: false,
             selection_active: false,
+            inserted_chart: None,
         }
     }
 
@@ -455,6 +475,7 @@ impl KitDocument for DocDocument {
         let answer = self.session().run(command, &params).map_err(|error| error.to_string())?;
         self.selection_active |= self.session.borrow().sel != selection || matches!(command, "select.range" | "caret.set");
         self.copied_by(command);
+        self.note_inserted_chart(command, &params, &answer);
         Ok(answer)
     }
 
@@ -462,7 +483,7 @@ impl KitDocument for DocDocument {
     /// the selection, and the history.
     fn inspect(&self) -> Result<Value, String> {
         // The selected shape or chart, for the editor's shared Shape Format and Chart Design controls.
-        let selected = self.selected_object().filter(|(_, uid, _)| *uid > 0).map(|(_, uid, _)| uid);
+        let selected = self.selected_object().filter(|(_, uid, _)| *uid > 0).map(|(_, uid, _)| uid).or_else(|| self.chart_just_inserted());
         let is_chart = selected.is_some_and(|uid| {
             let session = self.session.borrow();
             session

@@ -1,4 +1,5 @@
 // Visible scrollbars follow the document viewport without changing the file.
+import './platform.mjs'
 import assert from 'node:assert/strict'
 import { chromium, webkit } from 'playwright'
 import { createServer } from 'vite'

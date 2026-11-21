@@ -1,4 +1,5 @@
 // Scrolling stays within the document's pages in both the desktop and browser engines.
+import './platform.mjs'
 import assert from 'node:assert/strict'
 import { chromium, webkit } from 'playwright'
 import { createServer } from 'vite'

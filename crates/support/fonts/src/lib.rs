@@ -328,11 +328,15 @@ mod tests {
         }
         let fonts = japanese_document_fonts();
         assert!(!fonts.is_empty(), "kition-fonts has Japanese fonts");
-        // Ordering preferences (Mincho/BIZ UDPGothic first, bold before regular) only matter once
-        // kition-fonts ships more than one Japanese face; today it ships one universal fallback
-        // face, so every ordered list just contains that one face.
+        // Ordering preferences: documents take a Mincho face first and the interface BIZ
+        // UDPGothic, when kition-fonts ships them (it does since it added the BIZ UD and Shippori
+        // faces beside Droid Sans Fallback); with one universal fallback face both lists are just
+        // that face.
         let first_family = fonts[0].family;
-        assert_eq!(japanese_ui_fonts(false)[0].family, first_family);
+        let ships = |family: &str| fonts.iter().any(|f| f.family == family);
+        assert!(!ships("BIZ UDMincho") || first_family.contains("Mincho"), "{first_family}");
+        let ui_first = if ships("BIZ UDPGothic") { "BIZ UDPGothic" } else { first_family };
+        assert_eq!(japanese_ui_fonts(false)[0].family, ui_first);
         assert_eq!(japanese_ui_fonts(true).len(), fonts.len());
         let db = FontDb::with_font_dirs(Vec::new());
         db.set_system_fallback(false);

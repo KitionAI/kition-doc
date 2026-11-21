@@ -2,6 +2,7 @@
 // The engine draws the file and the host writes it as a new file (`host/write` mode `export`): the
 // editor says it exported only when the host answers, names the file the host wrote, and shows the
 // host's error when it refuses. The agent's export command answers the same bytes.
+import './platform.mjs'
 import { chromium, webkit } from 'playwright'
 import { createServer } from 'vite'
 

@@ -152,20 +152,29 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     [overlays, hostMarks, markers, marks],
   )
 
-  // A page made current some other way than on the canvas (Page Down, Go To) comes into view.
+  // A page made current some other way than on the canvas (Page Down, Go To) comes into view; a
+  // page the caret was pushed to by an agent's or the host's edit (text inserted before it) does
+  // not move the person's view.
   const page = state?.pages[state.page]
-  const shownPage = useRef(-1)
+  const shown = useRef({ page: -1, revision: -1 })
+  const editedBy = session.editedBy
   useEffect(() => {
-    if (!state || !page || shownPage.current === state.page) return
-    const first = shownPage.current < 0
-    shownPage.current = state.page
-    if (first) return
+    if (!state || !page) return
+    const revision = change.revision
+    if (shown.current.page === state.page) {
+      shown.current.revision = revision
+      return
+    }
+    const first = shown.current.page < 0
+    const pushed = editedBy != null && revision !== shown.current.revision
+    shown.current = { page: state.page, revision }
+    if (first || pushed) return
     const view = viewMemory.current
     const box = canvas.current
     if (!view || !box) return
     const height = window.innerHeight / view.zoom
     if (page.y1 < view.y || page.y0 > view.y + height) canvas.current?.show(pageWidthArea(page)!)
-  }, [page, state])
+  }, [change.revision, editedBy, page, state])
 
   const zoomTo = (to: 'pageWidth' | 'onePage' | number) => {
     const current = state?.pages[state.page]

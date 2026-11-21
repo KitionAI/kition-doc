@@ -2,6 +2,7 @@
 // Picks a pen from the shared Draw controls, draws a stroke with the pointer, undoes and redoes
 // it, erases it with the eraser's drag, saves to .docx, reopens, and checks that a commenter
 // cannot draw.
+import './platform.mjs'
 import assert from 'node:assert/strict'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
