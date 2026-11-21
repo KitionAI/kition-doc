@@ -2,7 +2,8 @@
 //! (`kition-doc-kit`), served headless over the Kit Protocol by `kition-headless`, as the kit's
 //! `kit.json` declares it, with the object model (`model.describe`, `model.batch`) and the replica
 //! methods (`model.open`, `model.import`, `model.export`, `model.save`) over the document's change
-//! exchange.
+//! exchange, and the identity a file carries (`document.identity`, `document.fork`): a `.docx`
+//! is written from the engine's document and embeds no replica, so it carries none.
 //!
 //! The executable's `main` serves [`backend`]; tests drive the same backend in-process.
 //!
@@ -13,22 +14,20 @@
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
 use kition_doc_kit::DocDocument;
-use kition_headless::{Headless, KitInfo};
+use kition_headless::{FileIdentity, Headless, KitInfo};
 
 /// The kit's manifest.
 pub const MANIFEST: &str = include_str!("../../../kit.json");
 /// Commands with file parameters an agent may run: none (the host opens, saves and exports).
 const SANDBOXED: &[&str] = &[];
-/// `inspect()` keys about the editing session rather than the file.
-const VOLATILE: &[&str] = &["page", "selected"];
 
 /// The kit as `kit.json` declares it.
 pub fn kit() -> Result<KitInfo, String> {
-    KitInfo::from_manifest(MANIFEST, SANDBOXED, VOLATILE)
+    KitInfo::from_manifest(MANIFEST, SANDBOXED, kition_doc_kit::context::EDITOR_STATE)
 }
 
 /// The backend the executable serves: from now on every document this process makes is hosted.
 pub fn backend(kit: &KitInfo) -> Headless<DocDocument> {
     kition_doc_kit::files::serve_hosted();
-    Headless::<DocDocument>::with_replica_port(kit.clone())
+    Headless::<DocDocument>::with_replica_port(kit.clone()).with_file_identity(FileIdentity::NotEmbedded)
 }

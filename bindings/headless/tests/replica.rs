@@ -49,7 +49,7 @@ fn a_document_opens_from_its_exported_replica_with_its_media() {
     document.execute("insert.picture", json!({ "data": PICTURE, "width": 72, "alt": "Four dots" })).unwrap();
     std::fs::write(root.join("basic.docx"), document.save(None).unwrap()).unwrap();
 
-    let mut kit = Headless::<DocDocument>::with_replica_port(KitInfo::from_manifest(MANIFEST, &[], &[]).unwrap());
+    let mut kit = Headless::<DocDocument>::with_replica_port(KitInfo::from_manifest(MANIFEST, &[], kition_doc_kit::context::EDITOR_STATE).unwrap());
     let folder = HostFolder::new(&root).unwrap();
     kit.set_host(folder.host());
     let file = kit.open(OpenRequest { file: &folder.file("basic.docx").unwrap(), read_only: false, create: None }).unwrap().id;

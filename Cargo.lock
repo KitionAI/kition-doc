@@ -1270,7 +1270,7 @@ dependencies = [
 [[package]]
 name = "kition-convergence"
 version = "0.1.0"
-source = "git+https://github.com/KitionAI/kition-sdk?rev=f5ea478430d1e85069b6c6c9fac1de6b8e5c5d57#f5ea478430d1e85069b6c6c9fac1de6b8e5c5d57"
+source = "git+https://github.com/KitionAI/kition-sdk?rev=6b4d471603aebdde1ee23c1a1cc522f8bbd97883#6b4d471603aebdde1ee23c1a1cc522f8bbd97883"
 dependencies = [
  "serde_json",
 ]
@@ -1283,6 +1283,7 @@ dependencies = [
  "kition-doc-kit",
  "kition-headless",
  "kition-kit",
+ "kition-kit-host",
  "kition-kit-server",
  "kition-kits",
  "serde_json",
@@ -1497,7 +1498,7 @@ dependencies = [
 [[package]]
 name = "kition-headless"
 version = "0.1.0"
-source = "git+https://github.com/KitionAI/kition-sdk?rev=f5ea478430d1e85069b6c6c9fac1de6b8e5c5d57#f5ea478430d1e85069b6c6c9fac1de6b8e5c5d57"
+source = "git+https://github.com/KitionAI/kition-sdk?rev=6b4d471603aebdde1ee23c1a1cc522f8bbd97883#6b4d471603aebdde1ee23c1a1cc522f8bbd97883"
 dependencies = [
  "kition-kit",
  "kition-kit-host",
@@ -1510,7 +1511,7 @@ dependencies = [
 [[package]]
 name = "kition-kdm"
 version = "0.1.0"
-source = "git+https://github.com/KitionAI/kition-sdk?rev=f5ea478430d1e85069b6c6c9fac1de6b8e5c5d57#f5ea478430d1e85069b6c6c9fac1de6b8e5c5d57"
+source = "git+https://github.com/KitionAI/kition-sdk?rev=6b4d471603aebdde1ee23c1a1cc522f8bbd97883#6b4d471603aebdde1ee23c1a1cc522f8bbd97883"
 dependencies = [
  "loro",
  "serde",
@@ -1523,7 +1524,7 @@ dependencies = [
 [[package]]
 name = "kition-kit"
 version = "0.1.0"
-source = "git+https://github.com/KitionAI/kition-sdk?rev=f5ea478430d1e85069b6c6c9fac1de6b8e5c5d57#f5ea478430d1e85069b6c6c9fac1de6b8e5c5d57"
+source = "git+https://github.com/KitionAI/kition-sdk?rev=6b4d471603aebdde1ee23c1a1cc522f8bbd97883#6b4d471603aebdde1ee23c1a1cc522f8bbd97883"
 dependencies = [
  "kition-kdm",
  "serde",
@@ -1536,7 +1537,7 @@ dependencies = [
 [[package]]
 name = "kition-kit-host"
 version = "0.1.0"
-source = "git+https://github.com/KitionAI/kition-sdk?rev=f5ea478430d1e85069b6c6c9fac1de6b8e5c5d57#f5ea478430d1e85069b6c6c9fac1de6b8e5c5d57"
+source = "git+https://github.com/KitionAI/kition-sdk?rev=6b4d471603aebdde1ee23c1a1cc522f8bbd97883#6b4d471603aebdde1ee23c1a1cc522f8bbd97883"
 dependencies = [
  "hex",
  "kition-kit-process-protocol",
@@ -1553,7 +1554,7 @@ dependencies = [
 [[package]]
 name = "kition-kit-process-protocol"
 version = "0.1.0"
-source = "git+https://github.com/KitionAI/kition-sdk?rev=f5ea478430d1e85069b6c6c9fac1de6b8e5c5d57#f5ea478430d1e85069b6c6c9fac1de6b8e5c5d57"
+source = "git+https://github.com/KitionAI/kition-sdk?rev=6b4d471603aebdde1ee23c1a1cc522f8bbd97883#6b4d471603aebdde1ee23c1a1cc522f8bbd97883"
 dependencies = [
  "serde",
  "serde_json",
@@ -1564,8 +1565,9 @@ dependencies = [
 [[package]]
 name = "kition-kit-server"
 version = "0.1.0"
-source = "git+https://github.com/KitionAI/kition-sdk?rev=f5ea478430d1e85069b6c6c9fac1de6b8e5c5d57#f5ea478430d1e85069b6c6c9fac1de6b8e5c5d57"
+source = "git+https://github.com/KitionAI/kition-sdk?rev=6b4d471603aebdde1ee23c1a1cc522f8bbd97883#6b4d471603aebdde1ee23c1a1cc522f8bbd97883"
 dependencies = [
+ "kition-kdm",
  "kition-kit-process-protocol",
  "serde",
  "serde_json",
@@ -1576,7 +1578,7 @@ dependencies = [
 [[package]]
 name = "kition-kits"
 version = "0.1.0"
-source = "git+https://github.com/KitionAI/kition-sdk?rev=f5ea478430d1e85069b6c6c9fac1de6b8e5c5d57#f5ea478430d1e85069b6c6c9fac1de6b8e5c5d57"
+source = "git+https://github.com/KitionAI/kition-sdk?rev=6b4d471603aebdde1ee23c1a1cc522f8bbd97883#6b4d471603aebdde1ee23c1a1cc522f8bbd97883"
 dependencies = [
  "base64",
  "hex",
@@ -1596,7 +1598,7 @@ dependencies = [
 [[package]]
 name = "kition-office-core"
 version = "0.1.0"
-source = "git+https://github.com/KitionAI/kition-sdk?rev=f5ea478430d1e85069b6c6c9fac1de6b8e5c5d57#f5ea478430d1e85069b6c6c9fac1de6b8e5c5d57"
+source = "git+https://github.com/KitionAI/kition-sdk?rev=6b4d471603aebdde1ee23c1a1cc522f8bbd97883#6b4d471603aebdde1ee23c1a1cc522f8bbd97883"
 dependencies = [
  "kurbo",
  "serde",
@@ -1732,7 +1734,7 @@ dependencies = [
 [[package]]
 name = "loro"
 version = "1.16.2"
-source = "git+https://github.com/KitionPkg/loro?rev=c0f64d39c2125415c6fb21c7fcf344c32e360886#c0f64d39c2125415c6fb21c7fcf344c32e360886"
+source = "git+https://github.com/KitionPkg/loro?rev=b7e6dfea82ac7dc4f5dcce282844911fba6d5c04#b7e6dfea82ac7dc4f5dcce282844911fba6d5c04"
 dependencies = [
  "enum-as-inner 0.6.1",
  "generic-btree",
@@ -1747,7 +1749,7 @@ dependencies = [
 [[package]]
 name = "loro-common"
 version = "1.16.0"
-source = "git+https://github.com/KitionPkg/loro?rev=c0f64d39c2125415c6fb21c7fcf344c32e360886#c0f64d39c2125415c6fb21c7fcf344c32e360886"
+source = "git+https://github.com/KitionPkg/loro?rev=b7e6dfea82ac7dc4f5dcce282844911fba6d5c04#b7e6dfea82ac7dc4f5dcce282844911fba6d5c04"
 dependencies = [
  "arbitrary",
  "enum-as-inner 0.6.1",
@@ -1764,7 +1766,7 @@ dependencies = [
 [[package]]
 name = "loro-delta"
 version = "1.13.0"
-source = "git+https://github.com/KitionPkg/loro?rev=c0f64d39c2125415c6fb21c7fcf344c32e360886#c0f64d39c2125415c6fb21c7fcf344c32e360886"
+source = "git+https://github.com/KitionPkg/loro?rev=b7e6dfea82ac7dc4f5dcce282844911fba6d5c04#b7e6dfea82ac7dc4f5dcce282844911fba6d5c04"
 dependencies = [
  "arrayvec",
  "enum-as-inner 0.5.1",
@@ -1775,7 +1777,7 @@ dependencies = [
 [[package]]
 name = "loro-internal"
 version = "1.16.2"
-source = "git+https://github.com/KitionPkg/loro?rev=c0f64d39c2125415c6fb21c7fcf344c32e360886#c0f64d39c2125415c6fb21c7fcf344c32e360886"
+source = "git+https://github.com/KitionPkg/loro?rev=b7e6dfea82ac7dc4f5dcce282844911fba6d5c04#b7e6dfea82ac7dc4f5dcce282844911fba6d5c04"
 dependencies = [
  "append-only-bytes",
  "arref",
@@ -1820,7 +1822,7 @@ dependencies = [
 [[package]]
 name = "loro-kv-store"
 version = "1.16.0"
-source = "git+https://github.com/KitionPkg/loro?rev=c0f64d39c2125415c6fb21c7fcf344c32e360886#c0f64d39c2125415c6fb21c7fcf344c32e360886"
+source = "git+https://github.com/KitionPkg/loro?rev=b7e6dfea82ac7dc4f5dcce282844911fba6d5c04#b7e6dfea82ac7dc4f5dcce282844911fba6d5c04"
 dependencies = [
  "bytes",
  "ensure-cov",
@@ -1836,7 +1838,7 @@ dependencies = [
 [[package]]
 name = "loro-rle"
 version = "1.6.0"
-source = "git+https://github.com/KitionPkg/loro?rev=c0f64d39c2125415c6fb21c7fcf344c32e360886#c0f64d39c2125415c6fb21c7fcf344c32e360886"
+source = "git+https://github.com/KitionPkg/loro?rev=b7e6dfea82ac7dc4f5dcce282844911fba6d5c04#b7e6dfea82ac7dc4f5dcce282844911fba6d5c04"
 dependencies = [
  "append-only-bytes",
  "num",
@@ -1852,7 +1854,7 @@ checksum = "3f3d053a135388e6b1df14e8af1212af5064746e9b87a06a345a7a779ee9695a"
 [[package]]
 name = "loro_fractional_index"
 version = "1.13.0"
-source = "git+https://github.com/KitionPkg/loro?rev=c0f64d39c2125415c6fb21c7fcf344c32e360886#c0f64d39c2125415c6fb21c7fcf344c32e360886"
+source = "git+https://github.com/KitionPkg/loro?rev=b7e6dfea82ac7dc4f5dcce282844911fba6d5c04#b7e6dfea82ac7dc4f5dcce282844911fba6d5c04"
 dependencies = [
  "once_cell",
  "rand 0.8.8",
