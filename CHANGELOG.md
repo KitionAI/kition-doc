@@ -3,6 +3,10 @@
 Changes to Kition Doc, newest first. A version is the kit package version in `kit.json`;
 each package is published with a `package-v<version>` tag.
 
+## 0.1.4
+
+- The same kit as 0.1.3, built on kition-sdk 6672663 (the replica's undo passes over an undo group whose changes came to nothing): the 0.1.3 package was built on kition-sdk 6b4d471.
+
 ## 0.1.3
 
 - A host asks a Word file for its document id (`document.identity`) and copies a document as a new document (`document.fork`): a `.docx` is written from the document and embeds no replica, so it carries no id and its fork is the same bytes (Kit Process Protocol section 5.6, kition-sdk 6b4d471).
