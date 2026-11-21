@@ -4,3 +4,9 @@ xtask = "run --package xtask --"
 [net]
 # Fetch the pinned public SDK revision with git.
 git-fetch-with-cli = true
+
+[env]
+# kition-fonts (the checkout next to this one, as web/scripts/build-engine.sh uses it) is the
+# native build's CJK and metric-compatible fonts, so tests that lay out Chinese text do not depend
+# on the machine's system fonts. KITION_FONTS_DIR in the environment overrides it.
+KITION_FONTS_DIR = { value = "../kition-fonts", relative = true }

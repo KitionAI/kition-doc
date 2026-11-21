@@ -262,6 +262,9 @@ async fn an_eraser_path_holds_the_strokes_it_could_take() {
 async fn an_agents_write_carries_the_save_stamp_in_its_receipt() {
     let f = Fixture::new(Guard::Premise);
     let was = f.call("query", json!({ "objects": ["document"], "fields": ["core"] })).await.unwrap()["objects"][0]["fields"]["core"].clone();
+    // The stamp's time is in whole seconds: the write comes in a later second than the fixture's
+    // save, as a person's edit does, so its modified time is a new one.
+    std::thread::sleep(std::time::Duration::from_millis(1100));
     let receipt = f.run(Some(f.basis().await), json!([by_index(1, 0, 4), bold()])).await.unwrap();
     let root = receipt["changes"]["changed"].as_array().unwrap().iter().find(|c| c["id"] == "document").cloned().unwrap_or_default();
     let fields: Vec<&str> = root["fields"].as_array().into_iter().flatten().filter_map(Value::as_str).collect();
