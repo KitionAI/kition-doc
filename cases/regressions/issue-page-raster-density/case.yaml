@@ -5,12 +5,12 @@ intent: Pixel-density metadata preserves physical content coordinates when raste
 layer: gate
 source:
   kind: synthetic
-  from: tools/test_golden_word.py
+  from: tools/test_corpus_word.py
   license: owned
 input: []
 steps:
   - exec:
-      cmd: [python3, -m, unittest, discover, -s, tools, -p, test_golden_word.py]
+      cmd: [python3, -m, unittest, discover, -s, tools, -p, test_corpus_word.py]
 expected:
   - actual: out:exec
     compare: exit

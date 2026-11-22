@@ -6,10 +6,10 @@ from types import SimpleNamespace
 from unittest.mock import patch
 from pathlib import Path
 
-from golden_word import collect_cases, compare_images, page_matches
+from corpus_word import collect_cases, compare_images, page_matches
 
 
-class GoldenWordTests(unittest.TestCase):
+class CorpusWordTests(unittest.TestCase):
     def test_pairs_originals_without_reverse_conversions_or_temporary_files(self):
         with tempfile.TemporaryDirectory() as directory:
             archive = Path(directory) / 'samples.zip'
@@ -106,13 +106,13 @@ class GoldenWordTests(unittest.TestCase):
         self.assertFalse(page_matches(metrics))
 
     def test_equal_page_counts_do_not_hide_wrong_page_allocation_or_page_numbers(self):
-        from golden_fidelity import compare_page_text
+        from corpus_fidelity import compare_page_text
         self.assertTrue(compare_page_text('Body text\n1', ['Body ', 'text', '1'])['page_text_equal'])
         self.assertFalse(compare_page_text('Body text\n1', ['Body text', '2'])['page_text_equal'])
         self.assertFalse(compare_page_text('First paragraph', ['Second paragraph'])['page_text_equal'])
 
     def test_sampled_or_empty_page_runs_cannot_pass_a_full_document(self):
-        from golden_fidelity import document_matches
+        from corpus_fidelity import document_matches
         page = {**compare_images(self.blank(), self.blank()), 'page_text_equal': True}
         result = {'reference_complete': True, 'page_delta': 0, 'reference_pages': 2, 'pages': [page]}
         self.assertFalse(document_matches(result))
@@ -158,7 +158,7 @@ class GoldenWordTests(unittest.TestCase):
     def test_case_pipeline_rejects_extra_page_number_and_modified_input(self):
         from PIL import Image
         from pypdf import PdfWriter
-        from golden_pages import compare_case, digest
+        from corpus_pages import compare_case, digest
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             source, output = root / 'corpus' / 'sample', root / 'out' / 'sample'
@@ -172,7 +172,7 @@ class GoldenWordTests(unittest.TestCase):
                     'hashes': {p.name: digest(p.read_bytes()) for p in source.iterdir()}}
             layout = {'page_count': 1, 'scale': 2, 'pages': [{'width_pt': 600, 'height_pt': 800, 'text_spans': []}]}
             (output / 'layout.json').write_text(json.dumps(layout))
-            with patch('golden_pages.subprocess.run', return_value=SimpleNamespace(returncode=0)) as renderer:
+            with patch('corpus_pages.subprocess.run', return_value=SimpleNamespace(returncode=0)) as renderer:
                 good = compare_case(case, source.parent, output.parent, Path('renderer'), 1, compare_images)
                 self.assertEqual(good['status'], 'match')
                 layout['pages'][0]['text_spans'] = [{'text': '2'}]

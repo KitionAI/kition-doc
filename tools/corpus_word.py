@@ -10,10 +10,10 @@ import sys
 import zipfile
 from pathlib import Path, PurePosixPath
 
-from golden_fidelity import (COMPARISON_WIDTH, MAXIMUM_TONE_RMSE, MINIMUM_LAYOUT_F1, MINIMUM_SIMILARITY, foreground_similarity, layout_similarity,
+from corpus_fidelity import (COMPARISON_WIDTH, MAXIMUM_TONE_RMSE, MINIMUM_LAYOUT_F1, MINIMUM_SIMILARITY, foreground_similarity, layout_similarity,
                              normalize_page, page_matches)
-from golden_provenance import compare_snapshots, source_snapshot
-from golden_raster import SAMPLING_METHOD
+from corpus_provenance import compare_snapshots, source_snapshot
+from corpus_raster import SAMPLING_METHOD
 
 
 def archive_name(info):
@@ -128,7 +128,7 @@ def run(corpus, output, renderer, pages, limit, selected, jobs=1):
         cases = cases[:limit]
     results = []
     from concurrent.futures import ThreadPoolExecutor
-    from golden_pages import compare_case
+    from corpus_pages import compare_case
     with ThreadPoolExecutor(max_workers=jobs) as pool:
         compared = pool.map(lambda case: compare_case(case, corpus, output, renderer, pages, compare_images), cases)
         for index, result in enumerate(compared):

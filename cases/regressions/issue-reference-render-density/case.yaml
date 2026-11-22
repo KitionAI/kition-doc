@@ -5,12 +5,12 @@ intent: Native comparisons use consistent reference PNG density, fall back when 
 layer: gate
 source:
   kind: synthetic
-  from: tools/test_golden_raster.py
+  from: tools/test_corpus_raster.py
   license: owned
 input: []
 steps:
   - exec:
-      cmd: [python3, -m, unittest, discover, -s, tools, -p, test_golden_raster.py]
+      cmd: [python3, -m, unittest, discover, -s, tools, -p, test_corpus_raster.py]
 expected:
   - actual: out:exec
     compare: exit

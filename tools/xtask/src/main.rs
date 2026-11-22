@@ -151,28 +151,28 @@ fn cmd_wasm() -> Result<(), String> {
     if failed == 0 { Ok(()) } else { Err(format!("{failed} crate(s) failed the wasm check")) }
 }
 
-/// The Python the layout comparison runs with: `KITION_GOLDEN_PYTHON`, or a virtual environment in
-/// `target/golden-venv` with `tools/requirements-golden.txt` installed (Pillow, numpy, pypdf), made
+/// The Python the layout comparison runs with: `KITION_CORPUS_PYTHON`, or a virtual environment in
+/// `target/corpus-venv` with `tools/requirements-corpus.txt` installed (Pillow, numpy, pypdf), made
 /// the first time and again when the requirements change, so a machine with only `python3` (a CI
 /// runner) runs the comparison too.
-fn golden_python() -> Result<PathBuf, String> {
-    if let Ok(python) = std::env::var("KITION_GOLDEN_PYTHON") {
+fn corpus_python() -> Result<PathBuf, String> {
+    if let Ok(python) = std::env::var("KITION_CORPUS_PYTHON") {
         return Ok(python.into());
     }
-    let venv = root().join("target/golden-venv");
+    let venv = root().join("target/corpus-venv");
     let python = venv.join("bin/python");
-    let requirements = root().join("tools/requirements-golden.txt");
+    let requirements = root().join("tools/requirements-corpus.txt");
     let wanted = std::fs::read_to_string(&requirements).map_err(|e| format!("{}: {e}", requirements.display()))?;
-    let installed = venv.join("requirements-golden.txt");
+    let installed = venv.join("requirements-corpus.txt");
     if python.exists() && std::fs::read_to_string(&installed).is_ok_and(|had| had == wanted) {
         return Ok(python);
     }
     let mut make = Command::new("python3");
     make.arg("-m").arg("venv").arg(&venv);
-    run(make, "python3 -m venv target/golden-venv")?;
+    run(make, "python3 -m venv target/corpus-venv")?;
     let mut install = Command::new(&python);
     install.args(["-m", "pip", "install", "--quiet", "-r"]).arg(&requirements);
-    run(install, "pip install -r tools/requirements-golden.txt")?;
+    run(install, "pip install -r tools/requirements-corpus.txt")?;
     std::fs::write(&installed, wanted).map_err(|e| format!("{}: {e}", installed.display()))?;
     Ok(python)
 }
@@ -207,8 +207,8 @@ fn cmd_ci() -> Result<(), String> {
         (
             "layout-comparison",
             Box::new(|| {
-                let mut command = Command::new(golden_python()?);
-                command.current_dir(root()).args(["-m", "unittest", "discover", "-s", "tools", "-p", "test_golden*.py"]);
+                let mut command = Command::new(corpus_python()?);
+                command.current_dir(root()).args(["-m", "unittest", "discover", "-s", "tools", "-p", "test_corpus*.py"]);
                 run(command, "Python WPS layout comparison tests")
             }),
         ),

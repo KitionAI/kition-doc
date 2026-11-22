@@ -5,12 +5,12 @@ intent: Comparison reports fingerprint tracked and untracked source files before
 layer: gate
 source:
   kind: synthetic
-  from: tools/test_golden_provenance.py
+  from: tools/test_corpus_provenance.py
   license: owned
 input: []
 steps:
   - exec:
-      cmd: [python3, -m, unittest, discover, -s, tools, -p, test_golden_provenance.py]
+      cmd: [python3, -m, unittest, discover, -s, tools, -p, test_corpus_provenance.py]
 expected:
   - actual: out:exec
     compare: exit

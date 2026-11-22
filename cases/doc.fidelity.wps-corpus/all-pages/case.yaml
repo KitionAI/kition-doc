@@ -13,7 +13,7 @@ source:
 input: ["corpus:golden-word/manifest.json"]
 steps:
   - exec:
-      cmd: [python3, tools/golden_word.py, run, --corpus, corpus/golden-word, --renderer, target/debug/xtask, --out, target/gate/wps-corpus, --pages, "1000", --check]
+      cmd: [python3, tools/corpus_word.py, run, --corpus, corpus/golden-word, --renderer, target/debug/xtask, --out, target/gate/wps-corpus, --pages, "1000", --check]
 expected:
   - actual: out:exec
     compare: exit

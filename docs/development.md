@@ -16,7 +16,7 @@ kit's package. To use Doc, start with the [README](../README.md).
 | `features.yaml`, `cases/` | The feature catalogue and its cases ([quality.md](quality.md)) |
 | `docs/` | Documents: entry documents at the first level, parity documents in `docs/parity/`, feature documents in `docs/features/` |
 | `assets/` | Fonts and hyphenation data the engine ships with; `readme/`: the README's pictures |
-| `tools/` | The repository's own tools: `tools/xtask` (`cargo xtask`) and the Python WPS layout comparison (`golden_*.py`) |
+| `tools/` | The repository's own tools: `tools/xtask` (`cargo xtask`) and the Python WPS layout comparison (`corpus_*.py`) |
 
 ## Build and test
 

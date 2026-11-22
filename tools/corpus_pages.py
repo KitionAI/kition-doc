@@ -4,8 +4,8 @@ import html
 import json
 import subprocess
 
-from golden_fidelity import compare_page_text, document_matches, normalize_page
-from golden_raster import reported_scale, select_scale
+from corpus_fidelity import compare_page_text, document_matches, normalize_page
+from corpus_raster import reported_scale, select_scale
 
 
 def digest(data):

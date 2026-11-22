@@ -440,14 +440,14 @@ features:
     priority: P0
     status: has
     paths:
-      - tools/golden_word.py
-      - tools/golden_fidelity.py
-      - tools/golden_pages.py
-      - tools/golden_provenance.py
-      - tools/golden_raster.py
-      - tools/test_golden_word.py
-      - tools/test_golden_provenance.py
-      - tools/test_golden_raster.py
+      - tools/corpus_word.py
+      - tools/corpus_fidelity.py
+      - tools/corpus_pages.py
+      - tools/corpus_provenance.py
+      - tools/corpus_raster.py
+      - tools/test_corpus_word.py
+      - tools/test_corpus_provenance.py
+      - tools/test_corpus_raster.py
       - tools/xtask/src/render_pages.rs
     cases:
       - regressions/issue-wps-layout-detection

@@ -6,9 +6,9 @@ import unittest
 from unittest.mock import patch
 
 
-class GoldenProvenanceTests(unittest.TestCase):
+class CorpusProvenanceTests(unittest.TestCase):
     def test_snapshot_includes_untracked_source_and_excludes_ignored_build_outputs(self):
-        from golden_provenance import source_snapshot, compare_snapshots
+        from corpus_provenance import source_snapshot, compare_snapshots
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             subprocess.run(['git', 'init', '-q', str(root)], check=True)
@@ -33,7 +33,7 @@ class GoldenProvenanceTests(unittest.TestCase):
             self.assertIn('engine.rs', compare_snapshots(end, source_snapshot(root))['changed_files'])
 
     def test_run_reports_source_changes_between_start_and_end(self):
-        from golden_word import run
+        from corpus_word import run
         start = {'revision': 'fixture-head', 'sha256': 'first', 'files': {'layout.rs': 'first'}}
         end = {'revision': 'fixture-head', 'sha256': 'second', 'files': {'layout.rs': 'second'}}
         with tempfile.TemporaryDirectory() as directory:
@@ -45,8 +45,8 @@ class GoldenProvenanceTests(unittest.TestCase):
             renderer.write_bytes(b'fixed renderer fixture')
             result = {'id': 'fixture', 'status': 'difference', 'reference_pages': 1,
                       'reference_complete': True, 'actual_pages': 1, 'page_delta': 0}
-            with patch('golden_word.source_snapshot', side_effect=[start, end]) as snapshots, \
-                 patch('golden_pages.compare_case', return_value=result):
+            with patch('corpus_word.source_snapshot', side_effect=[start, end]) as snapshots, \
+                 patch('corpus_pages.compare_case', return_value=result):
                 report = run(corpus, root / 'out', renderer, 1, 0, [])
             self.assertEqual(snapshots.call_count, 2)
             self.assertFalse(report['source_provenance']['unchanged'])

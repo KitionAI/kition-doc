@@ -12,11 +12,11 @@ From the repository root, using a Rust toolchain supported by the workspace:
 
 ```sh
 python3 -m venv target/layout-venv
-target/layout-venv/bin/python -m pip install -r tools/requirements-golden.txt
+target/layout-venv/bin/python -m pip install -r tools/requirements-corpus.txt
 cargo build -p xtask
-target/layout-venv/bin/python tools/golden_word.py inventory \
+target/layout-venv/bin/python tools/corpus_word.py inventory \
   --archive ../golden_word.zip --corpus corpus/golden-word
-target/layout-venv/bin/python tools/golden_word.py run \
+target/layout-venv/bin/python tools/corpus_word.py run \
   --corpus corpus/golden-word --renderer target/debug/xtask \
   --out target/wps-layout --pages 1000 --jobs 3 --check
 ```
@@ -118,12 +118,12 @@ differences; do not lower thresholds or update WPS files to make it green.
 Keep separate output directories for before and after runs, then compare them:
 
 ```sh
-target/layout-venv/bin/python tools/golden_word.py diff \
+target/layout-venv/bin/python tools/corpus_word.py diff \
   --before target/wps-baseline/report.json --after target/wps-layout/report.json \
   --out target/wps-layout/before-after.json
-target/layout-venv/bin/python -m unittest discover -s tools -p test_golden_word.py
+target/layout-venv/bin/python -m unittest discover -s tools -p test_corpus_word.py
 cargo test -p kition-doc-engine --test document_grid
-KITION_GOLDEN_PYTHON=target/layout-venv/bin/python cargo xtask ci
+KITION_CORPUS_PYTHON=target/layout-venv/bin/python cargo xtask ci
 ```
 
 Font substitution, differing source/reference revisions, paragraph spacing,
