@@ -31,7 +31,11 @@ kition-fonts checkout next to this repository (or the one `KITION_FONTS_DIR` nam
 serves `dev.html`, the editor in a development host; `web/package.json` lists the other browser
 tests (`test:drawing`, `test:chart`, `test:modes`, `test:export`, …).
 
-The check every change passes is `cargo xtask ci` ([quality.md](quality.md)); `cargo xtask --help`
+On your machine, run only the fast checks: `cargo fmt --all -- --check`, `cargo check -p
+<touched crates> --all-targets`, `cargo xtask wasm` and `pnpm typecheck` in `web/`. The check every
+change passes is the kit's CI run on GitHub (`.github/workflows/ci.yml`): clippy, `cargo test
+--workspace`, `cargo xtask ci` and every `test:*` script of `web/` ([quality.md](quality.md)); a
+change is done when the CI run of HEAD passes and HEAD is on `origin/main`. `cargo xtask --help`
 lists the other tasks (`layers`, `assets`, `parity`, …). The WPS layout comparison is described in
 [features/wps-layout-testing.md](features/wps-layout-testing.md).
 
@@ -92,4 +96,5 @@ machine: the Package workflow (`.github/workflows/package.yml`, which calls Kiti
 KitionAI/kition-doc`, and publishes the Release with the package's lock entry,
 `kition-doc-<version>.json`. Kition pins it with `node scripts/pin-kits.mjs doc` (see
 `docs/kits.md` there). A version is published once: bump `version` in `kit.json` to publish a
-change.
+change. Releasing is the owner's step: agents do not start the Package workflow or change a
+version.

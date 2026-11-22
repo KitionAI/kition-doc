@@ -111,15 +111,15 @@ People trust Kition Doc with their writing; a crash loses their work. **This out
 - **Layering** is enforced by `cargo xtask layers`.
 - **Rust only in the engine** (no handwritten JS/TS below `kition-doc-kit`). The kit's own editor, `web/`, is a React/TypeScript app by design (Kition platform `docs/platform/kits/ui.md`); **never break wasm** (`cargo xtask wasm`).
 
-## Quality gates
-Before every commit: `cargo xtask ci` (fmt, clippy -D warnings, tests, assets, layers, wasm). Commit after every arc of work that builds.
+## Checks and CI
+On this machine run only the fast checks: `cargo fmt --all -- --check`, `cargo check -p <touched crates> --all-targets`, the wasm check (`cargo xtask wasm`) and `pnpm typecheck` in `web/`. Commit after every arc of work that builds. The full checks run in the kit's CI run on GitHub (`.github/workflows/ci.yml`, which calls Kition's reusable kit CI): clippy, `cargo test --workspace`, `cargo xtask ci` (fmt, clippy -D warnings, tests, assets, layers, wasm) and every `test:*` script of `web/`. A task is done when the CI run of HEAD passes and HEAD is on `origin/main` (Kition's `scripts/kit-ci.sh` `push`, `wait`, `land`). Add no other workflows, and do not start the Package workflow (`.github/workflows/package.yml`): releasing is the owner's step.
 
 ## Typing behaves like Word
 Typing, Enter, Backspace, Tab, lists, AutoCorrect and AutoFormat follow Word's observed behaviour in [`docs/parity/typing-parity.md`](docs/parity/typing-parity.md), pinned by `crates/engine/engine/src/tests_typing.rs` (keys go through the same commands as the keyboard). Change behaviour, doc and tests together; a typing fix lands with a test there. Compare headlessly (drive the engine directly through tests, or `bindings/headless` over the Kit Protocol); don't drive GUIs with keystrokes on the shared machine.
 
 ## Building and running the kit
 - Engine: `cargo build --release -p kition-doc` (the headless kit executable for Kition's agent).
-- Editor: `cd web && pnpm install && pnpm engine && pnpm dev` (serves `dev.html`, a development host); `pnpm test:flow` runs its Playwright flow tests.
+- Editor: `cd web && pnpm install && pnpm engine && pnpm dev` (serves `dev.html`, a development host); `pnpm test:flow` and the other `test:*` scripts are its Playwright tests, which run in the kit's CI run.
 - Shell gotcha: `mv`/`cp` may be aliased interactive — use `/bin/mv -f` / `/bin/cp -f`.
 - Parallel agents: separate `CARGO_TARGET_DIR` per agent; edit only the crates you own; delete your target dir when done (disk).
 
