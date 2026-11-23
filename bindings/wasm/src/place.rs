@@ -1057,16 +1057,21 @@ fn enter_effect(on: bool, user: &[(String, String)], text: &str) -> bool {
 }
 
 /// The premise on one style, named by its id or its name: its entry in the root's `styles` map,
-/// keyed by style id (a JSON Pointer, so an id with a `.` or `/` stays one key): of each style
-/// whose id or name it is, else of a style of that id (one not made yet).
+/// keyed by style id (`styles.<id>`): of each style whose id or name it is, else of a style of
+/// that id (one not made yet). A key a path cannot name as one segment (with `.`, `/` or `#`)
+/// holds the whole map.
 pub(crate) fn style_premise(styles: &kition_doc_engine::doc::StyleSheet, name: &str) -> Premise {
     let mut keys: Vec<&str> = styles.styles.iter().filter(|s| s.id == name || s.name.eq_ignore_ascii_case(name)).map(|s| s.id.as_str()).collect();
     if keys.is_empty() {
         keys.push(name);
     }
     keys.dedup();
-    let pointer = |key: &str| format!("/styles/{}", key.replace('~', "~0").replace('/', "~1"));
-    Premise::on(ROOT).fields(keys.into_iter().map(pointer)).positions(Vec::<String>::new())
+    let fields: Vec<String> = if keys.iter().any(|key| key.is_empty() || key.contains(['.', '/', '#'])) {
+        vec!["styles".to_owned()]
+    } else {
+        keys.iter().map(|key| format!("styles.{key}")).collect()
+    };
+    Premise::on(ROOT).fields(fields).positions(Vec::<String>::new())
 }
 
 /// What a step with `on` rests on of the paragraphs it names, by its command.

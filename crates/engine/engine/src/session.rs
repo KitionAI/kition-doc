@@ -1031,10 +1031,8 @@ impl Session {
             return Err(CmdError::Disabled(format!("{id}: {why}")));
         }
         // Open for commenting only: comments, and taking back one's own (rule M23).
-        if spec.mutates && self.comment_only {
-            if !is_comment_command(id) && !matches!(id, "edit.undo" | "edit.redo") {
-                return Err(CmdError::Disabled(format!("{id}: the document is open for commenting only")));
-            }
+        if spec.mutates && self.comment_only && !is_comment_command(id) && !matches!(id, "edit.undo" | "edit.redo") {
+            return Err(CmdError::Disabled(format!("{id}: the document is open for commenting only")));
         }
         // Restrict Editing.
         if spec.mutates
