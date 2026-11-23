@@ -433,7 +433,7 @@ impl DocDocument {
             if let Some(under) = under {
                 under.objects.push(json!(id));
                 under.premises.push(Premise::on(id.as_str()).fields(["para"]).positions(["body"]));
-                under.premises.push(style_premise(p.props.style.as_deref().unwrap_or("Normal")));
+                under.premises.push(style_premise(&doc.styles, p.props.style.as_deref().unwrap_or("Normal")));
             }
             let len = p.text.chars().count();
             let hold = if after || len == 0 { Hold::Enter } else { Hold::Range };
@@ -575,6 +575,17 @@ impl DocDocument {
         let mut more = answer.take().unwrap_or_default();
         let declared = self.family_premises(command, params, &mut more);
         answer = if declared || more != Under::default() { Some(more) } else { None };
+        // Whatever resolves the styles (the whole `styles` map) resolves them over the document
+        // defaults, the `styleDefaults` register beside it.
+        for premise in answer.iter_mut().flat_map(|under| under.premises.iter_mut()) {
+            if premise.id == json!(ROOT)
+                && let Some(fields) = premise.fields.as_mut()
+                && fields.iter().any(|f| f == "styles")
+                && !fields.iter().any(|f| f == "styleDefaults")
+            {
+                fields.push("styleDefaults".into());
+            }
+        }
         if sets_selection(command, !self.context_on.is_empty()) || matches!(command, "para.text" | "para.insert") {
             self.pass.selection_set.set(true);
         }
@@ -751,8 +762,9 @@ impl DocDocument {
         if command == "list.define" {
             names.extend(params.get("levels").and_then(Value::as_array).into_iter().flatten().filter_map(|level| level.get("style")?.as_str()));
         }
+        let session = self.session.borrow();
         for name in &names {
-            under.premises.push(style_premise(name));
+            under.premises.push(style_premise(&session.doc.styles, name));
         }
         !names.is_empty()
     }
@@ -1044,11 +1056,17 @@ fn enter_effect(on: bool, user: &[(String, String)], text: &str) -> bool {
     scratch.doc.para_at(&start).cloned() != before
 }
 
-/// The premise on one style, named by its id or its name: its entry in the root's `styles`
-/// register (`styles.styles`, a list of styles each with an `id` and a `name`).
-pub(crate) fn style_premise(name: &str) -> Premise {
-    let quoted = serde_json::to_string(name).unwrap_or_default();
-    Premise::on(ROOT).fields([format!("styles.styles[id={quoted}]"), format!("styles.styles[name={quoted}]")]).positions(Vec::<String>::new())
+/// The premise on one style, named by its id or its name: its entry in the root's `styles` map,
+/// keyed by style id (a JSON Pointer, so an id with a `.` or `/` stays one key): of each style
+/// whose id or name it is, else of a style of that id (one not made yet).
+pub(crate) fn style_premise(styles: &kition_doc_engine::doc::StyleSheet, name: &str) -> Premise {
+    let mut keys: Vec<&str> = styles.styles.iter().filter(|s| s.id == name || s.name.eq_ignore_ascii_case(name)).map(|s| s.id.as_str()).collect();
+    if keys.is_empty() {
+        keys.push(name);
+    }
+    keys.dedup();
+    let pointer = |key: &str| format!("/styles/{}", key.replace('~', "~0").replace('/', "~1"));
+    Premise::on(ROOT).fields(keys.into_iter().map(pointer)).positions(Vec::<String>::new())
 }
 
 /// What a step with `on` rests on of the paragraphs it names, by its command.

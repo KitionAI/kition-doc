@@ -1,4 +1,4 @@
-//! An edited chart's description as its own `Chart` object (schema version 5, `KitDrawing` DR14):
+//! An edited chart's description as its own `Chart` object (`KitDrawing` DR14):
 //! an `Inline` holding a chart edited in Kition Doc names it in its `chart` ref, and each member
 //! of the description (type, title, legend, categories, series…) is an entry of its `parts` map,
 //! so two people changing different members of one chart at once both keep their change. The
@@ -10,9 +10,6 @@ use kition_kit::kdm::{ObjectId, Replica, Tx};
 use serde_json::{Map, Value};
 
 use crate::KdmResult;
-
-/// The minimum schema version once an edited chart's description is its own object.
-pub const CHART_SCHEMA_VERSION: u32 = 5;
 
 /// The object type.
 const CHART: &str = "Chart";
@@ -54,7 +51,6 @@ pub(crate) fn write(tx: &mut Tx<'_>, inline: &ObjectId, parts: Option<&Map<Strin
             tx.map_set(&object, "parts", k, v.clone())?;
         }
         tx.set(inline, "chart", Value::String(object.as_str().to_owned()))?;
-        tx.raise_schema_version(CHART_SCHEMA_VERSION)?;
         return Ok(true);
     };
     let have: Map<String, Value> = tx.map_entries(&object, "parts")?.into_iter().collect();

@@ -140,8 +140,7 @@ impl Session {
     fn active_kdm(&mut self) -> Result<&mut DocSession, CmdError> {
         self.sync_kdm();
         if self.link.kdm.is_none() {
-            let mut kdm = DocSession::create(&self.doc).map_err(kdm_error)?;
-            kdm.set_comment_only(self.comment_only);
+            let kdm = DocSession::create(&self.doc).map_err(kdm_error)?;
             self.link.kdm = Some(kdm);
         }
         self.link.kdm.as_mut().ok_or_else(no_replica)
@@ -264,8 +263,6 @@ impl Session {
     fn attach(&mut self, kdm: DocSession) {
         self.set_document(kdm.document().clone());
         self.link.replaced = false;
-        let mut kdm = kdm;
-        kdm.set_comment_only(self.comment_only);
         self.link.kdm = Some(kdm);
         self.link.mark = self.pushed;
         // `set_document` may have made the view nonempty: the next look writes that.
@@ -355,8 +352,7 @@ impl Session {
     fn record_kdm(&mut self, origin: &Origin, after: &Document) -> Option<u32> {
         if self.link.kdm.is_none() {
             match DocSession::create(&self.link.base) {
-                Ok(mut kdm) => {
-                    kdm.set_comment_only(self.comment_only);
+                Ok(kdm) => {
                     self.link.kdm = Some(kdm);
                 }
                 Err(error) => {

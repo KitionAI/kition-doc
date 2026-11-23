@@ -18,10 +18,9 @@ use crate::text::ParaText;
 pub struct BlockIds {
     pub object: ObjectId,
     pub table: Option<TableIds>,
-    /// A paragraph in the text form: its text field's runs as the replica holds them, which the
-    /// next write diffs from (`text`). `None` for a table, and for a paragraph in the register
-    /// form 0.3.x wrote, whose object has no text field: writing it makes a new object
-    /// (migration, K6).
+    /// A paragraph: its text field's runs as the replica holds them, which the next write diffs
+    /// from (`text`). `None` for a table, and for a block whose table object is gone (read as an
+    /// empty paragraph): writing it makes a new object.
     pub text: Option<ParaText>,
     /// The paragraphs merged into this one (`pieces`), listed right after it: not in the view,
     /// their text shown at the end of this paragraph's.
@@ -38,6 +37,8 @@ impl BlockIds {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TableIds {
     pub object: ObjectId,
+    /// Each grid column's `Col` object, parallel to `Table::grid`.
+    pub cols: Vec<ObjectId>,
     pub rows: Vec<RowIds>,
 }
 
@@ -74,10 +75,6 @@ pub struct Ids {
     pub threads: BTreeMap<u32, ObjectId>,
     /// Each comment's `body` text as last read or written, which the next write diffs from.
     pub comment_bodies: BTreeMap<u32, String>,
-    /// The replica holds comments in its content, as schema 2 wrote them (`Comment` objects the
-    /// document lists, their texts as parts, their anchors in the text): writes are refused until
-    /// [`crate::migrate_document`] moves them out.
-    pub legacy_comments: bool,
     pub revisions: Vec<ObjectId>,
     pub nums: BTreeMap<u32, String>,
     pub abstracts: BTreeMap<u32, String>,
@@ -85,40 +82,6 @@ pub struct Ids {
 }
 
 impl Ids {
-    /// Whether any paragraph is still in the register form 0.3.x wrote (see [`BlockIds::text`]).
-    pub fn has_register_form(&self) -> bool {
-        fn any(blocks: &[BlockIds], depth: usize) -> bool {
-            depth <= crate::write::MAX_DEPTH
-                && blocks.iter().any(|b| match &b.table {
-                    None => b.text.is_none(),
-                    Some(t) => t.rows.iter().any(|r| r.cells.iter().any(|c| any(&c.blocks, depth + 1))),
-                })
-        }
-        any(&self.body, 0) || self.parts.values().any(|p| any(&p.blocks, 0))
-    }
-
-    /// The objects of every paragraph still in the register form 0.3.x wrote.
-    pub fn register_form_objects(&self) -> Vec<ObjectId> {
-        fn collect(blocks: &[BlockIds], out: &mut Vec<ObjectId>, depth: usize) {
-            if depth > crate::write::MAX_DEPTH {
-                return;
-            }
-            for b in blocks {
-                match &b.table {
-                    None if b.text.is_none() => out.push(b.object.clone()),
-                    None => {}
-                    Some(t) => t.rows.iter().flat_map(|r| &r.cells).for_each(|c| collect(&c.blocks, out, depth + 1)),
-                }
-            }
-        }
-        let mut out = Vec::new();
-        collect(&self.body, &mut out, 0);
-        for part in self.parts.values() {
-            collect(&part.blocks, &mut out, 0);
-        }
-        out
-    }
-
     /// The object of part (story) `id`.
     pub fn part_object(&self, id: u32) -> Option<&ObjectId> {
         self.parts.get(&id).map(|p| &p.object)

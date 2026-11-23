@@ -1,7 +1,7 @@
 {
   "kdm": 1,
   "kit": "kit.doc",
-  "schemaVersion": 6,
+  "schemaVersion": 1,
   "root": "Document",
   "types": {
     "Document": {
@@ -38,13 +38,13 @@
         "sources": { "kind": "json", "optional": true },
         "customProps": { "kind": "json", "optional": true },
         "lastSection": { "kind": "json", "optional": true },
-        "styles": { "kind": "json", "optional": true },
+        "styleDefaults": { "kind": "json", "optional": true },
+        "styles": { "kind": "map" },
         "numbering": { "kind": "json", "optional": true },
         "lists": { "kind": "map" },
         "passthrough": { "kind": "json", "optional": true, "readOnly": true },
         "body": { "kind": "list", "of": "Block" },
         "parts": { "kind": "list", "of": "Part" },
-        "comments": { "kind": "list", "of": "Comment" },
         "revisions": { "kind": "list", "of": "Revision" },
         "media": { "kind": "list", "of": "Media" }
       }
@@ -165,8 +165,14 @@
       "batchOps": { "*": { "direct": true } },
       "fields": {
         "props": { "kind": "json", "optional": true },
-        "grid": { "kind": "json", "optional": true },
+        "cols": { "kind": "list", "of": "Col" },
         "rows": { "kind": "list", "of": "Row" }
+      }
+    },
+    "Col": {
+      "batchOps": { "*": { "direct": true } },
+      "fields": {
+        "width": { "kind": "number" }
       }
     },
     "Row": {
@@ -196,7 +202,7 @@
       "toolId": { "field": "id", "prefix": "part:" },
       "fields": {
         "id": { "kind": "string", "optional": true, "readOnly": true },
-        "kind": { "kind": "enum", "values": ["header", "footer", "footnote", "endnote", "comment", "textbox"], "sample": false },
+        "kind": { "kind": "enum", "values": ["header", "footer", "footnote", "endnote", "textbox"], "sample": false },
         "props": { "kind": "json", "optional": true },
         "blocks": { "kind": "list", "of": "Block" }
       }
@@ -221,9 +227,7 @@
         "body": { "kind": "text" },
         "created": { "kind": "string" },
         "initials": { "kind": "string", "optional": true },
-        "props": { "kind": "json", "optional": true },
-        "part": { "kind": "ref", "of": "Part", "optional": true },
-        "parent": { "kind": "ref", "of": "Comment", "optional": true }
+        "props": { "kind": "json", "optional": true }
       }
     },
     "Revision": {

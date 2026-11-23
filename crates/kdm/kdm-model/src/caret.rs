@@ -80,8 +80,8 @@ impl<'a> ListShape<'a> {
         !self.pieces.is_empty()
     }
 
-    /// The segments shown paragraph `b` of the list shows (none for a table, or a paragraph in
-    /// the register form, whose object has no text field).
+    /// The segments shown paragraph `b` of the list shows (none for a table, or a block whose
+    /// table object is gone, which has no text field).
     fn segments(&self, b: &BlockIds) -> Vec<Segment> {
         if !is_text(b) {
             return Vec::new();
@@ -266,7 +266,7 @@ mod tests {
     #[test]
     fn positions_in_tables_and_parts_are_found() {
         let cell = CellIds { object: o("cell"), blocks: vec![para("x", vec![run("in a cell")])] };
-        let table = TableIds { object: o("t"), rows: vec![RowIds { object: o("row"), cells: vec![cell] }] };
+        let table = TableIds { object: o("t"), cols: Vec::new(), rows: vec![RowIds { object: o("row"), cells: vec![cell] }] };
         let mut ids = Ids { body: vec![para("a", vec![run("before")]), BlockIds::new(o("t"), Some(table), None)], ..Ids::default() };
         ids.parts.insert(7, crate::ids::PartIds { object: o("header"), blocks: vec![para("h", vec![run("Header")])] });
         assert_eq!(ids.text_position(None, &[1, 0, 0, 0], 4), Some((o("x"), 4)));

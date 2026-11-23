@@ -313,12 +313,13 @@ pub fn assert_no_dangling(doc: &Document) {
 /// The replica itself holds no list entry naming a deleted object.
 pub fn assert_replica_clean(replica: &Replica) {
     let root = ObjectId::from_string("document");
-    for field in ["body", "parts", "comments", "revisions", "media"] {
+    for field in ["body", "parts", "revisions", "media"] {
         for item in replica.list(&root, field).unwrap_or_default() {
             assert!(replica.exists(&item), "document.{field} lists deleted {item}");
         }
     }
-    for (ty, field) in [("Table", "rows"), ("Row", "cells"), ("Cell", "blocks"), ("Part", "blocks")] {
+    for (ty, field) in [("Table", "cols"), ("Table", "rows"), ("Row", "cells"), ("Cell", "blocks"), ("Part", "blocks"), ("CommentThread", "comments")]
+    {
         for object in replica.objects_of_type(ty) {
             for item in replica.list(&object, field).unwrap_or_default() {
                 assert!(replica.exists(&item), "{ty} {object}.{field} lists deleted {item}");

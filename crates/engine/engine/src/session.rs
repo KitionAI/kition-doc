@@ -974,13 +974,10 @@ impl Session {
 
     /// Opens the document for commenting only (a commenter of a shared document): every command
     /// that changes the document but the comment commands is refused, typing included; undo and
-    /// redo take back one's own comments. The replica takes no migration then, which would change
-    /// the content, and only comment objects change (what a sync server lets a commenter push).
+    /// redo take back one's own comments. Only comment objects change then (what a sync server
+    /// lets a commenter push).
     pub fn set_comment_only(&mut self, comment_only: bool) {
         self.comment_only = comment_only;
-        if let Some(kdm) = self.link.kdm.as_mut() {
-            kdm.set_comment_only(comment_only);
-        }
     }
 
     /// Whether only comments may be written ([`Session::set_comment_only`]).
@@ -1037,9 +1034,6 @@ impl Session {
         if spec.mutates && self.comment_only {
             if !is_comment_command(id) && !matches!(id, "edit.undo" | "edit.redo") {
                 return Err(CmdError::Disabled(format!("{id}: the document is open for commenting only")));
-            }
-            if self.link.kdm.as_ref().is_some_and(kdm_model::DocSession::legacy_comments) {
-                return Err(CmdError::Disabled(format!("{id}: this document's comments need someone who may edit it to open it first")));
             }
         }
         // Restrict Editing.

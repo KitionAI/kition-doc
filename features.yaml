@@ -503,6 +503,14 @@ features:
     requirements: [AX13]
     cases: [doc.agent.draft/costs-paragraph, regressions/issue-draft-replica-open]
     since: "2026-11-17"
+  - id: doc.collab.concurrent-structure
+    title: "Styles and table columns edited at once by two people both keep their change (each style and each column its own entry of the object model)"
+    dimension: [collab]
+    priority: P0
+    status: has
+    paths: [crates/kdm/kdm-model/model/schema.json, crates/kdm/kdm-model/src/write.rs, crates/kdm/kdm-model/src/read.rs, crates/kdm/kdm-model/tests/styles_and_columns.rs]
+    cases: [regressions/issue-schema-freeze-containers]
+    since: "2026-11-22"
   - id: doc.collab.presence
     title: "Carets shown to co-editors and located in the document"
     dimension: [collab]

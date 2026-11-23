@@ -347,10 +347,8 @@ pub(crate) fn inline_from(v: &Value) -> KdmResult<InlineObject> {
     Ok(o)
 }
 
-/// A paragraph's own register in the text form (`para`): its properties, paragraph mark and
-/// section, without the text, runs and objects the text field and its `Inline` objects hold.
-/// Ids are still local. Never has a `text` key, which is how a reader tells it from the register
-/// form 0.3.x wrote ([`is_register_form`]).
+/// A paragraph's own register (`para`): its properties, paragraph mark and section, without the
+/// text, runs and objects the text field and its `Inline` objects hold. Ids are still local.
 pub(crate) fn para_meta(p: &Paragraph) -> KdmResult<Value> {
     let mut v = serde_json::to_value(p).map_err(kdm_err)?;
     if let Some(map) = v.as_object_mut() {
@@ -368,10 +366,4 @@ pub(crate) fn para_from_meta(v: &Value) -> KdmResult<Paragraph> {
     map.insert("runs".into(), Value::Array(Vec::new()));
     map.remove("objects");
     Paragraph::deserialize(Value::Object(map)).map_err(kdm_err)
-}
-
-/// Whether a `para` register holds a whole paragraph (the register form of 0.3.x, W2) rather
-/// than [`para_meta`].
-pub(crate) fn is_register_form(v: &Value) -> bool {
-    v.get("text").is_some()
 }

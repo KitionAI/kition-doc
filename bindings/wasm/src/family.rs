@@ -43,7 +43,7 @@ const ROOT: &str = "document";
 /// The root's fields that are the document's content: all but the save stamp's `core` (any
 /// save of another program changes it) and what the kit keeps of the file unread (`passthrough`).
 const ROOT_CONTENT: [&str; 12] =
-    ["settings", "styles", "numbering", "lists", "body", "parts", "comments", "revisions", "media", "lastSection", "sources", "customProps"];
+    ["settings", "styleDefaults", "styles", "numbering", "lists", "body", "parts", "revisions", "media", "lastSection", "sources", "customProps"];
 
 /// Above this many paragraphs a command reading the whole document holds the root only (its
 /// lists), not each paragraph.
@@ -236,7 +236,7 @@ fn root_reads(command: &str) -> &'static [&'static str] {
         "references.noteOptions" => &["settings.footnoteFormat", "settings.endnoteFormat"],
         "layout.hyphenation" => &["settings.autoHyphenation"],
         "layout.differentOddEven" => &["settings.evenOddHeaders"],
-        "comment.add" | "comment.delete" | "comment.reply" | "review.deleteComment" | "review.newComment" | "review.reply" => &["comments", "parts"],
+        "comment.add" | "comment.delete" | "comment.reply" | "review.deleteComment" | "review.newComment" | "review.reply" => &["parts"],
         "file.properties" => &["customProps"],
         // C8-doc-6: a chart keeps its parts as read; Set Text replaces the body.
         "drawing.chart" => &["passthrough"],
@@ -1266,7 +1266,7 @@ impl DocDocument {
                 let at = kition_doc_engine::doc::Pos::body(index, 0);
                 hold_paragraph(doc, &at, &["para"], under);
                 if let Some(style) = doc.para_at(&at).and_then(|p| p.props.style.as_deref()) {
-                    under.premises.push(crate::place::style_premise(style));
+                    under.premises.push(crate::place::style_premise(&doc.styles, style));
                 }
             }
         }
@@ -1377,7 +1377,7 @@ impl DocDocument {
             if let Some(p) = doc.para_at(&at).filter(|p| at.off >= p.len())
                 && let Some(style) = &p.props.style
             {
-                under.premises.push(crate::place::style_premise(style));
+                under.premises.push(crate::place::style_premise(&doc.styles, style));
             }
         }
         if command == "insert.bookmark" {
@@ -1611,7 +1611,7 @@ impl DocDocument {
             && !p.props.numbering.is_some_and(|n| n.num != 0 && p.is_empty())
             && let Some(style) = &p.props.style
         {
-            under.premises.push(crate::place::style_premise(style));
+            under.premises.push(crate::place::style_premise(&doc.styles, style));
         }
         if matches!(command, "text.tab" | "text.backTab") && b.path.cell().is_none() {
             let resolves_indent = if command == "text.tab" { a.path != b.path } else { true };
@@ -1622,20 +1622,20 @@ impl DocDocument {
                         let mut seen = Vec::new();
                         while !seen.contains(&style) && seen.len() < 64 {
                             seen.push(style);
-                            under.premises.push(crate::place::style_premise(style));
+                            under.premises.push(crate::place::style_premise(&doc.styles, style));
                             let Some(parent) = doc.styles.get(style).and_then(|s| s.based_on.as_deref()) else { break };
                             style = parent;
                         }
-                        under.premises.push(Premise::on(ROOT).fields(["styles.defaultPara"]).positions(Vec::<String>::new()));
+                        under.premises.push(Premise::on(ROOT).fields(["styleDefaults.defaultPara"]).positions(Vec::<String>::new()));
                     }
                 }
             }
         }
         if resolves_styles && !matches!(family, "format" | "para") {
             for style in paragraph_styles() {
-                under.premises.push(crate::place::style_premise(&style));
+                under.premises.push(crate::place::style_premise(&doc.styles, &style));
                 if let Some(next) = doc.styles.styles.iter().find(|s| s.id == style).and_then(|s| s.next.clone()) {
-                    under.premises.push(crate::place::style_premise(&next));
+                    under.premises.push(crate::place::style_premise(&doc.styles, &next));
                 }
             }
         }
@@ -1711,9 +1711,11 @@ impl DocDocument {
                         || !(direct_paragraph_properties(command) || disabling_list(command, params) || plain_paragraph_replacement(command, params))
                     {
                         for style in paragraph_styles() {
-                            under.premises.push(crate::place::style_premise(&style));
+                            under.premises.push(crate::place::style_premise(&doc.styles, &style));
                         }
-                        under.premises.push(Premise::on(ROOT).fields(["styles.defaultChr", "styles.defaultPara"]).positions(Vec::<String>::new()));
+                        under.premises.push(
+                            Premise::on(ROOT).fields(["styleDefaults.defaultChr", "styleDefaults.defaultPara"]).positions(Vec::<String>::new()),
+                        );
                     }
                     // The selected paragraphs' own: a paragraph command reads (and replaces) their
                     // properties; a character command's toggle reads their style.
@@ -1774,9 +1776,9 @@ impl DocDocument {
                                 "review.newComment" | "review.reply" | "review.editComment" | "review.deleteComment" | "review.resolveComment"
                             ) =>
                         {
-                            &["comments"]
+                            &[]
                         }
-                        _ => &["revisions", "comments"],
+                        _ => &["revisions"],
                     };
                     if !fields.is_empty() {
                         under.premises.push(Premise::on(ROOT).fields(fields.iter().copied()).positions(Vec::<String>::new()));

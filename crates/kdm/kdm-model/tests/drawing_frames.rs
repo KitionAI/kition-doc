@@ -94,7 +94,7 @@ fn an_art_text_warp_a_move_and_a_fill_of_one_shape_all_stay() {
     sync(&mut a, &mut b);
     assert_same("after a warp, a move and a fill", &a.model().document, &b.model().document);
     let InlineObject::Shape { warp, float, fill, .. } = &shapes(&b)[0] else { panic!() };
-    // Each member of a shape is its own entry (schema 6): A's warp and B's fill both stay.
+    // Each member of a shape is its own entry: A's warp and B's fill both stay.
     assert_eq!((warp.clone(), float.x, *fill), (Some(arch), 222.0, Some(Rgb(1, 2, 3))), "A's warp, B's move and fill all stay");
 }
 
@@ -114,56 +114,7 @@ fn a_shapes_frame_is_its_own_register() {
     assert_eq!(replica.min_schema_version(), kdm_model::SCHEMA_VERSION);
 }
 
-/// A replica as schema 3 wrote it: shapes' frames inside their `value`, minimum version 3.
-fn version_3_snapshot() -> Vec<u8> {
-    use kition_kit::kdm::{ActorId, DocId, Origin, Replica, Schema};
-    let mut v: serde_json::Value = serde_json::from_str(include_str!("../model/schema.json")).unwrap();
-    v["schemaVersion"] = serde_json::json!(3);
-    let schema = std::sync::Arc::new(Schema::parse(&v.to_string()).unwrap());
-    let mut ids = kdm_model::Ids::default();
-    let mut sink = SharedBlobs::default();
-    let (mut replica, ()) = Replica::create_with(schema, DocId::new(), ActorId::random(), &Origin::system("create"), |tx| {
-        kdm_model::write_document(tx, &doc(), &mut ids, &mut sink).map(|_| ())
-    })
-    .unwrap();
-    // Put the frames back into the values, as schema 3 kept them.
-    replica
-        .transact(&Origin::system("legacy"), |tx| {
-            for inline in tx.objects_of_type("Inline") {
-                let mut value = tx.get(&inline, "value")?;
-                let frame = tx.get(&inline, "frame")?;
-                if let (Some(map), Some(frame)) = (value.as_object_mut(), frame.as_object()) {
-                    for (k, x) in frame {
-                        map.insert(k.clone(), x.clone());
-                    }
-                }
-                tx.set(&inline, "value", value)?;
-                tx.set(&inline, "frame", serde_json::Value::Null)?;
-            }
-            Ok(())
-        })
-        .unwrap();
-    replica.snapshot().unwrap()
-}
-
-#[test]
-fn a_version_3_replica_reads_and_splits_its_frames_on_the_first_write() {
-    use kition_kit::kdm::Origin;
-    use kition_kit::session::MemoryBlobs;
-    let mut s = kdm_model::DocSession::open_snapshot(&version_3_snapshot(), MemoryBlobs::default()).unwrap();
-    let read: Vec<f32> = s.document().shapes().iter().filter_map(|(_, o)| o.frame().map(|(w, _, _)| w)).collect();
-    assert_eq!(read, [100.0, 100.0], "the frames read from the values");
-    let mut after = s.document().clone();
-    after.para_mut(StoryRef::Body, &kition_doc_doc::Path::top(0)).unwrap().insert_text(0, "My ", &Default::default()).unwrap();
-    assert_eq!(s.record(&Origin::person("user:a"), &after).unwrap(), 1, "the edit is one undo step");
-    assert_eq!(s.replica().min_schema_version(), kdm_model::SCHEMA_VERSION);
-    for object in s.replica().objects_of_type("Inline") {
-        assert!(s.replica().get(&object, "value").unwrap().get("w").is_none());
-        assert_eq!(s.replica().get(&object, "frame").unwrap()["w"], 100.0);
-    }
-}
-
-/// An edited chart's description is its own object (schema 5, DR14): one person retitling a chart,
+/// An edited chart's description is its own object (DR14): one person retitling a chart,
 /// another changing its data and a third moving it all keep their change, and every replica draws
 /// the merged chart from its part and description.
 #[test]

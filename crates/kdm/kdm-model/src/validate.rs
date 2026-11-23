@@ -5,14 +5,13 @@
 //!   listed twice (replicas that repaired the same state concurrently both listed the paragraph
 //!   below): the reader reads it once, at its first place, so the view is unchanged, and list
 //!   positions stay the view's.
-//! - A note reference or comment anchor naming a deleted part or comment is removed: its
-//!   `Inline` object is deleted (a transaction cannot read a text field, so its U+FFFC stays,
-//!   and reads as nothing until the paragraph's next write deletes it), or, in a paragraph in the
-//!   register form 0.3.x wrote, removed from the paragraph with its U+FFFC; a text box story, a section's header or footer, a tracked change
-//!   (`ins`/`del`, `fmtChange`, `numChange`) or a list reference naming a deleted part, revision or
-//!   list is cleared (in a run's marks, which a transaction cannot read, it reads as cleared and
-//!   is removed by the paragraph's next write); a picture of deleted media loses its media key. A comment whose part is gone
-//!   loses it; a reply whose parent is gone becomes a comment of its own.
+//! - A note reference naming a deleted part is removed: its `Inline` object is deleted (a
+//!   transaction cannot read a text field, so its U+FFFC stays, and reads as nothing until the
+//!   paragraph's next write deletes it); a text box story, a section's header or footer, a tracked
+//!   change (`ins`/`del`, `fmtChange`, `numChange`) or a list reference naming a deleted part,
+//!   revision or list is cleared (in a run's marks, which a transaction cannot read, it reads as
+//!   cleared and is removed by the paragraph's next write); a picture of deleted media loses its
+//!   media key.
 //! - A body, part or table cell left without blocks (or a body or cell ending with a table) gets
 //!   an empty paragraph, under an id derived from the state, so replicas repairing the same state
 //!   create the same object (and readers skip the repeated list entry).
@@ -36,11 +35,12 @@ pub(crate) fn validate(tx: &mut Tx<'_>, _changed: &BTreeSet<ObjectId>) -> KdmRes
     let mut wrote = false;
 
     // Dangling list entries.
-    for field in ["body", "parts", "comments", "revisions", "media"] {
+    for field in ["body", "parts", "revisions", "media"] {
         wrote |= clean_dangling(tx, &root, field)?;
     }
-    // A thread listing a comment twice (two replicas migrated it offline) or a deleted one.
-    for (ty, field) in [("Table", "rows"), ("Row", "cells"), ("Cell", "blocks"), ("Part", "blocks"), ("CommentThread", "comments")] {
+    // A thread listing a deleted comment, or one twice.
+    for (ty, field) in [("Table", "cols"), ("Table", "rows"), ("Row", "cells"), ("Cell", "blocks"), ("Part", "blocks"), ("CommentThread", "comments")]
+    {
         for object in tx.objects_of_type(ty) {
             wrote |= clean_dangling(tx, &object, field)?;
         }
@@ -52,6 +52,12 @@ pub(crate) fn validate(tx: &mut Tx<'_>, _changed: &BTreeSet<ObjectId>) -> KdmRes
     for (key, mut v) in lists {
         if clear_refs(&mut v, tx, &nums) {
             tx.map_set(&root, "lists", &key, v)?;
+            wrote = true;
+        }
+    }
+    for (key, mut v) in tx.map_entries(&root, "styles")? {
+        if clear_refs(&mut v, tx, &nums) {
+            tx.map_set(&root, "styles", &key, v)?;
             wrote = true;
         }
     }
@@ -70,14 +76,12 @@ pub(crate) fn validate(tx: &mut Tx<'_>, _changed: &BTreeSet<ObjectId>) -> KdmRes
         if para.is_null() {
             continue;
         }
-        let mut changed = remove_dangling_anchors(&mut para, tx);
-        changed |= clear_refs(&mut para, tx, &nums);
-        if changed {
+        if clear_refs(&mut para, tx, &nums) {
             tx.set(&block, "para", para)?;
             wrote = true;
         }
     }
-    let mut registers: Vec<(ObjectId, &str)> = vec![(root.clone(), "lastSection"), (root.clone(), "styles"), (root.clone(), "numbering")];
+    let mut registers: Vec<(ObjectId, &str)> = vec![(root.clone(), "lastSection"), (root.clone(), "styleDefaults"), (root.clone(), "numbering")];
     for ty in ["Table", "Row", "Cell"] {
         registers.extend(tx.objects_of_type(ty).into_iter().map(|o| (o, "props")));
     }
@@ -86,14 +90,6 @@ pub(crate) fn validate(tx: &mut Tx<'_>, _changed: &BTreeSet<ObjectId>) -> KdmRes
         if clear_refs(&mut v, tx, &nums) {
             tx.set(&object, field, v)?;
             wrote = true;
-        }
-    }
-    for comment in tx.objects_of_type("Comment") {
-        for field in ["part", "parent"] {
-            if gone(tx, &tx.get(&comment, field)?) {
-                tx.set(&comment, field, Value::Null)?;
-                wrote = true;
-            }
         }
     }
 
@@ -157,48 +153,6 @@ fn clear_refs(v: &mut Value, tx: &Tx<'_>, nums: &HashSet<String>) -> bool {
 /// comment.
 fn dangling_anchor(o: &Value, tx: &Tx<'_>) -> bool {
     matches!(o.get("type").and_then(Value::as_str), Some("noteRef" | "commentStart" | "commentEnd")) && o.get("id").is_some_and(|id| gone(tx, id))
-}
-
-/// Removes a paragraph's note references and comment anchors naming a deleted part or comment,
-/// with their U+FFFC and its byte in the run that holds it.
-fn remove_dangling_anchors(para: &mut Value, tx: &Tx<'_>) -> bool {
-    let Some(objects) = para.get("objects").and_then(Value::as_array) else { return false };
-    let doomed: Vec<usize> = objects.iter().enumerate().filter(|(_, o)| dangling_anchor(o, tx)).map(|(k, _)| k).collect();
-    if doomed.is_empty() {
-        return false;
-    }
-    let obj_len = kition_doc_doc::para::OBJ.len_utf8();
-    for k in doomed.into_iter().rev() {
-        if let Some(items) = para.get_mut("objects").and_then(Value::as_array_mut)
-            && k < items.len()
-        {
-            items.remove(k);
-        }
-        let Some(text) = para.get("text").and_then(Value::as_str) else { continue };
-        let Some(at) = text.match_indices(kition_doc_doc::para::OBJ).nth(k).map(|(i, _)| i) else { continue };
-        let mut text = text.to_owned();
-        text.replace_range(at..at + obj_len, "");
-        if let Some(slot) = para.get_mut("text") {
-            *slot = Value::String(text);
-        }
-        if let Some(runs) = para.get_mut("runs").and_then(Value::as_array_mut) {
-            let mut start = 0usize;
-            for index in 0..runs.len() {
-                let len = runs.get(index).and_then(|r| r.get("len")).and_then(Value::as_u64).unwrap_or(0) as usize;
-                if at >= start && at < start.saturating_add(len) {
-                    let left = len.saturating_sub(obj_len);
-                    if left == 0 {
-                        runs.remove(index);
-                    } else if let Some(slot) = runs.get_mut(index).and_then(|r| r.get_mut("len")) {
-                        *slot = json!(left);
-                    }
-                    break;
-                }
-                start = start.saturating_add(len);
-            }
-        }
-    }
-    true
 }
 
 /// Lists an empty paragraph at the end of `owner.field` if it holds no block (or, `trailing`, ends

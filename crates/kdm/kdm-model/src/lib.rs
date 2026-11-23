@@ -8,7 +8,7 @@
 //! the engine command bridge's entry points: writing a whole document in one creating
 //! transaction, or only what a command changed.
 //!
-//! What lives where (`model/schema.json`, schema version 3):
+//! What lives where (`model/schema.json`, schema version 1):
 //! - a paragraph's text is a KDM `text` field with marks, so
 //!   concurrent typing in one paragraph merges by character: one mark per run property, unknown
 //!   ones in one `extra` mark, each U+FFFC anchor marked with the `Inline` object holding its
@@ -21,29 +21,23 @@
 //!   first at the start of its field: the reader shows its text at the end of the first, so text
 //!   typed into it concurrently is kept. A paragraph whose `para` register was never written
 //!   (a script's) reads with the default properties;
-//! - replicas 0.3.x wrote hold each paragraph whole in its `para` register (W2): read as such, and
-//!   rewritten into the text form, each as a new object (of its own id) in its place, by a
-//!   `system` transaction before the first write that changes it ([`migrate_document`], K6); the
-//!   others stay registers until then, so two people migrating one document offline keep both
-//!   sides' edits (a paragraph both changed stays twice, each person's version). The first write
-//!   raises the replica's minimum schema version (2), so a 0.3.x build refuses it;
-//! - a table's properties and grid, a row's and a cell's properties are registers; rows, cells and
-//!   each story's blocks are lists;
-//! - the document's settings, properties, sources, custom properties, last section and styles are
-//!   `json` registers; each list (a `Num` with its abstract list) is an entry of the `lists` map,
-//!   keyed by the list's UUID, so lists made concurrently are all kept (the rest of the numbering
-//!   is the `numbering` register); media bytes and the package parts kept verbatim
-//!   (`passthrough`) are content-addressed blobs ([`BlobSink`]/[`BlobSource`]); what serde skips
-//!   (OLE objects and charts kept from a file) is added to the paragraph's JSON, so nothing is lost
-//!   on a round trip.
+//! - a table's properties, a row's and a cell's properties are registers; the table's columns
+//!   (`cols`, one `Col` object with its `width` per grid column), rows, cells and each story's
+//!   blocks are lists, so two people resizing two columns at once both keep theirs;
+//! - the document's settings, properties, sources, custom properties and last section are `json`
+//!   registers; each style is an entry of the `styles` map, keyed by its style id
+//!   (`{order, style}`), and the document defaults are the `styleDefaults` register, so styles
+//!   made or changed concurrently are all kept; each list (a `Num` with its abstract list) is an
+//!   entry of the `lists` map, keyed by the list's UUID, so lists made concurrently are all kept
+//!   (the rest of the numbering is the `numbering` register); media bytes and the package parts
+//!   kept verbatim (`passthrough`) are content-addressed blobs ([`BlobSink`]/[`BlobSource`]); what
+//!   serde skips (OLE objects and charts kept from a file) is added to the paragraph's JSON, so
+//!   nothing is lost on a round trip.
 //!
 //! - comments are beside the content (Kition platform rule M23, `comments`): a `CommentThread`
 //!   per thread, a `Comment` per comment, the thread's `anchor` naming the paragraph and range it
 //!   comments on; paragraphs hold no comment anchor and comment texts are no parts, so a change
-//!   that only comments touches only those two types. Schema 2 kept them in the content (anchors
-//!   in the text, texts as parts, `Comment` objects the document listed): read as such, and moved
-//!   out by the first write ([`migrate_document`]), which raises the minimum schema version to 3
-//!   so a build that keeps them in the content refuses the replica.
+//!   that only comments touches only those two types.
 //!
 //! **Identity (W3).** The engine's blocks have no ids: [`write_changes`] infers which object each
 //! block is (see `write`), and [`Ids`] keeps the objects of the view.
@@ -90,7 +84,7 @@ pub use ids::{BlockIds, CellIds, Ids, Known, PartIds, RowIds, TableIds};
 pub use read::{read_document, read_document_known};
 pub use session::DocSession;
 pub use text::ParaText;
-pub use write::{migrate_document, register_writes, write_changes, write_document};
+pub use write::{write_changes, write_document};
 
 /// Re-exported so downstream crates (the engine command bridge) share this crate's exact pin.
 pub use kition_kit;
@@ -100,14 +94,9 @@ pub(crate) type KdmResult<T> = std::result::Result<T, KdmError>;
 
 const SCHEMA: &str = include_str!("../model/schema.json");
 
-/// `model/schema.json`'s schema version: 2 brought the text form (K3), 3 comments beside the
-/// content (rule M23), 4 a shape's frame (size and placement) as its own register (`frames`), so
-/// moving a shape and formatting it concurrently keep both, 5 an edited chart's description as its
-/// own object (`charts`), so concurrent edits of one chart's members keep both, 6 a shape's other
-/// members as entries of its `look` map (`frames::write_look`), so concurrent edits of two of them
-/// keep both. [`migrate_document`] raises a replica's minimum schema version to it (rule
-/// M20), so an older build refuses a migrated replica as it refuses one created by this one.
-pub const SCHEMA_VERSION: u32 = 6;
+/// `model/schema.json`'s schema version. There is no migration from the shapes earlier builds
+/// wrote: their replicas are rebuilt from their files.
+pub const SCHEMA_VERSION: u32 = 1;
 
 /// The `Document` object's id: one per replica, minted by [`write_document`] with
 /// [`Tx::create_with_id`], so every reader finds it without an index.

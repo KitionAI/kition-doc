@@ -7,8 +7,9 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::sync::Arc;
 
 use kition_doc_doc::numbering::{AbstractNum, Num};
+use kition_doc_doc::styles::{Style, StyleSheet};
 use kition_doc_doc::table::{Cell, Row};
-use kition_doc_doc::{Block, Blocks, Comment, Document, InlineObject, Numbering, Paragraph, Part, PartKind, Revision, Table};
+use kition_doc_doc::{Block, Blocks, Document, InlineObject, Numbering, Paragraph, Part, PartKind, Revision, Table};
 use kition_kit::kdm::{KdmError, ObjectId, Replica, TextRun};
 use kition_kit::session::{BlobRef, BlobSource};
 use serde::de::DeserializeOwned;
@@ -16,7 +17,7 @@ use serde_json::Value;
 
 use crate::ids::{BlockIds, CellIds, Ids, Known, Minter, PartIds, RowIds, TableIds};
 use crate::pieces::{Composition, compose, has_anchor, layout};
-use crate::refs::{Locals, inline_from, is_register_form, local_number, para_from, para_from_meta};
+use crate::refs::{Locals, inline_from, para_from_meta};
 use crate::text::{INLINE, ParaText, TEXT, merged, para_parts};
 use crate::write::MAX_DEPTH;
 use crate::{KdmResult, MediaCache, kdm_err, root_id};
@@ -44,7 +45,6 @@ pub(crate) fn part_kind(name: &str) -> PartKind {
         "footer" => PartKind::Footer,
         "footnote" => PartKind::Footnote,
         "endnote" => PartKind::Endnote,
-        "comment" => PartKind::Comment,
         "textbox" => PartKind::TextBox,
         _ => PartKind::Header,
     }
@@ -70,9 +70,7 @@ enum Pending {
     Table(ObjectId),
     /// A table whose table object is gone.
     Empty,
-    /// A paragraph in the register form 0.3.x wrote.
-    Register(Box<Paragraph>),
-    /// A paragraph in the text form: its register and its field's runs.
+    /// A paragraph: its register and its field's runs.
     Text(Value, Vec<TextRun>),
 }
 
@@ -115,14 +113,7 @@ pub(crate) fn read_with(
         r.locals.parts.insert(object.as_str().to_owned(), id);
         parts.push((id, object));
     }
-    // Comments as schema 2 wrote them, in the content (migrated by the next write, rule M23).
-    let mut comment_minter = Minter::with_zero(known.max_comment);
-    let mut comments = Vec::new();
-    for object in r.live(&root, "comments")? {
-        let id = comment_minter.mint(known.comments.get(&object).copied());
-        r.locals.comments.insert(object.as_str().to_owned(), id);
-        comments.push((id, object));
-    }
+    let comment_minter = Minter::with_zero(known.max_comment);
     let mut media = Vec::new();
     let mut keys = HashSet::new();
     for object in r.live(&root, "media")? {
@@ -138,7 +129,7 @@ pub(crate) fn read_with(
         body: Vec::new(),
         last_section: from(r.translated(&root, "lastSection")?)?,
         parts: BTreeMap::new(),
-        styles: from(r.translated(&root, "styles")?)?,
+        styles: r.styles(&root)?,
         numbering,
         comments: BTreeMap::new(),
         revisions: Vec::new(),
@@ -170,26 +161,9 @@ pub(crate) fn read_with(
     ids.body = body_ids;
     for (id, object) in parts {
         let kind = part_kind(replica.get(&object, "kind")?.as_str().unwrap_or("header"));
-        ids.legacy_comments |= kind == PartKind::Comment;
         let (blocks, block_ids) = r.blocks(&object, "blocks", 0)?;
         doc.parts.insert(id, Part { kind, blocks });
         ids.parts.insert(id, PartIds { object, blocks: block_ids });
-    }
-
-    for (id, object) in comments {
-        let props = replica.get(&object, "props")?;
-        let mut comment: Comment = from(props.clone())?;
-        comment.part = match replica.get(&object, "part")? {
-            Value::String(s) => r.locals.parts.get(&s).copied().unwrap_or(0),
-            _ => props.get("part").and_then(local_number).unwrap_or(0),
-        };
-        comment.parent = match replica.get(&object, "parent")? {
-            Value::String(s) => r.locals.comments.get(&s).copied(),
-            _ => props.get("parent").and_then(local_number),
-        };
-        doc.comments.insert(id, comment);
-        ids.comments.insert(id, object);
-        ids.legacy_comments = true;
     }
 
     // Comment threads (rule M23), and their anchors placed in the paragraphs.
@@ -200,6 +174,36 @@ pub(crate) fn read_with(
 }
 
 impl Reader<'_> {
+    /// The styles (see `Writer::write_styles`): the `styleDefaults` register, then the `styles`
+    /// entries by their order (then key). A replica whose styles were never written (a script's)
+    /// reads with the built-in styles.
+    fn styles(&self, root: &ObjectId) -> KdmResult<StyleSheet> {
+        let mut defaults = self.translated(root, "styleDefaults")?;
+        let unwritten = defaults.is_null() && self.replica.map_entries(root, "styles")?.is_empty();
+        if unwritten {
+            return Ok(StyleSheet::default());
+        }
+        let mut sheet = StyleSheet::empty();
+        if let Some(map) = defaults.as_object_mut() {
+            sheet.default_chr = from(map.remove("defaultChr").unwrap_or(Value::Null))?;
+            sheet.default_para = from(map.remove("defaultPara").unwrap_or(Value::Null))?;
+        }
+        let mut entries: Vec<(f64, String, Value)> = self
+            .replica
+            .map_entries(root, "styles")?
+            .into_iter()
+            .filter_map(|(key, v)| {
+                Some((v.get("order").and_then(Value::as_f64).unwrap_or(f64::MAX), key, v.get("style").filter(|s| s.is_object())?.clone()))
+            })
+            .collect();
+        entries.sort_by(|a, b| a.0.total_cmp(&b.0).then_with(|| a.1.cmp(&b.1)));
+        for (_, _, mut style) in entries {
+            self.locals.translate(&mut style);
+            sheet.styles.push(from::<Style>(style)?);
+        }
+        Ok(sheet)
+    }
+
     /// The lists (see `Writer::write_lists`): the `lists` entries by their order (then key), then
     /// the `numbering` register's rest. An abstract list is read once, from the first entry that
     /// holds it; every list and abstract list gets its local id ([`Known`]), and the lists' ids go
@@ -347,22 +351,15 @@ impl Reader<'_> {
                 // when next written).
                 None if is_table => Pending::Empty,
                 None => {
+                    // A register never written (a script's or another writer's paragraph made
+                    // with only its text) reads as the default properties, and the text is kept.
                     let v = self.translated(&object, "para")?;
-                    if is_register_form(&v) {
-                        // Written by 0.3.x: the whole paragraph in its register (migrated on the
-                        // next write, K6).
-                        Pending::Register(Box::new(para_from(&v)?))
-                    } else {
-                        // The text form. A register never written (a script's or another
-                        // writer's paragraph made with only its text) reads as the default
-                        // properties, and the text is kept.
-                        let runs = self.replica.text_delta(&object, TEXT)?;
-                        if has_anchor(&runs) {
-                            fields.insert(object.clone(), compose(&runs));
-                        }
-                        list.push((object.clone(), true));
-                        Pending::Text(v, runs)
+                    let runs = self.replica.text_delta(&object, TEXT)?;
+                    if has_anchor(&runs) {
+                        fields.insert(object.clone(), compose(&runs));
                     }
+                    list.push((object.clone(), true));
+                    Pending::Text(v, runs)
                 }
             };
             if !matches!(entry, Pending::Text(..)) {
@@ -390,10 +387,6 @@ impl Reader<'_> {
                 }
                 Pending::Empty => {
                     blocks.push(Arc::new(Block::Para(Paragraph::new())));
-                    ids.push(BlockIds::new(object, None, None));
-                }
-                Pending::Register(p) => {
-                    blocks.push(Arc::new(Block::Para(*p)));
                     ids.push(BlockIds::new(object, None, None));
                 }
                 Pending::Text(v, runs) => {
@@ -425,7 +418,7 @@ impl Reader<'_> {
         Ok((blocks, ids))
     }
 
-    /// A paragraph in the text form: its register (`meta`, translated) and its text field's runs.
+    /// A paragraph: its register (`meta`, translated) and its text field's runs.
     fn paragraph(&self, meta: &Value, runs: &[TextRun]) -> KdmResult<Paragraph> {
         let mut p = para_from_meta(meta)?;
         let (replica, locals) = (self.replica, &self.locals);
@@ -449,7 +442,12 @@ impl Reader<'_> {
     }
 
     fn table(&mut self, object: ObjectId, depth: usize) -> KdmResult<(Table, TableIds)> {
-        let mut t = Table { props: from(self.translated(&object, "props")?)?, grid: from(self.replica.get(&object, "grid")?)?, rows: Vec::new() };
+        let mut t = Table { props: from(self.translated(&object, "props")?)?, grid: Vec::new(), rows: Vec::new() };
+        let cols = self.live(&object, "cols")?;
+        for col in &cols {
+            // A width a merge left unreadable reads as 0 (the layout sizes such a column).
+            t.grid.push(self.replica.get(col, "width")?.as_f64().map_or(0.0, |w| w as f32));
+        }
         let mut row_ids = Vec::new();
         for row in self.live(&object, "rows")? {
             let mut r = Row { props: from(self.translated(&row, "props")?)?, cells: Vec::new() };
@@ -463,6 +461,6 @@ impl Reader<'_> {
             t.rows.push(r);
             row_ids.push(RowIds { object: row, cells: cell_ids });
         }
-        Ok((t, TableIds { object, rows: row_ids }))
+        Ok((t, TableIds { object, cols, rows: row_ids }))
     }
 }

@@ -1,23 +1,20 @@
 //! Comments beside the content (Kition platform rule M23): the schema declares the
 //! reserved `CommentThread` and `Comment` types; a comment, a reply, a resolve or a delete touches
 //! only those (what a sync server lets a commenter push); concurrent comments on one thread are
-//! all kept; a replica schema 2 wrote, with its comments in the content, is migrated by the first
-//! write of someone who may edit, as a `system` change that loses no comment, and two replicas
-//! migrating offline converge; a build that keeps comments in the content refuses it then.
+//! all kept.
 
 mod common;
 
 use std::collections::BTreeSet;
-use std::sync::Arc;
 
 use common::{body_para, para, rich};
-use kdm_model::{DocModel, DocSession, SCHEMA_VERSION, normalize};
+use kdm_model::{DocModel, DocSession, normalize};
 use kition_doc_doc::props::CharProps;
-use kition_doc_doc::{Comment, Document, InlineObject, Paragraph, Path, StoryRef};
+use kition_doc_doc::{Comment, Document, InlineObject, Path, StoryRef};
 use kition_kit::kdm::comment::{COMMENT_THREAD_TYPE_JSON, COMMENT_TYPE_JSON};
-use kition_kit::kdm::{ActorId, DocId, KdmError, ObjectId, Origin, Replica, Schema, TextRun};
-use kition_kit::session::{KitModel, MemoryBlobs, write_rich_text};
-use serde_json::{Map, Value, json};
+use kition_kit::kdm::{ActorId, Origin, Replica};
+use kition_kit::session::KitModel;
+use serde_json::{Value, json};
 
 fn session(doc: &Document) -> DocSession {
     DocSession::create(doc).unwrap_or_else(|e| panic!("create: {e}"))
@@ -117,10 +114,9 @@ fn the_content_holds_no_comment_and_a_comment_touches_only_comments() {
     assert!(!text.contains("commentStart") && !text.contains("commentEnd"), "no comment anchor in the content");
     assert!(state["objects"].as_object().into_iter().flatten().all(|(_, o)| o["kind"] != json!("comment")), "no comment text is a part");
 
-    // B may only comment: a new comment on a paragraph, a reply, a resolve, and deleting its own
+    // B comments: a new comment on a paragraph, a reply, a resolve, and deleting its own
     // reply touch only `CommentThread` and `Comment` objects, and write B's principal as author.
     let mut b = copy(&a);
-    b.set_comment_only(true);
     let before = b.snapshot().unwrap_or_else(|e| panic!("{e}"));
     let version = b.version();
     let mut new = 0;
@@ -244,213 +240,4 @@ fn anchors_follow_typing_without_rewriting_the_thread() {
     let fresh = kdm_model::read_document(a.replica(), a.blobs()).unwrap_or_else(|e| panic!("{e}")).0;
     let p = fresh.para(StoryRef::Body, &Path::top(1)).unwrap_or_else(|| panic!("paragraph"));
     assert!(p.text.starts_with("Intro \u{fffc}Paragraph 1\u{fffc}"), "{:?}", p.text);
-}
-
-// --- schema 2 -----------------------------------------------------------------------------------
-
-/// `model/schema.json` as schema version 2 had it: comments in the content.
-fn schema_v2() -> Arc<Schema> {
-    let mut v: Value = serde_json::from_str(include_str!("../model/schema.json")).unwrap_or_else(|e| panic!("{e}"));
-    v["schemaVersion"] = json!(2);
-    v["types"].as_object_mut().unwrap_or_else(|| panic!("types")).remove("CommentThread");
-    v["types"]["Comment"] = json!({ "fields": {
-        "props": { "kind": "json", "optional": true },
-        "part": { "kind": "ref", "of": "Part", "optional": true },
-        "parent": { "kind": "ref", "of": "Comment", "optional": true }
-    } });
-    Arc::new(Schema::parse(&v.to_string()).unwrap_or_else(|e| panic!("{e}")))
-}
-
-fn meta() -> Value {
-    let mut v = serde_json::to_value(Paragraph::new()).unwrap_or_else(|e| panic!("{e}"));
-    if let Some(map) = v.as_object_mut() {
-        map.remove("text");
-        map.remove("runs");
-        map.remove("objects");
-    }
-    v
-}
-
-fn fields(pairs: &[(&str, Value)]) -> Map<String, Value> {
-    pairs.iter().map(|(k, v)| ((*k).to_owned(), v.clone())).collect()
-}
-
-/// A replica as schema 2 wrote it: "Hello commented world", "commented" commented by Ann
-/// ("Check this", resolved), with Ben's reply ("Done") on the same range.
-fn old_snapshot() -> Vec<u8> {
-    let root = ObjectId::from_string("document");
-    let (replica, ()) = Replica::create_with(schema_v2(), DocId::new(), ActorId::random(), &Origin::system("create"), |tx| {
-        tx.create_with_id("Document", &root, Map::new())?;
-        let text_part = |tx: &mut kition_kit::kdm::Tx<'_>, text: &str| -> Result<ObjectId, KdmError> {
-            let part = tx.create("Part", fields(&[("kind", json!("comment"))]))?;
-            let block = tx.create("Block", fields(&[("kind", json!("para")), ("para", meta())]))?;
-            tx.text_insert(&block, "text", 0, text)?;
-            tx.list_insert(&part, "blocks", 0, &block)?;
-            Ok(part)
-        };
-        let (first, second) = (text_part(tx, "Check this")?, text_part(tx, "Done")?);
-        tx.list_insert(&root, "parts", 0, &first)?;
-        tx.list_insert(&root, "parts", 1, &second)?;
-        let ann = tx.create(
-            "Comment",
-            fields(&[
-                ("props", json!({ "author": "Ann", "initials": "A", "date": "2026-03-01T09:00:00Z", "resolved": true, "paraId": "1A2B3C4D" })),
-                ("part", json!(first.as_str())),
-            ]),
-        )?;
-        let ben = tx.create(
-            "Comment",
-            fields(&[
-                ("props", json!({ "author": "Ben", "date": "2026-03-01T10:00:00Z" })),
-                ("part", json!(second.as_str())),
-                ("parent", json!(ann.as_str())),
-            ]),
-        )?;
-        tx.list_insert(&root, "comments", 0, &ann)?;
-        tx.list_insert(&root, "comments", 1, &ben)?;
-        let inline = |tx: &mut kition_kit::kdm::Tx<'_>, ty: &str, of: &ObjectId| {
-            tx.create("Inline", fields(&[("value", json!({ "type": ty, "id": of.as_str() }))]))
-        };
-        let marks: Vec<ObjectId> = vec![
-            inline(tx, "commentStart", &ann)?,
-            inline(tx, "commentStart", &ben)?,
-            inline(tx, "commentEnd", &ann)?,
-            inline(tx, "commentEnd", &ben)?,
-        ];
-        let block = tx.create("Block", fields(&[("kind", json!("para")), ("para", meta())]))?;
-        let run = |text: &str| TextRun { insert: text.into(), attributes: Default::default() };
-        let anchor =
-            |o: &ObjectId| TextRun { insert: "\u{fffc}".into(), attributes: [("object".to_owned(), json!(o.as_str()))].into_iter().collect() };
-        let runs = vec![run("Hello "), anchor(&marks[0]), anchor(&marks[1]), run("commented"), anchor(&marks[2]), anchor(&marks[3]), run(" world")];
-        write_rich_text(tx, &block, "text", &[], &runs).map_err(|e| KdmError::Engine(e.to_string()))?;
-        tx.list_insert(&root, "body", 0, &block)?;
-        Ok(())
-    })
-    .unwrap_or_else(|e| panic!("old replica: {e}"));
-    replica.snapshot().unwrap_or_else(|e| panic!("{e}"))
-}
-
-fn old_session() -> DocSession {
-    open(&old_snapshot())
-}
-
-fn open(snapshot: &[u8]) -> DocSession {
-    DocSession::open_snapshot(snapshot, MemoryBlobs::default()).unwrap_or_else(|e| panic!("open: {e}"))
-}
-
-/// What the old replica holds, as the view shows it (comment ids and parts normalized).
-fn expected_view(s: &DocSession) -> Value {
-    serde_json::to_value(normalize(s.document())).unwrap_or_else(|e| panic!("{e}"))
-}
-
-fn assert_old_comments(d: &Document) {
-    assert_eq!(bodies(d), ["Check this", "Done"]);
-    let ann = d.comments.values().find(|c| c.author == "Ann").unwrap_or_else(|| panic!("Ann's comment"));
-    assert!(ann.resolved && ann.initials == "A" && ann.date == "2026-03-01T09:00:00Z" && ann.para_id == "1A2B3C4D");
-    let ben = d.comments.values().find(|c| c.author == "Ben").unwrap_or_else(|| panic!("Ben's reply"));
-    assert!(ben.parent.is_some_and(|p| d.comments[&p].author == "Ann"));
-    let p = d.para(StoryRef::Body, &Path::top(0)).unwrap_or_else(|| panic!("paragraph"));
-    assert_eq!(p.text, "Hello \u{fffc}\u{fffc}commented\u{fffc}\u{fffc} world");
-    assert!(matches!(
-        p.objects.as_slice(),
-        [InlineObject::CommentStart { .. }, InlineObject::CommentStart { .. }, InlineObject::CommentEnd { .. }, InlineObject::CommentEnd { .. }]
-    ));
-}
-
-#[test]
-fn a_schema_2_replica_reads_with_its_comments() {
-    let s = old_session();
-    assert!(s.legacy_comments());
-    assert_old_comments(s.document());
-}
-
-#[test]
-fn the_first_write_moves_the_comments_out_of_the_content_and_loses_none() {
-    let mut s = old_session();
-    let view = expected_view(&s);
-    record(&mut s, "user:ann", |d| {
-        body_para(d, 0).insert_text(0, "Oh ", &CharProps::default()).unwrap_or_else(|e| panic!("{e}"));
-    });
-    assert!(!s.legacy_comments());
-    assert_eq!(s.steps().0, 1, "the migration is no undo step; the edit is one");
-    assert_eq!(s.replica().min_schema_version(), SCHEMA_VERSION);
-    // Nothing of the comments is left in the content.
-    let state = s.replica().state_json().unwrap_or_else(|e| panic!("{e}"));
-    let objects = state["objects"].as_object().cloned().unwrap_or_default();
-    assert!(objects.values().all(|o| o["$type"] != json!("Inline")), "the anchors' objects are gone");
-    assert!(objects.values().all(|o| o["kind"] != json!("comment")), "the comment texts are no parts");
-    assert_eq!(s.replica().list(&ObjectId::from_string("document"), "comments").ok(), Some(Vec::new()));
-    let block = &s.model().ids().body[0].object;
-    assert_eq!(s.replica().text(block, "text").ok().as_deref(), Some("Oh Hello commented world"));
-    // One thread: Ann's comment and Ben's reply, anchored on "commented".
-    let threads: Vec<_> = objects.iter().filter(|(_, o)| o["$type"] == json!("CommentThread")).collect();
-    assert_eq!(threads.len(), 1);
-    let (_, thread) = threads[0];
-    assert_eq!(thread["resolved"], json!(true));
-    assert_eq!(thread["anchor"]["quote"], json!("commented"));
-    assert_eq!(thread["comments"].as_array().map(Vec::len), Some(2));
-    // The view is as it was (plus the edit), and so is a fresh read.
-    assert_old_comments(&{
-        let mut d = s.document().clone();
-        body_para(&mut d, 0).delete(0, 3).unwrap_or_else(|e| panic!("{e}"));
-        d
-    });
-    let mut undone = s.document().clone();
-    body_para(&mut undone, 0).delete(0, 3).unwrap_or_else(|e| panic!("{e}"));
-    assert_eq!(serde_json::to_value(normalize(&undone)).ok(), Some(view));
-    let fresh = kdm_model::read_document(s.replica(), s.blobs()).unwrap_or_else(|e| panic!("{e}")).0;
-    assert_eq!(serde_json::to_value(normalize(&fresh)).ok(), serde_json::to_value(normalize(s.document())).ok());
-    // Undo takes back the edit, not the migration.
-    assert!(s.undo().unwrap_or_else(|e| panic!("{e}")).0);
-    assert!(!s.legacy_comments());
-    assert_old_comments(s.document());
-
-    // A build that keeps comments in the content refuses the migrated replica.
-    let error = Replica::load(schema_v2(), &s.snapshot().unwrap_or_else(|e| panic!("{e}")), ActorId::random()).err();
-    assert_eq!(error, Some(KdmError::NewerSchema { found: SCHEMA_VERSION.into(), reads: 2 }));
-}
-
-#[test]
-fn two_replicas_migrating_offline_converge_without_doubling_a_comment() {
-    let snapshot = old_snapshot();
-    let (mut a, mut b) = (open(&snapshot), open(&snapshot));
-    record(&mut a, "user:ann", |d| {
-        body_para(d, 0).insert_text(0, "A ", &CharProps::default()).unwrap_or_else(|e| panic!("{e}"));
-    });
-    record(&mut b, "user:bob", |d| {
-        let end = body_para(d, 0).len();
-        body_para(d, 0).insert_text(end, " B", &CharProps::default()).unwrap_or_else(|e| panic!("{e}"));
-        let ann = d.comments.iter().find(|(_, c)| c.author == "Ann").map(|(id, _)| *id).unwrap_or_else(|| panic!("Ann"));
-        reply(d, ann, "user:bob", "Bob", "Seen");
-    });
-    exchange(&mut a, &mut b);
-    let d = a.document();
-    assert_eq!(bodies(d), ["Check this", "Done", "Seen"], "every comment once");
-    let threads = a.replica().objects_of_type("CommentThread");
-    assert_eq!(threads.len(), 1, "both made the same thread");
-    // One replica's list of the thread won; B's reply, which only B's listed, shows in the thread
-    // it was written in all the same, and the next write lists it there.
-    let seen = d.comments.values().find(|c| c.author == "Bob").unwrap_or_else(|| panic!("Bob's reply"));
-    assert!(seen.parent.is_some_and(|p| d.comments[&p].author == "Ann"), "in Ann's thread");
-    let p = d.para(StoryRef::Body, &Path::top(0)).unwrap_or_else(|| panic!("paragraph"));
-    assert_eq!(p.text.chars().filter(|c| *c != '\u{fffc}').collect::<String>(), "A Hello commented world B");
-    assert_eq!(p.objects.len(), 4, "the range is placed once");
-    record(&mut a, "user:ann", |d| {
-        body_para(d, 0).insert_text(0, "!", &CharProps::default()).unwrap_or_else(|e| panic!("{e}"));
-    });
-    exchange(&mut a, &mut b);
-    assert_eq!(a.replica().list(&threads[0], "comments").map(|l| l.len()).ok(), Some(3), "listed once each");
-    assert_eq!(bodies(b.document()), ["Check this", "Done", "Seen"]);
-}
-
-#[test]
-fn a_commenter_does_not_migrate_and_writes_nothing_over_a_schema_2_replica() {
-    let mut s = old_session();
-    s.set_comment_only(true);
-    let version = s.version();
-    let mut after = s.document().clone();
-    reply(&mut after, 0, "user:bob", "Bob", "No");
-    assert!(s.record(&Origin::person("user:bob"), &after).is_err(), "refused: comments are still in the content");
-    assert_eq!(s.version(), version, "nothing written");
-    assert!(s.legacy_comments());
 }

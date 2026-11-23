@@ -78,9 +78,11 @@ your draft of the document and leave the file as it is; only the person merges o
 
 ## Common tasks
 
-- `doc_query { "select": "root" }` returns the whole object model: `body` (block ids), `styles`,
-  `settings` (theme fonts), `lastSection` (page size and margins in points). It is large; ask for
-  the objects you need.
+- `doc_query { "select": "root" }` returns the whole object model: `body` (block ids), `styles`
+  (one entry per style, keyed by style id), `styleDefaults` (the document's default character and
+  paragraph formatting), `settings` (theme fonts), `lastSection` (page size and margins in points).
+  It is large; ask for the objects you need. A table's columns are its `cols` (each a `width` in
+  points).
 - New paragraph at the caret: [`text.newParagraph`](/kits/doc/commands/text.newParagraph/).
 - Text at the caret: [`text.insert`](/kits/doc/commands/text.insert/) `{ "text": "..." }`.
 - Bold the selection: [`format.bold`](/kits/doc/commands/format.bold/).
@@ -214,7 +216,7 @@ What each family of commands rests on besides what its step names:
 |---|---|
 | `format` | the selected paragraphs' styles and their runs' character styles, the styles they are based on, the document defaults, each paragraph's style |
 | `para` | as `format`, and the paragraphs' whole properties; numbering commands: the list definitions, selected paragraphs and their neighbors |
-| `table` | the table the selection is in (grid, properties) and each row's and cell's properties; a table style without a name: the styles |
+| `table` | the table the selection is in (its columns, properties) and each row's and cell's properties; a table style without a name: the styles |
 | `insert` | tracked changes; cross-references, captions, tables of contents, indexes, Quick Parts, fields: every paragraph's text and properties and the document |
 | `references`, `mailings` | every paragraph's text and properties and the document |
 | `review` | the tracked-change commands: the document's revisions and comments; the comment commands: the comments; Track Changes and Restrict Editing: the settings |

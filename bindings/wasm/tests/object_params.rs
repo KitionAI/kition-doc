@@ -44,7 +44,7 @@ const NAME_ALLOW: &[(&str, &str, &str)] = &[
     (
         "*",
         "style",
-        "a style: an entry of the root's `styles` register, no object; `under` holds that entry (`styles.styles[id=…]`) for the commands that name one",
+        "a style: an entry of the root's `styles` map (keyed by style id), no object; `under` holds that entry (`/styles/<id>`) for the commands that name one",
     ),
     ("*", "basedOn", "a style, as `style`"),
     ("*", "next", "a style, as `style`"),

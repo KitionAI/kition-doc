@@ -16,12 +16,12 @@
 //! anchor naming the new paragraph is inserted at the split point (`pieces`). A merge of two
 //! paragraphs keeps both objects: the second stays listed, with its text, after a merge anchor
 //! naming the first at the start of its field, and is read as part of the first (`pieces`); its
-//! `BlockIds` move into the first's `merged`. A paragraph in
-//! the register form 0.3.x wrote becomes a new object when written ([`migrate_document`]).
+//! `BlockIds` move into the first's `merged`.
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::Arc;
 
+use kition_doc_doc::StyleSheet;
 use kition_doc_doc::numbering::{Num, Numbering};
 use kition_doc_doc::para::OBJ;
 use kition_doc_doc::table::{Cell, Row};
@@ -35,7 +35,7 @@ use crate::comments::{self, Stripped};
 use crate::ids::{BlockIds, CellIds, Ids, PartIds, RowIds, TableIds};
 use crate::list::{align, longest_increasing, sync_list, sync_set};
 use crate::pieces::{Composition, Mark, Piece, anchor, assign, char_len, compose, has_anchor, layout, slice, text_of};
-use crate::refs::{Objects, inline_value, para_meta, para_value};
+use crate::refs::{Objects, inline_value, para_meta};
 use crate::text::{INLINE, OBJECT_MARK, ParaText, TEXT, kept_from, merged, para_runs};
 use crate::{KdmResult, kdm_err, root_id};
 
@@ -54,15 +54,17 @@ fn object_value(object: &ObjectId) -> Value {
     Value::String(object.as_str().to_owned())
 }
 
-pub(crate) fn kind_name(kind: PartKind) -> &'static str {
-    match kind {
+/// A part's `kind`. A comment's text is no part of the object model (it is its `Comment`'s
+/// `body`, rule M23): the writer strips those parts first (`comments::Stripped`).
+pub(crate) fn kind_name(kind: PartKind) -> KdmResult<&'static str> {
+    Ok(match kind {
         PartKind::Header => "header",
         PartKind::Footer => "footer",
         PartKind::Footnote => "footnote",
         PartKind::Endnote => "endnote",
-        PartKind::Comment => "comment",
         PartKind::TextBox => "textbox",
-    }
+        PartKind::Comment => return Err(kdm_err("a comment's text is no part")),
+    })
 }
 
 /// The MIME type of a media key, by its extension.
@@ -91,60 +93,8 @@ pub fn write_document(tx: &mut Tx<'_>, doc: &Document, ids: &mut Ids, blobs: &mu
     let mut writer = Writer::new(tx, blobs);
     writer.write(None, &content, ids)?;
     let objects = std::mem::take(&mut writer.objects);
-    comments::write(tx, None, doc, ids, &objects, false)?;
+    comments::write(tx, None, doc, ids, &objects)?;
     Ok(root)
-}
-
-/// Raises the replica's minimum schema version to [`crate::SCHEMA_VERSION`] (rule M20), so a 0.3.x
-/// build refuses the replica rather than misread what this build writes next, and rewrites the
-/// paragraphs `paragraphs` names, still in the register form 0.3.x wrote, into the text form
-/// (K6), each as a new object in its place (the old one has no text field): the ones the next
-/// write changes ([`register_writes`]). The others stay registers, read as they are, until a write
-/// changes them, so two people who migrate one document offline only ever both rewrite a
-/// paragraph they both changed, which then stays twice (each person's version) instead of losing
-/// one. `doc` is the view `ids` describe. Answers whether it wrote anything. [`crate::DocSession`]
-/// runs it as a `system` transaction (the only kind that may raise the version, and never an undo
-/// step) before each write while the replica holds register-form paragraphs.
-///
-/// A replica schema 2 wrote with comments in it (comment anchors in the paragraphs' text, comment
-/// texts as `Part`s, `Comment` objects listed by the document) has them moved out of the content
-/// in the same transaction (rule M23, `comments`): the anchors are deleted from the text and become
-/// each thread's `anchor`, the texts become each comment's `body`, and every comment an object of
-/// a `CommentThread`, under ids derived from the old comment's, so two replicas migrating offline
-/// make the same objects. Every paragraph still in the register form is rewritten then too.
-pub fn migrate_document(tx: &mut Tx<'_>, doc: &Document, paragraphs: &HashSet<ObjectId>, ids: &mut Ids, blobs: &mut dyn BlobSink) -> KdmResult<bool> {
-    let mut wrote = false;
-    let legacy = ids.legacy_comments;
-    if !paragraphs.is_empty() || legacy {
-        let mut migrating = paragraphs.clone();
-        if legacy {
-            migrating.extend(ids.register_form_objects());
-        }
-        let mut stripped = Stripped::default();
-        // The replica holds the comments in the content: the view as it is describes it.
-        let before = if legacy { doc.clone() } else { stripped.doc(doc) };
-        let after = stripped.doc(doc);
-        let mut writer = Writer::new(tx, blobs);
-        writer.migrating = migrating;
-        writer.write(Some(&before), &after, ids)?;
-        wrote = writer.wrote;
-        let objects = std::mem::take(&mut writer.objects);
-        wrote |= comments::write(tx, Some(doc), doc, ids, &objects, legacy)?;
-    }
-    // Shapes' frames out of their values (schema 4), in the transaction that raises the version.
-    wrote |= crate::frames::migrate(tx)?;
-    let raised = tx.raise_schema_version(crate::SCHEMA_VERSION)?;
-    Ok(wrote || raised)
-}
-
-/// The register-form paragraphs (0.3.x, K6) a write of `after` over `before` would rewrite: a
-/// dry run of [`write_changes`] in `tx`, which the caller then drops.
-pub fn register_writes(tx: &mut Tx<'_>, before: &Document, after: &Document, ids: &Ids, blobs: &mut dyn BlobSink) -> KdmResult<HashSet<ObjectId>> {
-    let mut stripped = Stripped::default();
-    let (before, after) = (stripped.doc(before), stripped.doc(after));
-    let mut writer = Writer::new(tx, blobs);
-    writer.write(Some(&before), &after, &mut ids.clone())?;
-    Ok(writer.rewritten)
 }
 
 /// Writes only what differs between `before` (the document `ids` describe) and `after`, and
@@ -152,20 +102,15 @@ pub fn register_writes(tx: &mut Tx<'_>, before: &Document, after: &Document, ids
 ///
 /// The paragraphs are written without their comment anchors and the comment texts not as parts
 /// (rule M23): the comments are written as `CommentThread` and `Comment` objects beside the
-/// content (`comments`), so a change that only comments touches only those. A replica still
-/// holding comments in its content (schema 2) must be migrated first ([`migrate_document`]):
-/// writing over it is refused.
+/// content (`comments`), so a change that only comments touches only those.
 pub fn write_changes(tx: &mut Tx<'_>, before: &Document, after: &Document, ids: &mut Ids, blobs: &mut dyn BlobSink) -> KdmResult<bool> {
-    if ids.legacy_comments {
-        return Err(kdm_err("the replica holds comments in its content (schema 2): migrate it first"));
-    }
     let mut stripped = Stripped::default();
     let (content_before, content_after) = (stripped.doc(before), stripped.doc(after));
     let mut writer = Writer::new(tx, blobs);
     writer.write(Some(&content_before), &content_after, ids)?;
     let mut wrote = writer.wrote;
     let objects = std::mem::take(&mut writer.objects);
-    wrote |= comments::write(tx, Some(before), after, ids, &objects, false)?;
+    wrote |= comments::write(tx, Some(before), after, ids, &objects)?;
     Ok(wrote)
 }
 
@@ -178,10 +123,6 @@ struct Writer<'w, 'tx> {
     /// every reference must be compared, even in blocks the command did not touch.
     remap: bool,
     wrote: bool,
-    /// Register-form paragraphs to rewrite into the text form though unchanged ([`migrate_document`]).
-    migrating: HashSet<ObjectId>,
-    /// The register-form paragraphs this write rewrote ([`register_writes`]).
-    rewritten: HashSet<ObjectId>,
     /// `Inline` objects whose anchors this write removed, deleted at its end unless claimed: a
     /// field may keep an anchor another field gave up (`pieces`).
     doomed: Vec<ObjectId>,
@@ -191,28 +132,7 @@ struct Writer<'w, 'tx> {
 
 impl<'w, 'tx> Writer<'w, 'tx> {
     fn new(tx: &'w mut Tx<'tx>, blobs: &'w mut dyn BlobSink) -> Self {
-        Self {
-            tx,
-            blobs,
-            objects: Objects::default(),
-            remap: false,
-            wrote: false,
-            migrating: HashSet::new(),
-            rewritten: HashSet::new(),
-            doomed: Vec::new(),
-            claimed: HashSet::new(),
-        }
-    }
-
-    /// Whether `ids` is, or (a table) holds, a paragraph [`migrate_document`] rewrites.
-    fn migrates(&self, ids: &BlockIds, depth: usize) -> bool {
-        if self.migrating.is_empty() || depth > MAX_DEPTH {
-            return false;
-        }
-        match &ids.table {
-            None => self.migrating.contains(&ids.object),
-            Some(t) => t.rows.iter().any(|r| r.cells.iter().any(|c| c.blocks.iter().any(|b| self.migrates(b, depth + 1)))),
-        }
+        Self { tx, blobs, objects: Objects::default(), remap: false, wrote: false, doomed: Vec::new(), claimed: HashSet::new() }
     }
 }
 
@@ -278,7 +198,7 @@ impl Writer<'_, '_> {
             match (was, old_parts.remove(id)) {
                 (Some(was), Some(existing)) => {
                     if was.kind != part.kind {
-                        self.set(&existing.object, "kind", json!(kind_name(part.kind)))?;
+                        self.set(&existing.object, "kind", json!(kind_name(part.kind)?))?;
                     }
                     self.set(&existing.object, "id", name(id))?;
                     parts.insert(*id, existing);
@@ -288,7 +208,7 @@ impl Writer<'_, '_> {
                         self.drop_inlines(&stale.blocks, 0)?;
                         self.delete_tree(&stale.object, 0)?;
                     }
-                    let mut fields = vec![("kind", json!(kind_name(part.kind)))];
+                    let mut fields = vec![("kind", json!(kind_name(part.kind)?))];
                     if names.contains_key(id) {
                         fields.push(("id", name(id)));
                     }
@@ -361,7 +281,9 @@ impl Writer<'_, '_> {
         self.root_field("sources", before.map(|b| &b.sources), &after.sources, false)?;
         self.root_field("customProps", before.map(|b| &b.custom_props), &after.custom_props, false)?;
         self.root_field("lastSection", before.map(|b| &b.last_section), &after.last_section, true)?;
-        self.root_field("styles", before.map(|b| &b.styles), &after.styles, true)?;
+        if self.remap || before.is_none_or(|b| b.styles != after.styles) {
+            self.write_styles(&after.styles)?;
+        }
         if self.remap || lists_changed || before.is_none_or(|b| b.numbering != after.numbering) {
             self.write_lists(&after.numbering, &nums, &abstracts, &ids.nums)?;
         }
@@ -488,6 +410,47 @@ impl Writer<'_, '_> {
         self.set(&root, "numbering", rest)
     }
 
+    /// Writes the styles: the document defaults as the `styleDefaults` register, each style as the
+    /// `styles` entry of its style id (`{order, style}`: its place among the styles, the style), so
+    /// styles made or changed concurrently are all kept; a style whose id an earlier one already
+    /// has is keyed `<id>#<n>`. An entry keeps the order it holds while that still sorts it after
+    /// the one before it, so adding or removing a style rewrites no other entry. References are
+    /// written as object ids; entries are compared with what the replica holds, so a copy a merge
+    /// left stale is written again.
+    fn write_styles(&mut self, sheet: &StyleSheet) -> KdmResult<()> {
+        let root = root_id();
+        let mut defaults = json!({ "defaultChr": value(&sheet.default_chr)?, "defaultPara": value(&sheet.default_para)? });
+        self.objects.translate(&mut defaults);
+        self.set(&root, "styleDefaults", defaults)?;
+
+        let stored: HashMap<String, Value> = self.tx.map_entries(&root, "styles")?.into_iter().collect();
+        let mut used: HashSet<String> = HashSet::new();
+        let mut keys: Vec<String> = Vec::with_capacity(sheet.styles.len());
+        for style in &sheet.styles {
+            let mut key = style.id.clone();
+            let mut n = 1u32;
+            while !used.insert(key.clone()) {
+                n = n.saturating_add(1);
+                key = format!("{}#{n}", style.id);
+            }
+            keys.push(key);
+        }
+        let orders = style_orders(&keys, |key| stored.get(key).and_then(|v| v.get("order")).and_then(Value::as_f64).filter(|o| o.is_finite()));
+        for ((style, key), order) in sheet.styles.iter().zip(&keys).zip(orders) {
+            let mut entry = json!({ "order": order, "style": value(style)? });
+            self.objects.translate(&mut entry);
+            if !stored.get(key).is_some_and(|had| same_json(had, &entry)) {
+                self.tx.map_set(&root, "styles", key, entry)?;
+                self.wrote = true;
+            }
+        }
+        for key in stored.keys().filter(|key| !used.contains(*key)) {
+            self.tx.map_delete(&root, "styles", key)?;
+            self.wrote = true;
+        }
+        Ok(())
+    }
+
     fn root_field<T: Serialize + PartialEq>(&mut self, field: &str, before: Option<&T>, after: &T, refs: bool) -> KdmResult<()> {
         if before == Some(after) && !(refs && self.remap) {
             return Ok(());
@@ -505,13 +468,13 @@ impl Writer<'_, '_> {
             return Ok(());
         }
         let ty = self.tx.object_type(object)?;
-        let list = match ty.as_str() {
-            "Table" => Some("rows"),
-            "Row" => Some("cells"),
-            "Cell" | "Part" => Some("blocks"),
-            _ => None,
+        let lists: &[&str] = match ty.as_str() {
+            "Table" => &["cols", "rows"],
+            "Row" => &["cells"],
+            "Cell" | "Part" => &["blocks"],
+            _ => &[],
         };
-        if let Some(field) = list {
+        for field in lists {
             for item in self.tx.list_items(object, field)? {
                 self.delete_tree(&item, depth + 1)?;
             }
@@ -613,14 +576,14 @@ impl Writer<'_, '_> {
             }
         }
 
-        // Paired blocks: tables and register-form paragraphs as they are; a text paragraph's new
-        // runs onto its pieces (and those of the paragraph merged into it).
+        // Paired blocks: tables (and a block whose table is gone) as they are; a text paragraph's
+        // new runs onto its pieces (and those of the paragraph merged into it).
         let mut splits: HashMap<usize, (usize, ObjectId)> = HashMap::new();
         let mut merge_marks: HashMap<usize, ObjectId> = HashMap::new();
         for (j, block) in after.iter().enumerate() {
             let Some(i) = partner.get(j).copied().flatten() else { continue };
             let (Some(was), Some(ids)) = (before.get(i), old.get(i)) else { continue };
-            let unchanged = Arc::ptr_eq(was, block) && !self.remap && !self.migrates(ids, depth);
+            let unchanged = Arc::ptr_eq(was, block) && !self.remap;
             let Block::Para(p) = &**block else {
                 out[j] = Some(if unchanged { ids.clone() } else { self.update_block(ids, was, block, depth)? });
                 continue;
@@ -816,25 +779,9 @@ impl Writer<'_, '_> {
         match after {
             Block::Para(p) => {
                 let (None, Some(truth)) = (&ids.table, &ids.text) else {
-                    if ids.table.is_none() {
-                        // A paragraph in the register form (K6) that is not changing (rebuilt,
-                        // or its references renumbered) stays one: its register written again
-                        // where a reference now names another object.
-                        if !self.migrating.contains(&object)
-                            && let Block::Para(was) = before
-                            && was == p
-                        {
-                            let v = self.objects.translated(para_value(p)?);
-                            self.set(&object, "para", v)?;
-                            self.set(&object, "id", block_tool_id(after))?;
-                            return Ok(ids.clone());
-                        }
-                        self.rewritten.insert(object.clone());
-                    }
-                    // A table becoming a paragraph, or a paragraph in the register form (K6): its
-                    // object has no text field to write (or one holding a table's leftovers), so
-                    // the paragraph is a new object in its place, with an id of its own: two
-                    // replicas rewriting the same paragraph at once keep both versions.
+                    // A table becoming a paragraph (or a block whose table is gone): its object's
+                    // text field holds a table's leftovers, so the paragraph is a new object in
+                    // its place, with an id of its own.
                     let fresh = self.create_block(after, depth)?;
                     self.delete_block(ids, depth)?;
                     return Ok(fresh);
@@ -914,12 +861,12 @@ impl Writer<'_, '_> {
                 .filter(|id| !used.contains(*id))
                 .map(ObjectId::from_string)
                 .filter(|id| self.is_inline(id));
-            // A shape's frame is its own register (schema 4), so a move and a format both stay; an
-            // edited chart's description its own object (schema 5).
+            // A shape's frame is its own register, so a move and a format both stay; an edited
+            // chart's description its own object.
             let (value, chart) = crate::charts::split(value);
             let (value, frame) = crate::frames::split(value);
-            // A shape's other members are entries of its `look` map (schema 6), so two people
-            // changing two of them both keep theirs.
+            // A shape's other members are entries of its `look` map, so two people changing two
+            // of them both keep theirs.
             let shape = crate::frames::is_plain_shape(&value);
             let id = match reuse {
                 Some(id) => {
@@ -1029,20 +976,54 @@ impl Writer<'_, '_> {
         self.delete_tree(&ids.object, 0)
     }
 
-    fn table_fields(&self, t: &Table) -> KdmResult<Vec<(&'static str, Value)>> {
-        Ok(vec![("props", self.objects.translated(value(&t.props)?)), ("grid", value(&t.grid)?)])
-    }
-
     fn create_table(&mut self, t: &Table, depth: usize) -> KdmResult<TableIds> {
-        let fields = self.table_fields(t)?;
-        let object = self.create("Table", fields)?;
+        let props = self.objects.translated(value(&t.props)?);
+        let object = self.create("Table", vec![("props", props)])?;
+        let cols = self.write_cols(&object, &[], &[], &t.grid)?;
         let mut rows = Vec::with_capacity(t.rows.len());
         for (r, row) in t.rows.iter().enumerate() {
             let ids = self.create_row(row, depth)?;
             self.tx.list_insert(&object, "rows", r, &ids.object)?;
             rows.push(ids);
         }
-        Ok(TableIds { object, rows })
+        Ok(TableIds { object, cols, rows })
+    }
+
+    /// Writes a table's grid (`after`, its column widths) as its `cols`, over `before` (whose
+    /// `Col` objects are `old`): a column keeps its object while it is the same column (all of
+    /// them when the count is the same, else aligned by width, then in order), so two people
+    /// resizing two columns at once both keep theirs. Answers the columns' objects.
+    fn write_cols(&mut self, table: &ObjectId, old: &[ObjectId], before: &[f32], after: &[f32]) -> KdmResult<Vec<ObjectId>> {
+        let partner: Vec<Option<usize>> = if before.len() != old.len() {
+            vec![None; after.len()]
+        } else if before.len() == after.len() {
+            (0..after.len()).map(Some).collect()
+        } else {
+            align(&keyless(before), &keyless(after))
+        };
+        let mut kept = vec![false; old.len()];
+        let mut cols = Vec::with_capacity(after.len());
+        for (j, w) in after.iter().enumerate() {
+            let width = col_width(*w);
+            match partner.get(j).copied().flatten().and_then(|i| Some((i, old.get(i)?))).filter(|(_, o)| self.tx.exists(o)) {
+                Some((i, object)) => {
+                    kept[i] = true;
+                    self.set(object, "width", width)?;
+                    cols.push(object.clone());
+                }
+                None => cols.push(self.create("Col", vec![("width", width)])?),
+            }
+        }
+        for (i, object) in old.iter().enumerate() {
+            if !kept[i] && self.tx.exists(object) {
+                self.tx.delete(object)?;
+                self.wrote = true;
+            }
+        }
+        if cols.as_slice() != old {
+            self.wrote |= sync_list(self.tx, table, "cols", &cols)? > 0;
+        }
+        Ok(cols)
     }
 
     fn create_row(&mut self, row: &Row, depth: usize) -> KdmResult<RowIds> {
@@ -1066,11 +1047,15 @@ impl Writer<'_, '_> {
 
     fn update_table(&mut self, ids: &TableIds, before: &Table, after: &Table, depth: usize) -> KdmResult<TableIds> {
         let object = ids.object.clone();
-        if self.remap || before.props != after.props || before.grid != after.grid {
-            for (field, v) in self.table_fields(after)? {
-                self.set(&object, field, v)?;
-            }
+        if self.remap || before.props != after.props {
+            let props = self.objects.translated(value(&after.props)?);
+            self.set(&object, "props", props)?;
         }
+        let cols = if before.grid == after.grid && before.grid.len() == ids.cols.len() {
+            ids.cols.clone()
+        } else {
+            self.write_cols(&object, &ids.cols, &before.grid, &after.grid)?
+        };
         let partner: Vec<Option<usize>> = if before.rows.len() != ids.rows.len() {
             vec![None; after.rows.len()]
         } else if before.rows == after.rows {
@@ -1100,7 +1085,7 @@ impl Writer<'_, '_> {
         if order.len() != ids.rows.len() || order.iter().zip(&ids.rows).any(|(a, b)| *a != b.object) {
             self.wrote |= sync_list(self.tx, &object, "rows", &order)? > 0;
         }
-        Ok(TableIds { object, rows })
+        Ok(TableIds { object, cols, rows })
     }
 
     fn update_row(&mut self, ids: &RowIds, before: &Row, after: &Row, depth: usize) -> KdmResult<RowIds> {
@@ -1152,6 +1137,51 @@ impl Writer<'_, '_> {
         }
         Ok(RowIds { object, cells })
     }
+}
+
+/// A column's `width`: its grid width, a width JSON cannot hold (not finite) as 0.
+fn col_width(w: f32) -> Value {
+    json!(if w.is_finite() { w } else { 0.0 })
+}
+
+/// Each style's `order` (see `Writer::write_styles`), by its key: the order an entry holds
+/// (`stored`) while it sorts the entry (order, then key) after the one before it, else one between
+/// its neighbours' that are kept.
+fn style_orders(keys: &[String], stored: impl Fn(&str) -> Option<f64>) -> Vec<f64> {
+    let mut kept: Vec<Option<f64>> = Vec::with_capacity(keys.len());
+    let mut last: Option<(f64, &str)> = None;
+    for key in keys {
+        let order = stored(key).filter(|o| last.is_none_or(|(lo, lk)| (*o, key.as_str()) > (lo, lk)));
+        if let Some(o) = order {
+            last = Some((o, key.as_str()));
+        }
+        kept.push(order);
+    }
+    let mut out = Vec::with_capacity(keys.len());
+    let mut i = 0;
+    while i < kept.len() {
+        if let Some(Some(o)) = kept.get(i) {
+            out.push(*o);
+            i += 1;
+            continue;
+        }
+        // A run of entries to place, between the kept ones around it.
+        let end = (i..kept.len()).find(|k| kept.get(*k).is_some_and(Option::is_some)).unwrap_or(kept.len());
+        let lo = out.last().copied();
+        let hi = kept.get(end).copied().flatten();
+        let count = end - i;
+        for k in 0..count {
+            let n = k as f64;
+            out.push(match (lo, hi) {
+                (None, None) => n,
+                (Some(lo), None) => lo + 1.0 + n,
+                (None, Some(hi)) => hi - (count - k) as f64,
+                (Some(lo), Some(hi)) => lo + (hi - lo) * (n + 1.0) / (count as f64 + 1.0),
+            });
+        }
+        i = end;
+    }
+    out
 }
 
 /// Whether two JSON values are equal, numbers by value: the replica keeps a whole float as an

@@ -1,15 +1,13 @@
 //! A drawing object's frame (its size and placement: `w`, `h`, `float`) as its own register of its
-//! `Inline` object (schema version 4), beside the `value` register holding the rest of the object,
-//! so one person moving or resizing a shape or chart and another formatting or editing it both
-//! keep their change (Kit Harness Protocol `KitDrawing` DR14). A replica schema 3 wrote holds the
-//! frame in `value`: it reads as it is, and [`migrate`] splits it. Charts and diagrams split the
-//! same way; a schema 4 reader joins every object's frame, so it reads them either way.
+//! `Inline` object, beside the `value` register holding the rest of the object, so one person
+//! moving or resizing a shape or chart and another formatting or editing it both keep their
+//! change (Kit Harness Protocol `KitDrawing` DR14). Charts and diagrams split the same way. A
+//! shape's other members are entries of its `look` map ([`write_look`]).
 
 use kition_kit::kdm::Tx;
 use serde_json::{Map, Value};
 
 use crate::KdmResult;
-use crate::text::INLINE;
 
 /// The members of a serialized shape that make its frame.
 const FRAME: [&str; 3] = ["w", "h", "float"];
@@ -36,8 +34,8 @@ pub(crate) fn split(mut value: Value) -> (Value, Option<Value>) {
     (value, Some(Value::Object(frame)))
 }
 
-/// The serialized inline object from its two registers (a `frame` that is not an object, as one
-/// schema 3 wrote has none, leaves `value` as it is).
+/// The serialized inline object from its two registers (a `frame` that is not an object, as an
+/// object without a frame has, leaves `value` as it is).
 pub(crate) fn join(mut value: Value, frame: &Value) -> Value {
     if let (Some(map), Some(frame)) = (value.as_object_mut(), frame.as_object()) {
         for key in FRAME {
@@ -49,40 +47,16 @@ pub(crate) fn join(mut value: Value, frame: &Value) -> Value {
     value
 }
 
-/// Splits the frame out of every shape's or graphic's `value` that still holds it (a schema 3
-/// replica's, or a graphic an earlier schema 4 build wrote whole).
-/// Run in [`crate::migrate_document`]'s `system` transaction, which raises the minimum schema
-/// version, so a schema 3 build refuses the replica instead of showing shapes without a size.
-pub(crate) fn migrate(tx: &mut Tx<'_>) -> KdmResult<bool> {
-    let mut wrote = false;
-    for inline in tx.objects_of_type(INLINE) {
-        let value = tx.get(&inline, "value")?;
-        if !is_shape(&value) || !FRAME.iter().any(|k| value.get(*k).is_some()) {
-            continue;
-        }
-        let (rest, frame) = split(value);
-        tx.set(&inline, "value", rest)?;
-        if let Some(frame) = frame {
-            tx.set(&inline, "frame", frame)?;
-        }
-        wrote = true;
-    }
-    Ok(wrote)
-}
-
-/// A shape's members other than its frame as entries of its `look` map (schema version 6), one
-/// per member, so two people changing two different ones of one shape at once both keep theirs
-/// (DR14); its `value` register keeps only its type. Members still in `value` (an earlier
-/// schema) move into `look` on the shape's next write. `true` when it wrote.
+/// A shape's members other than its frame as entries of its `look` map, one per member, so two
+/// people changing two different ones of one shape at once both keep theirs (DR14); its `value`
+/// register keeps only its type. `true` when it wrote.
 pub(crate) fn write_look(tx: &mut Tx, inline: &kition_kit::kdm::ObjectId, value: &Value) -> KdmResult<bool> {
     let Some(members) = value.as_object() else { return Ok(false) };
     let kept = tx.get(inline, "value")?;
-    let legacy = kept.as_object().is_some_and(|m| m.len() > 1);
     let now: Map<String, Value> = tx.map_entries(inline, "look").unwrap_or_default().into_iter().collect();
     let mut wrote = false;
     for (k, v) in members.iter().filter(|(k, _)| k.as_str() != "type") {
-        let had = if legacy { kept.get(k.as_str()) } else { now.get(k.as_str()) };
-        if legacy || !had.is_some_and(|h| crate::write::same_json(h, v)) {
+        if !now.get(k.as_str()).is_some_and(|h| crate::write::same_json(h, v)) {
             tx.map_set(inline, "look", k, v.clone())?;
             wrote = true;
         }

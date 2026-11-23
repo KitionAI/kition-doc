@@ -45,7 +45,7 @@ use kition_kit::session::write_text;
 use serde_json::{Map, Value, json};
 
 use crate::ids::{BlockIds, Ids, Known, Minter};
-use crate::list::{sync_list, sync_set};
+use crate::list::sync_list;
 use crate::refs::{Locals, Objects};
 use crate::text::{TEXT, char_marks, char_props};
 use crate::write::{MAX_DEPTH, same_json};
@@ -476,16 +476,8 @@ fn registers(
 
 /// Writes the comments of `after` (the view; `before` the view `ids` described) as threads, with
 /// `ids`' content objects already those of `after`; leaves `ids`' comment maps describing `after`.
-/// `migrating`: `ids.comments` are the comments as schema 2 wrote them, deleted here, and every
-/// comment is made anew under an id derived from its old object's. Answers whether it wrote.
-pub(crate) fn write(
-    tx: &mut Tx<'_>,
-    before: Option<&Document>,
-    after: &Document,
-    ids: &mut Ids,
-    objects: &Objects,
-    migrating: bool,
-) -> KdmResult<bool> {
+/// Answers whether it wrote.
+pub(crate) fn write(tx: &mut Tx<'_>, before: Option<&Document>, after: &Document, ids: &mut Ids, objects: &Objects) -> KdmResult<bool> {
     let placed = Placed::of(after, ids);
     let ends = placed.ends();
     let old_comments = std::mem::take(&mut ids.comments);
@@ -499,24 +491,11 @@ pub(crate) fn write(
         }
     };
 
-    if migrating {
-        for object in old_comments.values() {
-            if tx.exists(object) {
-                tx.delete(object)?;
-                wrote = true;
-            }
-        }
-        wrote |= sync_set(tx, &root_id(), "comments", &[])? > 0;
-    }
-    // The id a migrated comment's or thread's object gets: derived from its old one, so replicas
-    // migrating one replica offline make the same objects.
-    let derived = |prefix: &str, id: u32| old_comments.get(&id).map(|o| ObjectId::from_string(format!("{prefix}-{}", o.as_str())));
-
     // Comments: the same object while the comment is.
     let mut comments: BTreeMap<u32, ObjectId> = BTreeMap::new();
     let mut fresh: Vec<u32> = Vec::new();
     for id in after.comments.keys() {
-        let existed = !migrating && before.is_some_and(|b| b.comments.contains_key(id));
+        let existed = before.is_some_and(|b| b.comments.contains_key(id));
         match old_comments.get(id) {
             Some(object) if existed && tx.exists(object) => {
                 comments.insert(*id, object.clone());
@@ -553,10 +532,7 @@ pub(crate) fn write(
                     fields.insert("id".into(), thread_id);
                 }
                 wrote = true;
-                match migrating.then(|| derived("cth", *root)).flatten() {
-                    Some(chosen) => tx.create_with_id(THREAD, &chosen, fields)?,
-                    None => tx.create(THREAD, fields)?,
-                }
+                tx.create(THREAD, fields)?
             }
         };
         threads.insert(*root, thread);
@@ -570,10 +546,7 @@ pub(crate) fn write(
         let Some(c) = after.comments.get(id) else { continue };
         let mut fields = registers(c, thread_of(*id), None, None, blocks_for(c), objects, true)?;
         fields.retain(|_, v| !v.is_null());
-        let object = match migrating.then(|| derived("cmt", *id)).flatten() {
-            Some(chosen) => tx.create_with_id(COMMENT, &chosen, fields)?,
-            None => tx.create(COMMENT, fields)?,
-        };
+        let object = tx.create(COMMENT, fields)?;
         comments.insert(*id, object);
         wrote = true;
     }
@@ -607,7 +580,7 @@ pub(crate) fn write(
     }
     let live: HashSet<&ObjectId> = comments.values().collect();
     for object in old_comments.values() {
-        if !migrating && !live.contains(object) && tx.exists(object) {
+        if !live.contains(object) && tx.exists(object) {
             tx.delete(object)?;
             wrote = true;
         }
@@ -646,7 +619,6 @@ pub(crate) fn write(
     ids.comments = comments;
     ids.threads = threads;
     ids.comment_bodies = bodies;
-    ids.legacy_comments = false;
     Ok(wrote)
 }
 
@@ -690,7 +662,7 @@ pub(crate) fn read(
         return Ok(());
     }
     // Every thread with its comments: each comment once (a concurrent delete may leave a deleted
-    // one listed, and two replicas that migrated one thread offline list its comments twice).
+    // one listed).
     let mut threads: Vec<(ObjectId, Vec<ObjectId>)> = Vec::new();
     let mut listed: HashSet<ObjectId> = HashSet::new();
     let mut found = replica.objects_of_type(THREAD);

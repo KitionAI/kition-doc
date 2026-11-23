@@ -68,9 +68,11 @@ Commands by namespace (the part of the id before the first dot):
 - A paragraph's text is split into **runs** with the same formatting. You never address runs:
   select text, then run a formatting command, and the kit splits runs for you.
 - Headers, footers, footnotes and endnotes are separate **stories** (`parts` in `doc_query`).
-- `doc_query { "select": "root" }` returns the whole object model: `body` (block ids), `styles`,
-  `settings` (theme fonts), `lastSection` (page size and margins in points). It is large; ask for
-  the objects you need.
+- `doc_query { "select": "root" }` returns the whole object model: `body` (block ids), `styles`
+  (one entry per style, keyed by style id), `styleDefaults` (the document's default character and
+  paragraph formatting), `settings` (theme fonts), `lastSection` (page size and margins in points).
+  It is large; ask for the objects you need. A table's columns are its `cols` (each a `width` in
+  points).
 
 ### Addressing: positions
 

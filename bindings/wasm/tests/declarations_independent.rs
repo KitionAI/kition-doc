@@ -1069,6 +1069,10 @@ fn field_name(path: &str) -> String {
     if path == "props.blocks" {
         return "blocks".into();
     }
+    // A JSON Pointer (`/styles/Heading1`, a map entry): its first segment is the field.
+    if let Some(pointer) = path.strip_prefix('/') {
+        return pointer.split('/').next().unwrap_or_default().to_owned();
+    }
     let name = path.split(['.', '[', '(']).next().unwrap_or_default().trim();
     // `sources@`: the field and its order (C8-doc-6): a list field held holds its order.
     if name == "*" || name == "@" { name.to_owned() } else { name.trim_end_matches(['~', '*', '@']).to_owned() }
@@ -1211,8 +1215,24 @@ fn root_list_field(field: &str) -> bool {
     matches!(field, "body" | "parts" | "comments" | "revisions" | "media")
 }
 
-/// `*` says nothing beside a field.
+/// `*` says nothing beside a field. Also the schema-freeze words (both sides): the readings were
+/// written when the root's `styles` was one register (the document defaults and the styles) and a
+/// table's grid its `grid` register; now the defaults are `styleDefaults` beside the `styles` map
+/// (compared as the styles, as before), and the grid is the table's `cols` list. The root's
+/// `comments` list, which held nothing since comments became threads of their own (rule M23,
+/// held by their tool ids), is gone.
 fn tidy(holds: &mut Holds) {
+    if let Some(fields) = holds.objects.get_mut("doc") {
+        if fields.remove("styleDefaults") {
+            fields.insert("styles".into());
+        }
+        fields.remove("comments");
+    }
+    for fields in holds.objects.values_mut() {
+        if fields.remove("grid") {
+            fields.insert("cols".into());
+        }
+    }
     for fields in holds.objects.values_mut() {
         if fields.len() > 1 {
             fields.remove("*");
