@@ -78,6 +78,9 @@ try {
   assert.deepEqual(await paragraphIds(page), ids, 'the paragraphs keep their object ids (the stored replica, merged)')
   assert.equal(await page.frameLocator('#kit').getByTestId('doc-unsaved').count(), 0, 'merging the newer file is no unsaved edit')
   assert.ok(await page.evaluate((path) => window.devHost.history.replica(path) != null, PATH), 'the replica is still kept')
+  // The next save writes the replica on: its lineage continues, so the earlier checkpoint stays.
+  await append(page, ' After.')
+  await until(page, async () => (await bodyText(page)).includes('Changed outside. After.'), 'an edit after the merge')
   await save(page)
   const kept = await page.evaluate((path) => window.devHost.history.checkpoints(path), PATH)
   assert.ok(kept.some((entry) => entry.id === checkpoint.id && entry.available), `the earlier checkpoint stays available: ${JSON.stringify(kept)}`)
@@ -86,7 +89,7 @@ try {
   // The control: the same file opened alone (its replica dropped) has other ids.
   const current = await page.evaluate((path) => [...new Uint8Array(window.devHost.files.get(path).bytes)], PATH)
   await page.evaluate((bytes) => window.devHost.open('Sample.docx', new Uint8Array(bytes).buffer), current)
-  await until(page, async () => (await bodyText(page)).includes('Changed outside.'), 'the file opened alone')
+  await until(page, async () => (await bodyText(page)).includes('Changed outside. After.'), 'the file opened alone')
   assert.notDeepEqual(await paragraphIds(page), ids, 'a file opened alone gets new ids')
   console.log('PASS a file opened alone starts a new replica')
 
