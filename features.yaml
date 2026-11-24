@@ -503,6 +503,15 @@ features:
     requirements: [AX13]
     cases: [doc.agent.draft/costs-paragraph, regressions/issue-draft-replica-open]
     since: "2026-11-17"
+  - id: doc.collab.replica-merges-file
+    title: "A document changed outside Kition keeps its history: the stored replica opens and the newer file merges into it as one import change"
+    dimension: [collab, data-safety]
+    priority: P1
+    status: has
+    paths: [web/src/App.tsx, crates/engine/engine/src/kdm_bridge.rs, crates/engine/engine/tests/kdm_bridge.rs, web/tests/replica-merge.mjs]
+    target: "Kit UI protocol section 7, UI-R1 (replicaMergesFile)"
+    cases: [regressions/issue-replica-merges-file]
+    since: "2026-11-24"
   - id: doc.collab.concurrent-structure
     title: "Styles and table columns edited at once by two people both keep their change (each style and each column its own entry of the object model)"
     dimension: [collab]

@@ -11,6 +11,7 @@ import {
   useEngineTools,
   useKitEditorState,
   useKitSession,
+  type KitSessionOptions,
   usePresence,
   type FrameTab,
   type HostConnection,
@@ -67,6 +68,13 @@ function useCommentThreadsOf(editor: { query: <R>(id: string, params?: Record<st
  */
 const hiddenShortcut = (command: string) => command === 'select.collapse'
 
+/**
+ * A .docx changed outside Kition keeps its history (Kit UI protocol UI-R1): the stored replica opens
+ * whatever the file's stamp, and the engine merges what the newer file holds into it as one
+ * `import` change (`openWithReplica`), so object ids, comments' anchors and checkpoints survive.
+ */
+const SESSION_OPTIONS: KitSessionOptions = { replicaMergesFile: true }
+
 const TABS = ['file', 'home', 'insert', 'draw', 'design', 'layout', 'references', 'mailings', 'review', 'view'] as const
 const TAB_MENUS: Record<string, string> = { file: 'File', home: 'Home', insert: 'Insert', draw: 'Draw', design: 'Design', layout: 'Layout', references: 'References', mailings: 'Mailings', review: 'Review', view: 'View' }
 
@@ -76,7 +84,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   // the engine writes comments and refuses every other edit itself (`setCommentOnly`).
   const commenter = commenting(host)
   const manifest = useMemo(() => engineManifest(commenter), [commenter])
-  const session = useKitSession(host, manifest, describe)
+  const session = useKitSession(host, manifest, describe, SESSION_OPTIONS)
   const ownEditor = useKitEditorState(session, host, t, 'doc', phrase)
   const { doc, change, state } = session
   // Comment threads the host keeps (Kit UI protocol section 7k, `HostComments.tsx`): a new comment
