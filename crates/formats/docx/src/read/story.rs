@@ -372,7 +372,7 @@ impl Reader<'_> {
         self.read_inline_children(sc, &mut pb, e, rels, &ctx, depth + 1);
         self.flush_custom_note(sc, &mut pb);
         self.spill_fields(sc, &mut pb);
-        paragraph.text = pb.text;
+        para.text = pb.text;
         para.runs = pb.runs;
         para.objects = pb.objects;
         para.normalize();

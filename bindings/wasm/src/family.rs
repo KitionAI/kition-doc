@@ -2,35 +2,38 @@
 //! read from the handlers in `crates/engine/engine/src/cmd/*.rs`. The SDK default holds every
 //! field and position of each object a step names (`on`, a drawing's `ids`) and the selection's
 //! state; [`crate::place`] holds positions, ranges and the call's selection. What the default
-//! misses, by family (the table is in `agent/guide.md`):
+//! misses, by family (`kition_doc_engine::cmd::family`: the commands that share a reading, not a
+//! namespace; the table is in `agent/guide.md`):
 //!
 //! - **Every command that changes the document**: whether changes are tracked
 //!   (`settings.trackChanges`: typing, deleting and formatting become revisions).
-//! - **Character and paragraph formatting** (`format.*`, `para.*`): a toggle (bold, italic,
+//! - **Character and paragraph formatting** (`format.*`, `paragraph.*`): a toggle (bold, italic,
 //!   hidden, …) and a relative change (grow font, distribute) read the formatting the selected
 //!   text has with its paragraph style resolved: the selected paragraphs' styles, the styles they
 //!   are based on, the document defaults, and each paragraph's style (a paragraph command its
 //!   whole properties).
-//! - **Lists and numbering** (`para.*Numbering`, `paragraph.bullets`, `paragraph.numbering`, `list.*`):
+//! - **Lists and numbering** (`paragraph.*Numbering`, `paragraph.bullets`, `paragraph.numbering`, `list.*`):
 //!   the list definitions (`numbering`, `lists`) and the paragraphs around (where a list
 //!   continues or restarts): the definitions and the body's order.
 //! - **Tables** (`table.*`): the table the selection is in, whole (its grid and properties), and
 //!   each of its rows' properties and cells' properties (merge, split, distribute, insert by row
 //!   or column index); a table style without a name reads the styles.
-//! - **Sections and pages** (`layout.*`): the section the selection is in (the last section's
-//!   properties, a section break's on its paragraph): `lastSection` and the selected paragraphs.
+//! - **Sections and pages** (the `section` family: `page.margins`, `page.size`, `page.columns`,
+//!   …): the section the selection is in (the last section's properties, a section break's on
+//!   its paragraph): `lastSection` and the selected paragraphs.
 //! - **Reading the whole document** (cross-references, tables of contents, captions, indexes,
 //!   citations and bibliographies, field updates, mail merge, replace all, equation conversion of
 //!   every equation): every paragraph's text and properties, and the root.
-//! - **Revisions and comments by index** (`review.*`, `comment.*`): the root's revisions and
+//! - **Revisions and comments by index** (`change.*`, `comment.*`): the root's revisions and
 //!   comments; a comment command the comment and thread it names, by their tool ids.
-//! - **Themes and document-wide design** (`design.*`), **styles without a name**: the root.
-//! - **Pictures** (`picture.*`): the selected picture by its number; bitmap adjustments also
+//! - **Themes and document-wide design** (`theme.*`, `page.color`, `page.watermark`,
+//!   `page.borders`), **styles without a name**: the root.
+//! - **Pictures** (`image.*`): the selected picture by its number; bitmap adjustments also
 //!   read its media (`Media` has no tool id, so a bitmap change is the root's `media`).
 //! - **Equations** (`equation.*`): the equation at the caret or being edited, by its number.
-//! - **Headers and footers** (`hf.*`, `header.insert`, `footer.insert`): the parts; the header or
-//!   footer a command replaces by its tool id (`part:header-1-default`), and every part's
-//!   paragraph list where a command reads every story.
+//! - **Headers and footers** (`headerFooter.*`, `header.insert`, `footer.insert`): the parts; the
+//!   header or footer a command replaces by its tool id (`part:header-1-default`), and every
+//!   part's paragraph list where a command reads every story.
 use kition_doc_engine::doc::{Block, Document, StoryRef};
 use kition_kit::{Premise, Under};
 use serde_json::Value;
@@ -59,14 +62,10 @@ fn reads_document(command: &str) -> bool {
     ) {
         return false;
     }
-    (command != "footnote.options" && matches!(command.split_once('.').map(|(family, _)| family), Some("references" | "mailings")))
+    (command != "footnote.options" && matches!(kition_doc_engine::cmd::family::family(command), "reference" | "mailMerge"))
         || matches!(
             command,
             "crossReference.insert"
-                | "insert.caption"
-                | "insert.toc"
-                | "insert.index"
-                | "insert.tableOfFigures"
                 | "quickPart.insert"
                 | "field.insert"
                 | "edit.replaceAll"
@@ -78,7 +77,7 @@ fn reads_document(command: &str) -> bool {
         )
 }
 
-/// Commands outside `layout.*` that act on the section the selection is in (`page::sect`,
+/// Commands outside the `section` family that act on the section the selection is in (`page::sect`,
 /// `with_sect`: the section ending at the first section break at or after the selection's block),
 /// from the reading (C8-doc-3).
 const SECTION_READERS: &[&str] = &[
@@ -99,12 +98,12 @@ const SECTION_READERS: &[&str] = &[
 /// read (a rotation turns from the angle the object has; its place and wrap are its `frame`, a
 /// shape's fill and outline its `look`), from the reading (C8-doc-3).
 fn on_selected_objects(command: &str) -> Option<&'static [&'static str]> {
-    match command.split_once('.').map(|(family, _)| family) {
-        Some("arrange") => Some(&["frame"]),
+    match kition_doc_engine::cmd::family::family(command) {
+        "arrange" => Some(&["frame"]),
         // The fill, outline and kind are written as given; the effects read the look and frame.
-        Some("shape") => Some(if command == "shape.effects" { &["look", "frame"] } else { &[] }),
+        "shape" => Some(if command == "shape.effects" { &["look", "frame"] } else { &[] }),
         // A picture's own fields are its `value` (and its `frame`); a shape's look.
-        Some("picture") => Some(match command {
+        "image" => Some(match command {
             "image.size" => &["frame", "value"],
             _ => &["value", "look", "frame"],
         }),
@@ -112,7 +111,7 @@ fn on_selected_objects(command: &str) -> Option<&'static [&'static str]> {
     }
 }
 
-/// What a command of `design.*` reads of the root, where it is less than the whole (C8-doc-3):
+/// What a command of the `design` family reads of the root, where it is less than the whole (C8-doc-3):
 /// the page colour and the watermark are settings written as given, the paragraph spacing the
 /// styles' defaults; the themes, style sets and effects re-resolve the whole document.
 fn design_reads(command: &str) -> Option<&'static [&'static str]> {
@@ -466,7 +465,7 @@ fn lists(command: &str) -> bool {
     command != "paragraph.outlineLevel"
         && (command.starts_with("list.")
             || matches!(command, "paragraph.defineBullet" | "paragraph.defineNumber" | "paragraph.multilevel")
-            || (command.starts_with("para.")
+            || (command.starts_with("paragraph.")
                 && ["umbering", "bullets", "Bullets", "List", "list", "Level"].iter().any(|word| command.contains(word))))
 }
 
@@ -1176,7 +1175,7 @@ impl DocDocument {
             reads_layout =
                 Some(LayoutRead::Page(layout.caret_on(&session.sel.focus, session.page_hint).map_or(session.page_hint, |caret| caret.page)));
         }
-        let family = command.split_once('.').map_or(command, |(family, _)| family);
+        let family = kition_doc_engine::cmd::family::family(command);
         let before = under.premises.len();
         if family == "drawing" {
             let ids: Vec<u32> = ["id", "ids", "from", "to"]
@@ -1621,7 +1620,7 @@ impl DocDocument {
                 }
             }
         }
-        if resolves_styles && !matches!(family, "format" | "para") {
+        if resolves_styles && !matches!(family, "format" | "paragraph") {
             for style in paragraph_styles() {
                 under.premises.push(crate::place::style_premise(&doc.styles, &style));
                 if let Some(next) = doc.styles.styles.iter().find(|s| s.id == style).and_then(|s| s.next.clone()) {
@@ -1696,8 +1695,8 @@ impl DocDocument {
         } else {
             match family {
                 "format" if direct_character_assignment(command, params) => {}
-                "format" | "para" => {
-                    if family != "para"
+                "format" | "paragraph" => {
+                    if family != "paragraph"
                         || !(direct_paragraph_properties(command) || disabling_list(command, params) || plain_paragraph_replacement(command, params))
                     {
                         for style in paragraph_styles() {
@@ -1709,7 +1708,7 @@ impl DocDocument {
                     }
                     // The selected paragraphs' own: a paragraph command reads (and replaces) their
                     // properties; a character command's toggle reads their style.
-                    let field = if family == "para" { "para" } else { "para.props.style" };
+                    let field = if family == "paragraph" { "para" } else { "para.props.style" };
                     for p in &selected {
                         if let Some(v) = p.props.para_id {
                             under.premises.push(Premise::on(format!("p{v:08X}").as_str()).fields([field]).positions(Vec::<String>::new()));
@@ -1735,7 +1734,7 @@ impl DocDocument {
                         under.premises.push(Premise::on(ROOT).fields(["styles"]).positions(Vec::<String>::new()));
                     }
                 }
-                "layout" if !matches!(command, "page.hyphenation" | "page.differentOddEven") => {
+                "section" if !matches!(command, "page.hyphenation" | "page.differentOddEven") => {
                     under.premises.push(Premise::on(ROOT).fields(["lastSection"]).positions(Vec::<String>::new()));
                     for p in &selected {
                         if let Some(v) = p.props.para_id {
@@ -1791,14 +1790,14 @@ impl DocDocument {
                         part_premises(doc, None, under);
                     }
                 },
-                "styles" if command != "style.inspectorClear" && params.get("style").is_none() => {
+                "style" if command != "style.inspectorClear" && params.get("style").is_none() => {
                     under.premises.push(Premise::on(ROOT).fields(["styles"]).positions(Vec::<String>::new()));
                 }
-                "picture" if !matches!(command, "image.size" | "image.crop" | "image.altText" | "image.reset") => {
+                "image" if !matches!(command, "image.size" | "image.crop" | "image.altText" | "image.reset") => {
                     // Bitmap adjustments decode media and scan the collection for deduplication.
                     under.premises.push(Premise::on(ROOT).fields(["media"]).positions(Vec::<String>::new()));
                 }
-                "hf" => under.premises.push(Premise::on(ROOT).fields(["parts"]).positions(Vec::<String>::new())),
+                "headerFooter" => under.premises.push(Premise::on(ROOT).fields(["parts"]).positions(Vec::<String>::new())),
                 _ if matches!(command, "header.insert" | "footer.insert") => {
                     under.premises.push(Premise::on(ROOT).fields(["parts"]).positions(Vec::<String>::new()));
                 }
@@ -1826,7 +1825,7 @@ impl DocDocument {
             }
             // `arrange.align` and `arrange.position` read the section only for a selected object.
             let objects = selected_objects(doc, &a, &b);
-            if family != "layout" && SECTION_READERS.contains(&command) && (family != "arrange" || !objects.is_empty()) {
+            if family != "section" && SECTION_READERS.contains(&command) && (family != "arrange" || !objects.is_empty()) {
                 under.premises.push(Premise::on(ROOT).fields(["lastSection"]).positions(Vec::<String>::new()));
                 if command == "headerFooter.position" {
                     let at = kition_doc_engine::doc::Pos::body(focus.path.0.first().copied().unwrap_or(0) as usize, 0);

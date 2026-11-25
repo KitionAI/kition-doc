@@ -40,8 +40,8 @@ export function HomeTab({ onFind }: { onFind: (replace: boolean) => void }) {
   const format = useEngineQuery<FormatState>('format.state') ?? {}
   const view = useEngineQuery<ViewState>('view.state') ?? {}
   const styles = (useEngineQuery<StyleEntry[]>('style.list') ?? []).filter((style) => style.quick && style.kind === 'paragraph')
-  const fonts = format.fontName && !FONTS.includes(format.fontName) ? [format.fontName, ...FONTS] : FONTS
-  const size = format.fontSize ?? null
+  const fonts = format.font && !FONTS.includes(format.font) ? [format.font, ...FONTS] : FONTS
+  const size = format.size ?? null
 
   return (
     <>
@@ -65,7 +65,7 @@ export function HomeTab({ onFind }: { onFind: (replace: boolean) => void }) {
               <select
                 className="kui-ribbon-field"
                 style={{ width: 150 }}
-                value={format.fontName ?? ''}
+                value={format.font ?? ''}
                 aria-label={p('Font')}
                 disabled={!enabled('format.fontName')}
                 onChange={(event) => void run('format.fontName', { name: event.target.value })}

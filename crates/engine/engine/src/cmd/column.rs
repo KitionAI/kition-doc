@@ -129,7 +129,7 @@ pub(crate) fn dispatch(s: &mut Session, id: &str, mutates: bool, run: fn(&mut Se
         extend_to(s, to);
         return result(s);
     }
-    if matches!(id, "caret.set" | "select.collapse") || (mutates && !id.starts_with("format.") && !id.starts_with("para.")) {
+    if matches!(id, "caret.set" | "select.collapse") || (mutates && !id.starts_with("format.") && !id.starts_with("paragraph.")) {
         s.column_mode = false;
     }
     let Some(segs) = s.column_segments().map(<[(Pos, Pos)]>::to_vec) else { return run(s, v) };
@@ -145,8 +145,8 @@ pub(crate) fn dispatch(s: &mut Session, id: &str, mutates: bool, run: fn(&mut Se
             super::sel_result(s)
         }
         "format.changeCase" | "format.clear" | "format.resetChar" => per_row(s, run, v, &segs),
-        _ if id.starts_with("format.") || id.starts_with("para.") || id == "select.column" => run(s, v),
-        _ if mutates && (id.starts_with("text.") || id.starts_with("edit.paste")) => {
+        _ if id.starts_with("format.") || id.starts_with("paragraph.") || id == "select.column" => run(s, v),
+        _ if mutates && (super::family::family(id) == "text" || id.starts_with("edit.paste")) => {
             delete(s, &segs)?;
             run(s, v)
         }

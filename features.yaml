@@ -474,7 +474,7 @@ features:
     dimension: [ai]
     priority: P0
     status: has
-    commands: [format.state, list.get, style.inspect, view.state, equation.get, file.removeHiddenContent, file.text, file.paragraph, file.selection, file.layout, drawing.describe, ink.state, readAloud.status]
+    commands: [format.state, list.get, style.inspect, view.state, equation.get, file.inspect, file.text, file.paragraph, file.selection, file.layout, drawing.describe, ink.state, readAloud.status]
     requirements: [AX13]
     cases: [doc.agent.observe/title-line]
     since: "2026-11-17"

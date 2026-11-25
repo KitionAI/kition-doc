@@ -1282,7 +1282,7 @@ fn hostile_params_never_panic() {
     for spec in reg.all() {
         // These reach outside the session (files). Read Aloud (`readAloud.open`, `readAloud.*`)
         // is fuzzed too: under `cfg(test)` its backend is the silent `Hold`, asserted below.
-        if spec.id.starts_with("file.") || spec.id == "image.insert" || spec.id == "text.insertFromFile" {
+        if crate::cmd::family::family(spec.id) == "file" || spec.id == "image.insert" || spec.id == "text.insertFromFile" {
             continue;
         }
         for j in &junk {

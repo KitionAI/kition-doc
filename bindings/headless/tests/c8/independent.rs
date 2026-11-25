@@ -3248,7 +3248,7 @@ async fn document_operations_do_not_hold_unrelated_metadata() {
             ("change.rejectAll", json!({}), ""),
         ] {
             for necessary in [false, true] {
-                let bytes = if command.starts_with("review.") { tracked() } else { document().save(None).unwrap() };
+                let bytes = if command.starts_with("change.") { tracked() } else { document().save(None).unwrap() };
                 let f = Fixture::with(Guard::Premise, &bytes);
                 let basis = f.basis().await;
                 let steps = if !necessary {
@@ -3282,7 +3282,7 @@ async fn document_operations_do_not_hold_unrelated_metadata() {
                     if command == "file.properties" {
                         assert_eq!(data["core"]["title"], "Agent title");
                         assert_eq!(f.texts(), TEXTS);
-                    } else if command.starts_with("review.") {
+                    } else if command.starts_with("change.") {
                         assert!(data["revisions"].as_array().unwrap().is_empty());
                         let mut texts: Vec<String> = TEXTS.iter().map(|s| s.to_string()).collect();
                         if command == "change.acceptAll" {

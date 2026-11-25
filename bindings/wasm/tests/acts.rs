@@ -116,7 +116,10 @@ fn no_command_depends_on_the_page_the_caret_was_last_seen_on() {
     // `file.layout` answers where the caret is drawn (a read, no edit): for a caret at a page
     // break the page it was last seen on picks which page's line it is drawn on.
     let reads_page = ["file.layout"];
-    for command in commands.iter().filter(|id| !id.starts_with("file.") && !id.starts_with("view.") && !reads_page.contains(&id.as_str())) {
+    for command in commands
+        .iter()
+        .filter(|id| kition_doc_engine::cmd::family::family(id) != "file" && !id.starts_with("view.") && !reads_page.contains(&id.as_str()))
+    {
         for params in [json!({}), json!({ "text": "x" })] {
             let run = |page: usize| {
                 let mut doc = open(&bytes);
@@ -200,7 +203,8 @@ fn the_commands_that_declare_no_reads_give_the_same_result_whatever_the_selectio
         );
         other["pending"] = json!({ "bold": true });
         b.restore_editor_state(&other).unwrap();
-        let echo = id.starts_with("design.") || matches!(id.as_str(), "style.addToGallery" | "style.set" | "page.differentOddEven");
+        let echo = kition_doc_engine::cmd::family::family(id) == "design"
+            || matches!(id.as_str(), "style.addToGallery" | "style.set" | "page.differentOddEven");
         let selection_echo = |doc: &mut DocDocument| {
             let selection = doc.execute("file.selection", json!({})).unwrap();
             json!({ "anchor": selection["anchor"], "focus": selection["focus"] }).to_string()

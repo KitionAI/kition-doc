@@ -190,10 +190,11 @@ fn commands_flagged_as_not_mutating_never_commit_to_the_replica() {
     let bytes = fixture();
     let commands = DocDocument::open("Letter.docx", &bytes).unwrap().commands();
     // `file` commands and commands that take a path are left out: the test must not touch files.
-    for command in commands
-        .iter()
-        .filter(|command| !command.mutates && !command.id.starts_with("file.") && !command.params.as_deref().unwrap_or_default().contains("path"))
-    {
+    for command in commands.iter().filter(|command| {
+        !command.mutates
+            && kition_doc_engine::cmd::family::family(&command.id) != "file"
+            && !command.params.as_deref().unwrap_or_default().contains("path")
+    }) {
         let mut doc = DocDocument::open("Letter.docx", &bytes).unwrap();
         doc.execute("edit.selectAll", json!({})).unwrap();
         let before = doc.version().unwrap();

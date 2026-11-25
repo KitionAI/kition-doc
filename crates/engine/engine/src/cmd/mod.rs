@@ -9,6 +9,7 @@ pub mod draw;
 pub mod drawing;
 pub mod edit;
 pub mod equation;
+pub mod family;
 pub mod file;
 pub mod fmt_revisions;
 pub mod format;

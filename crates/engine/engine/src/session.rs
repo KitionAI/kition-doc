@@ -1019,6 +1019,8 @@ impl Session {
         let join = std::mem::take(&mut self.join_next);
         let reg = self.registry.clone();
         let Some(spec) = reg.get(id) else { return Err(CmdError::Unknown(id.to_string())) };
+        // What the guards below go by (`cmd::family`): a command's namespace does not say it.
+        let family = crate::cmd::family::family(id);
         // Anyone but a person passes the kit's gate before every command, nested ones included
         // (KHP A29, A45): a batch's or a macro's step gets the same check as a direct call.
         if let Some(gate) = self.agent_gate
@@ -1037,8 +1039,10 @@ impl Session {
         if spec.mutates
             && let Some(mode) = self.doc.settings.protection.clone()
         {
-            let allowed = id.starts_with("file.restrictEditing") || id.starts_with("file.") || id == "edit.undo" || id == "edit.redo";
-            let comment_ok = id.starts_with("review.") && (id.contains("Comment") || id == "comment.replyCurrent");
+            let allowed = id == "file.restrictEditing" || family == "file" || id == "edit.undo" || id == "edit.redo";
+            // The commands on the current comment (the Review tab's); not the ones naming a comment by id.
+            let comment_ok =
+                matches!(id, "comment.new" | "comment.replyCurrent" | "comment.edit" | "comment.deleteCurrent" | "comment.resolveCurrent");
             match mode.as_str() {
                 "readOnly" | "forms" if !allowed => return Err(CmdError::Disabled(format!("{id}: the document is protected (read only)"))),
                 "comments" if !allowed && !comment_ok => return Err(CmdError::Disabled(format!("{id}: only comments are allowed in this document"))),
@@ -1048,7 +1052,7 @@ impl Session {
         }
         // Macro recording and Repeat.
         let record = !matches!(id, "macro.record" | "macro.list" | "edit.undo" | "edit.redo" | "edit.repeat")
-            && (spec.mutates || id.starts_with("caret.") || id.starts_with("select."));
+            && (spec.mutates || family == "caret" || family == "select");
         if record && let Some((_, steps)) = self.recording.as_mut() {
             steps.push((id.to_string(), params.clone()));
         }
@@ -1057,7 +1061,7 @@ impl Session {
         }
         // Typing, caret movement and selection outside the equation commands leave the equation.
         if self.math.is_some()
-            && (id.starts_with("text.") || id.starts_with("caret.") || id.starts_with("select.") || id.starts_with("edit.paste"))
+            && (matches!(family, "text" | "caret" | "select") || id.starts_with("edit.paste"))
             && let Some(m) = self.math.take()
         {
             let off = m.at.off + kition_doc_doc::para::OBJ.len_utf8();
@@ -1117,21 +1121,14 @@ impl Session {
                     self.doc.prune_text_boxes();
                     // A command that can make or copy shapes leaves each with an id of its own
                     // (KitDrawing DR2); typing and formatting cannot, so they skip the scan.
-                    if self.depth == 1
-                        && (id.starts_with("insert.")
-                            || id.starts_with("edit.paste")
-                            || id.starts_with("draw.")
-                            || id.starts_with("drawing.")
-                            || id.starts_with("file."))
-                    {
+                    if self.depth == 1 && (matches!(family, "insert" | "ink" | "drawing" | "file") || id.starts_with("edit.paste")) {
                         self.doc.assign_object_ids();
                     }
                     // Connectors follow what any other edit moved, in the same step (`drawing.*`
                     // commands reroute their own; undo and redo put back what was; typing, which
                     // runs per key, is left out of the document scan).
                     if self.depth == 1
-                        && !id.starts_with("drawing.")
-                        && !id.starts_with("text.")
+                        && !matches!(family, "drawing" | "text")
                         && !matches!(id, "edit.undo" | "edit.redo")
                         && self.doc.shapes().iter().any(|(_, o)| matches!(o, kition_doc_doc::para::InlineObject::Shape { connection: Some(_), .. }))
                     {
@@ -1239,5 +1236,4 @@ pub(crate) fn stamp_core(core: &mut kition_doc_doc::CoreProps, author: &str) {
 /// The commands that write only comments (rule M23): what a commenter may run.
 pub fn is_comment_command(id: &str) -> bool {
     id.starts_with("comment.")
-        || matches!(id, "comment.new" | "comment.replyCurrent" | "comment.edit" | "comment.deleteCurrent" | "comment.resolveCurrent")
 }

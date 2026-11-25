@@ -1632,7 +1632,7 @@ fn reading_geometry(doc: &mut DocDocument, names: &BTreeMap<String, String>, com
         || (command == "drawing.erase" && !source.contains("view.hide_ink true"))
         || (command == "drawing.insert" && explicit_page.is_some())
         || moves;
-    let every = command.starts_with("references.") || matches!(command, "field.insert" | "crossReference.insert");
+    let every = kition_doc_engine::cmd::family::family(command) == "reference" || matches!(command, "field.insert" | "crossReference.insert");
     let mut pages = BTreeSet::new();
     if let Some(page) = explicit_page {
         pages.insert(page);
@@ -2258,7 +2258,9 @@ fn every_write_command_is_declared_as_its_code_reads() {
             run(doc, "select.range", json!({ "anchor": anchor, "focus": focus }));
         }
         // These readings explicitly describe an active equation editing session.
-        let editing = command.starts_with("equation.") && holds.objects.contains_key("inline:eq") && params.get("all") != Some(&json!(true));
+        let editing = kition_doc_engine::cmd::family::family(command) == "equation"
+            && holds.objects.contains_key("inline:eq")
+            && params.get("all") != Some(&json!(true));
         if editing {
             select(doc, at(&[5], 0), at(&[5], 0));
             run(doc, "equation.edit", json!({}));

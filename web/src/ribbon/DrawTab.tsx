@@ -1,6 +1,6 @@
 import { CommandTab, InkGroup } from '@kition/sdk/editor'
 
-/** The shared pens (`draw.*`; the pointer draws and erases with `drawing.ink` and `drawing.erase`), then the Draw tab's other commands. */
+/** The shared pens (`ink.*`; the pointer draws and erases with `drawing.ink` and `drawing.erase`), then the Draw tab's other commands. */
 export function DrawTab() {
   return (
     <>

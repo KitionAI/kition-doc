@@ -4,7 +4,7 @@ How a model writes Kition Doc documents: the steps it sends, how it names what i
 what a new document starts with, the named values commands accept, and worked examples.
 The package ships the short version for models as [agent/guide.md](../agent/guide.md); this file is
 the complete reference it is drawn from. Everything below comes from the engine itself
-(its 487 commands and their parameter schemas, and what `inspect` reports) and from the guide.
+(its 491 commands and their parameter schemas, and what `inspect` reports) and from the guide.
 
 ## What a model writes
 
@@ -25,38 +25,66 @@ A step is one engine command with its parameters, as JSON:
 
 `doc_run` takes a list of steps and runs them in order, stopping at the first failure. Parameter
 names, types and required fields come from each command's schema; `doc_commands` returns them.
-Commands by namespace (the part of the id before the first dot):
+Commands by namespace (the part of the id before the first dot, which names the object a command
+acts on: `page`, `comment`, `file`; not the ribbon tab it is on):
 
 | Namespace | Commands | Change the document | Open to the agent | Examples |
 | --- | ---: | ---: | ---: | --- |
 | `arrange` | 12 | 11 | 12 | `arrange.rotate`, `arrange.rotation`, `arrange.wrap` |
+| `artText` | 1 | 1 | 1 | `artText.insert` |
+| `autocorrect` | 1 | 0 | 1 | `autocorrect.options` |
+| `autoText` | 1 | 1 | 1 | `autoText.insert` |
+| `bibliography` | 1 | 1 | 1 | `bibliography.insert` |
+| `bookmark` | 1 | 1 | 1 | `bookmark.insert` |
+| `caption` | 1 | 1 | 1 | `caption.insert` |
 | `caret` | 16 | 0 | 16 | `caret.left`, `caret.right`, `caret.up` |
-| `comment` | 6 | 4 | 6 | `comment.threads`, `comment.add`, `comment.reply` |
-| `design` | 11 | 9 | 11 | `theme.set`, `theme.fonts`, `theme.colors` |
-| `document` | 6 | 1 | 6 | `file.inspect`, `file.text`, `file.paragraph` |
-| `draw` | 9 | 2 | 9 | `ink.select`, `ink.shape`, `ink.eraser` |
+| `change` | 11 | 5 | 11 | `change.track`, `change.acceptAll`, `change.rejectAll` |
+| `chart` | 1 | 1 | 1 | `chart.insert` |
+| `citation` | 3 | 3 | 3 | `citation.sources`, `citation.insert`, `citation.style` |
+| `comment` | 16 | 9 | 16 | `comment.new`, `comment.replyCurrent`, `comment.edit` |
+| `crossReference` | 1 | 1 | 1 | `crossReference.insert` |
 | `drawing` | 14 | 13 | 14 | `drawing.describe`, `drawing.insert`, `drawing.delete` |
-| `edit` | 25 | 12 | 25 | `edit.undo`, `edit.redo`, `edit.cut` |
-| `equation` | 20 | 12 | 20 | `equation.edit`, `equation.exit`, `equation.type` |
-| `file` | 23 | 12 | 23 | `file.new`, `file.open`, `file.save` |
-| `format` | 35 | 33 | 35 | `format.bold`, `format.italic`, `format.underline` |
-| `hf` | 3 | 1 | 3 | `headerFooter.next`, `headerFooter.previous`, `headerFooter.position` |
-| `insert` | 34 | 33 | 34 | `page.insertBreak`, `page.insertBlank`, `page.insertCover` |
-| `layout` | 14 | 13 | 14 | `page.margins`, `page.orientation`, `page.size` |
+| `dropCap` | 1 | 1 | 1 | `dropCap.set` |
+| `edit` | 26 | 12 | 26 | `edit.selectAll`, `edit.undo`, `edit.redo` |
+| `endnote` | 1 | 1 | 1 | `endnote.insert` |
+| `equation` | 21 | 13 | 21 | `equation.insert`, `equation.edit`, `equation.exit` |
+| `field` | 4 | 4 | 4 | `field.insertDateTime`, `field.insert`, `field.updateAll` |
+| `file` | 34 | 16 | 34 | `file.wordCount`, `file.new`, `file.open` |
+| `footer` | 3 | 3 | 3 | `footer.insert`, `footer.edit`, `footer.remove` |
+| `footnote` | 4 | 2 | 4 | `footnote.insert`, `footnote.next`, `footnote.show` |
+| `format` | 40 | 38 | 40 | `format.bold`, `format.italic`, `format.underline` |
+| `header` | 4 | 3 | 4 | `header.insert`, `header.edit`, `header.close` |
+| `headerFooter` | 3 | 1 | 3 | `headerFooter.next`, `headerFooter.previous`, `headerFooter.position` |
+| `horizontalLine` | 1 | 1 | 1 | `horizontalLine.insert` |
+| `image` | 14 | 14 | 14 | `image.insert`, `image.size`, `image.crop` |
+| `index` | 3 | 3 | 3 | `index.markEntry`, `index.insert`, `index.update` |
+| `ink` | 10 | 2 | 10 | `ink.select`, `ink.shape`, `ink.eraser` |
+| `link` | 2 | 2 | 2 | `link.insert`, `link.remove` |
 | `list` | 2 | 1 | 2 | `list.define`, `list.get` |
-| `mailings` | 17 | 11 | 17 | `mailMerge.start`, `mailMerge.recipients`, `mailMerge.editRecipients` |
-| `para` | 47 | 46 | 47 | `format.alignLeft`, `format.alignCenter`, `format.alignRight` |
-| `picture` | 13 | 13 | 13 | `image.size`, `image.crop`, `image.altText` |
+| `macro` | 2 | 0 | 2 | `macro.record`, `macro.list` |
+| `mailMerge` | 17 | 11 | 17 | `mailMerge.start`, `mailMerge.recipients`, `mailMerge.editRecipients` |
+| `object` | 1 | 1 | 1 | `object.insert` |
+| `page` | 20 | 19 | 20 | `page.insertBreak`, `page.insertBlank`, `page.insertCover` |
+| `pageNumber` | 1 | 1 | 1 | `pageNumber.insert` |
+| `paragraph` | 43 | 42 | 43 | `paragraph.distribute`, `paragraph.align`, `paragraph.rtl` |
 | `presence` | 2 | 0 | 2 | `presence.caret`, `presence.locate` |
-| `readAloud` | 7 | 0 | 7 | `readAloud.playPause`, `readAloud.next`, `readAloud.previous` |
-| `references` | 23 | 20 | 23 | `toc.insert`, `toc.update`, `toc.remove` |
-| `review` | 35 | 15 | 35 | `comment.new`, `comment.replyCurrent`, `comment.edit` |
-| `select` | 13 | 0 | 13 | `edit.selectAll`, `select.range`, `select.word` |
-| `shape` | 4 | 4 | 4 | `shape.fill`, `shape.outline`, `shape.effects` |
-| `styles` | 13 | 7 | 13 | `style.add`, `style.set`, `style.updateToMatch` |
-| `table` | 40 | 36 | 40 | `table.viewGridlines`, `table.insertRowAbove`, `table.insertRowBelow` |
-| `text` | 14 | 14 | 14 | `text.insert`, `text.newParagraph`, `text.lineBreak` |
-| `tools` | 3 | 0 | 3 | `macro.record`, `macro.list`, `autocorrect.options` |
+| `quickPart` | 1 | 1 | 1 | `quickPart.insert` |
+| `readAloud` | 8 | 0 | 6 | `readAloud.open`, `readAloud.playPause`, `readAloud.next` |
+| `research` | 1 | 0 | 1 | `research.open` |
+| `select` | 12 | 0 | 12 | `select.range`, `select.word`, `select.sentence` |
+| `shape` | 5 | 5 | 5 | `shape.insert`, `shape.fill`, `shape.outline` |
+| `signatureLine` | 1 | 1 | 1 | `signatureLine.insert` |
+| `spelling` | 10 | 2 | 10 | `spelling.check`, `spelling.issues`, `spelling.suggestions` |
+| `spreadsheet` | 1 | 1 | 1 | `spreadsheet.insert` |
+| `style` | 13 | 7 | 13 | `style.add`, `style.set`, `style.updateToMatch` |
+| `symbol` | 1 | 1 | 1 | `symbol.insert` |
+| `table` | 41 | 37 | 41 | `table.viewGridlines`, `table.insert`, `table.insertRowAbove` |
+| `tableOfAuthorities` | 2 | 2 | 2 | `tableOfAuthorities.markCitation`, `tableOfAuthorities.insert` |
+| `tableOfFigures` | 2 | 2 | 2 | `tableOfFigures.insert`, `tableOfFigures.update` |
+| `text` | 15 | 15 | 15 | `text.insert`, `text.newParagraph`, `text.lineBreak` |
+| `textBox` | 1 | 1 | 1 | `textBox.insert` |
+| `theme` | 8 | 6 | 8 | `theme.set`, `theme.fonts`, `theme.colors` |
+| `toc` | 4 | 4 | 4 | `toc.insert`, `toc.update`, `toc.remove` |
 | `view` | 26 | 0 | 26 | `view.marks`, `view.printLayout`, `view.webLayout` |
 
 ### The document

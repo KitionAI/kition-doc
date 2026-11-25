@@ -749,7 +749,7 @@ impl DocDocument {
     fn style_premises(&self, command: &str, params: &Value, under: &mut Under) -> bool {
         // Underline/border styles, picture presets and citation formats are not
         // names in the document's style sheet.
-        let named = command.starts_with("styles.")
+        let named = command.starts_with("style.")
             || matches!(
                 command,
                 "format.charStyle" | "paragraph.style" | "table.insert" | "table.style" | "table.newStyle" | "table.setStyle" | "table.deleteStyle"
@@ -1084,10 +1084,9 @@ enum OnFamily {
 }
 
 fn on_family(command: &str) -> Option<OnFamily> {
-    let (family, _) = command.split_once('.')?;
-    match family {
+    match kition_doc_engine::cmd::family::family(command) {
         "format" | "font" => Some(OnFamily::Characters),
-        "para" if !matches!(command, "paragraph.text" | "paragraph.insert" | "paragraph.dialog") => Some(OnFamily::Paragraph),
+        "paragraph" if !matches!(command, "paragraph.text" | "paragraph.insert" | "paragraph.dialog") => Some(OnFamily::Paragraph),
         _ => None,
     }
 }

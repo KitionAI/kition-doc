@@ -23,7 +23,7 @@ const SELECTION_AND_MODE: &[EditorState] = &[Selection, Mode];
 /// equation, `equation.*` edit it) and a column selection (`Session::column`: cutting, case and
 /// size changes, styles and languages act on each of its lines).
 pub fn reads_mode(id: &str) -> bool {
-    id.starts_with("text.")
+    kition_doc_engine::cmd::family::family(id) == "text"
         || matches!(
             id,
             "equation.backspace"

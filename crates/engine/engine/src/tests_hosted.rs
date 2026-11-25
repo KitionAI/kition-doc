@@ -118,7 +118,7 @@ fn a_hosted_session_writes_reads_and_starts_nothing_by_path() {
 
 /// The kit's gate in this test: the commands that name files.
 fn gate(command: &str) -> Result<(), String> {
-    if command.starts_with("file.") || command == "text.insertFromFile" { Err(format!("{command}: not for agents")) } else { Ok(()) }
+    if crate::cmd::family::family(command) == "file" || command == "text.insertFromFile" { Err(format!("{command}: not for agents")) } else { Ok(()) }
 }
 
 #[test]

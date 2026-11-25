@@ -25,7 +25,7 @@ fn records(id: &str) -> bool {
     !(id.starts_with("change.accept")
         || id.starts_with("change.reject")
         || matches!(id, "file.compare" | "file.combine" | "edit.undo" | "edit.redo")
-        || id.starts_with("file."))
+        || super::family::family(id) == "file")
 }
 
 /// Tables nested deeper than this aren't compared (hostile documents).
