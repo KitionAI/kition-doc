@@ -47,7 +47,7 @@ pub(crate) fn write(tx: &mut Tx<'_>, inline: &ObjectId, parts: Option<&Map<Strin
             Ok(id) => id,
             Err(_) => tx.create(CHART, Map::new())?,
         };
-        for (k, v) in parts {
+        for (k, v) in parts.iter().filter(|(_, v)| !v.is_null()) {
             tx.map_set(&object, "parts", k, v.clone())?;
         }
         tx.set(inline, "chart", Value::String(object.as_str().to_owned()))?;
@@ -55,13 +55,14 @@ pub(crate) fn write(tx: &mut Tx<'_>, inline: &ObjectId, parts: Option<&Map<Strin
     };
     let have: Map<String, Value> = tx.map_entries(&object, "parts")?.into_iter().collect();
     let mut wrote = false;
-    for (k, v) in parts {
-        if have.get(k) != Some(v) {
+    // A map holds no `null` (data model C5): a `null` part is no entry.
+    for (k, v) in parts.iter().filter(|(_, v)| !v.is_null()) {
+        if !have.get(k).is_some_and(|had| crate::write::same_json(had, v)) {
             tx.map_set(&object, "parts", k, v.clone())?;
             wrote = true;
         }
     }
-    for k in have.keys().filter(|k| !parts.contains_key(*k)) {
+    for k in have.keys().filter(|k| parts.get(*k).is_none_or(Value::is_null)) {
         tx.map_delete(&object, "parts", k)?;
         wrote = true;
     }

@@ -55,13 +55,14 @@ pub(crate) fn write_look(tx: &mut Tx, inline: &kition_kit::kdm::ObjectId, value:
     let kept = tx.get(inline, "value")?;
     let now: Map<String, Value> = tx.map_entries(inline, "look").unwrap_or_default().into_iter().collect();
     let mut wrote = false;
-    for (k, v) in members.iter().filter(|(k, _)| k.as_str() != "type") {
+    // A map holds no `null` (data model C5): a `null` member is no entry.
+    for (k, v) in members.iter().filter(|(k, v)| k.as_str() != "type" && !v.is_null()) {
         if !now.get(k.as_str()).is_some_and(|h| crate::write::same_json(h, v)) {
             tx.map_set(inline, "look", k, v.clone())?;
             wrote = true;
         }
     }
-    for k in now.keys().filter(|k| !members.contains_key(k.as_str())) {
+    for k in now.keys().filter(|k| members.get(k.as_str()).is_none_or(Value::is_null)) {
         tx.map_delete(inline, "look", k)?;
         wrote = true;
     }
