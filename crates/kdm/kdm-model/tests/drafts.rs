@@ -68,7 +68,13 @@ fn lists_made_in_a_draft_and_meanwhile_are_both_kept() {
     assert_eq!((doc.numbering.nums.len(), doc.numbering.abstracts.len()), (4, 3), "a restart shares its definition");
     let now = a.replica().map_entries(&root, "lists").unwrap_or_else(|e| panic!("{e}"));
     assert_eq!(now.len(), entries.len() + 1, "the restart is one new entry");
-    assert!(entries.iter().all(|entry| now.contains(entry)), "the other lists are not rewritten");
+    // The other lists keep their definitions (their `order` may be renumbered: the merge left two
+    // lists made at one place with one order).
+    let held = |e: &[(String, Value)]| -> Vec<(String, Value, Value)> {
+        e.iter().map(|(k, v)| (k.clone(), v["num"].clone(), v["abstract"].clone())).collect()
+    };
+    let now_held = held(&now);
+    assert!(held(&entries).iter().all(|entry| now_held.contains(entry)), "the other lists keep their definitions");
     assert!(a.undo().unwrap_or_else(|e| panic!("undo: {e}")).0);
     assert_eq!(a.replica().map_entries(&root, "lists").unwrap_or_else(|e| panic!("{e}")), entries, "undo takes the restart back");
     assert_eq!((a.model().document.numbering.nums.len(), a.model().document.numbering.abstracts.len()), (3, 3));

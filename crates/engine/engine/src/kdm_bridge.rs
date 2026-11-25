@@ -216,7 +216,7 @@ impl Session {
     /// the document and its selection follow the replica, and one Undo takes the whole draft
     /// back. Add the draft's blobs first ([`Session::add_blobs`]). A refused merge changes nothing.
     pub fn merge_changes(&mut self, bytes: &[u8], origin: &Origin) -> Result<Damage, CmdError> {
-        self.take_in("Merge Draft", UndoScope::Person, |kdm| kdm.merge_changes(bytes, origin))
+        self.take_in("Merge Draft", UndoScope::Person, &local_person(), |kdm| kdm.merge_changes(bytes, origin))
     }
 
     /// Writes the state a snapshot holds (a checkpoint of this document, `replica/restore`) over
@@ -224,8 +224,11 @@ impl Session {
     /// is ([`Session::merge_changes`]). Nothing changes when the states are equal; another
     /// document's snapshot is refused.
     pub fn restore_state(&mut self, snapshot: &[u8], origin: &Origin) -> Result<Damage, CmdError> {
-        let scope = UndoScope::of(origin.kind).unwrap_or(UndoScope::Person);
-        self.take_in("Restore Version", scope, |kdm| kdm.restore_state(snapshot, origin))
+        let (scope, own) = match UndoScope::of(origin.kind) {
+            Some(scope) => (scope, origin.clone()),
+            None => (UndoScope::Person, local_person()),
+        };
+        self.take_in("Restore Version", scope, &own, |kdm| kdm.restore_state(snapshot, origin))
     }
 
     /// One transaction `write` makes on the replica, taken into the document as a command's step:
@@ -235,6 +238,7 @@ impl Session {
         &mut self,
         label: &str,
         scope: UndoScope,
+        own: &Origin,
         write: impl FnOnce(&mut DocSession) -> kdm_model::kition_kit::session::Result<(u32, Damage)>,
     ) -> Result<Damage, CmdError> {
         if self.comment_only {
@@ -267,6 +271,16 @@ impl Session {
             // The step is written already: the bridge has nothing of it left to record.
             self.link.mark = self.pushed;
             self.dirty = true;
+            // Both sides may have numbered a new paragraph, row or drawing object alike (each
+            // numbers from the same state): the ids are made unique now and written onto this
+            // step, in its scope (`own`), so the merged document holds each tool id once and one
+            // Undo still gives back the state before it.
+            if self.stable_ids && self.doc.ensure_tool_ids() {
+                self.rev = self.rev.wrapping_add(1);
+                let doc = self.doc.clone();
+                self.record_onto(self.history.len().checked_sub(1), own, &doc);
+                self.link.rev = self.rev;
+            }
         }
         self.trim_kdm();
         result.map(|(_, damage)| damage).map_err(kdm_error)

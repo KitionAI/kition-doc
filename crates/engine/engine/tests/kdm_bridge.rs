@@ -586,9 +586,9 @@ fn an_undo_past_the_replicas_step_limit_is_exact_and_keeps_the_replica() {
         assert_eq!((s.kdm_resets(), s.doc_id()), (0, doc_id.clone()), "the replica is kept at step {k}");
     }
     assert_eq!(indent(&s, 0), None);
-    for k in 1..=120 {
+    for (k, state) in states.iter().enumerate().skip(1) {
         assert!(s.redo(), "redo to step {k}");
-        assert!(canonical(&s.doc) == states[k], "redone to step {k}:\n{:#?}", differences(&canonical(&s.doc), &states[k]));
+        assert!(canonical(&s.doc) == *state, "redone to step {k}:\n{:#?}", differences(&canonical(&s.doc), state));
         assert_holds(&s, &format!("redone to step {k}"));
         assert_eq!((s.kdm_resets(), s.doc_id()), (0, doc_id.clone()), "the replica is kept at step {k}");
     }

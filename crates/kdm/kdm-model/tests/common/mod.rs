@@ -255,7 +255,9 @@ pub fn merge_draft(a: &mut Session, blobs: &SharedBlobs, theirs: impl FnOnce(&mu
     let (mut d, base) = draft(a, 2, blobs);
     edit(&mut d, blobs, theirs);
     edit(a, blobs, mine);
-    let (hash, view) = (a.state_hash().ok(), a.model().document.clone());
+    // The view as the replica holds it (`edit` does not redraw a chart; a read does).
+    let view = kdm_model::read_document(a.replica(), a.blobs()).unwrap_or_else(|error| panic!("read: {error}")).0;
+    let hash = a.state_hash().ok();
     merge(a, &d, &base, &Origin::agent("agent:test"));
     assert_fresh(a);
     let (merged_hash, merged_view) = (a.state_hash().ok(), a.model().document.clone());

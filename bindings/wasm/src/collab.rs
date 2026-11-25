@@ -625,6 +625,12 @@ mod tests {
         assert!(doc.replicated_state().unwrap().to_string().contains("Meanwhile title"), "the title set here stays");
         assert!(doc.dirty());
         let (merged_state, merged) = (doc.replicated_state().unwrap(), view(&doc));
+        // Both sides numbered their new paragraph from the same state: the merge's step makes the
+        // tool ids unique, so the next command writes nothing of it.
+        let tool_ids: Vec<&Value> =
+            merged_state["objects"].as_object().unwrap().values().filter(|object| object["$type"] == "Block").map(|object| &object["id"]).collect();
+        let unique: std::collections::BTreeSet<String> = tool_ids.iter().map(|id| id.to_string()).collect();
+        assert_eq!(unique.len(), tool_ids.len(), "each paragraph its own tool id: {tool_ids:?}");
         // The merge is the person's step, in the replica and in the engine alike.
         {
             let session = doc.session();
