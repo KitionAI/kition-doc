@@ -4,8 +4,9 @@
 //! keeps the remote edit, selection-only commands write nothing, the history limit never loses an
 //! edit, a remote deletion of the caret's paragraph leaves a valid selection, two sessions taking
 //! turns at random commands agree with the engine's document equal to its own replica after every
-//! step, and a remote keystroke in a 2,000-paragraph document keeps every other paragraph's layout
-//! cache key.
+//! step, a remote keystroke in a 2,000-paragraph document keeps every other paragraph's layout
+//! cache key, an undo past the replica's own step limit is exact and keeps the replica, and an undo
+//! whose replica step has nothing left to change takes the step below with it.
 
 use std::sync::Arc;
 use std::time::Instant;
@@ -556,6 +557,90 @@ fn a_remote_keystroke_in_a_long_document_reloads_one_paragraph() {
     eprintln!("2,000 paragraphs: local keystroke + write {local:?}, remote import {import:?}, relayout {relayout:?}");
     assert_eq!(kept, 1999, "only the typed paragraph is new");
     assert!(para_text(&b, 1000).starts_with("xParagraph"));
+}
+
+fn indent(s: &Session, block: usize) -> Option<f32> {
+    s.doc.para_at(&Pos::body(block, 0)).and_then(|p| p.props.indent_left)
+}
+
+/// More steps than the replica keeps in one scope (100): the newest undo through the replica, the
+/// older ones from the history's snapshots. The document is exactly what it was at every step, it
+/// stays what its replica holds, and the replica is kept; redo comes back the same way.
+#[test]
+fn an_undo_past_the_replicas_step_limit_is_exact_and_keeps_the_replica() {
+    let mut s = new_session();
+    let doc_id = s.doc_id();
+    assert!(doc_id.is_some(), "the edits made the replica");
+    caret_at(&mut s, 0, 0);
+    let mut states = vec![canonical(&s.doc)];
+    for i in 1..=120u16 {
+        run(&mut s, "para.indents", json!({ "left": f64::from(i) }));
+        states.push(canonical(&s.doc));
+    }
+    assert_eq!(indent(&s, 0), Some(120.0));
+    assert!(s.undo_depth() >= 120, "the history holds every step: {}", s.undo_depth());
+    for k in (0..120).rev() {
+        assert!(s.undo(), "undo to step {k}");
+        assert!(canonical(&s.doc) == states[k], "undone to step {k}:\n{:#?}", differences(&canonical(&s.doc), &states[k]));
+        assert_holds(&s, &format!("undone to step {k}"));
+        assert_eq!((s.kdm_resets(), s.doc_id()), (0, doc_id.clone()), "the replica is kept at step {k}");
+    }
+    assert_eq!(indent(&s, 0), None);
+    for k in 1..=120 {
+        assert!(s.redo(), "redo to step {k}");
+        assert!(canonical(&s.doc) == states[k], "redone to step {k}:\n{:#?}", differences(&canonical(&s.doc), &states[k]));
+        assert_holds(&s, &format!("redone to step {k}"));
+        assert_eq!((s.kdm_resets(), s.doc_id()), (0, doc_id.clone()), "the replica is kept at step {k}");
+    }
+    assert!(!s.can_redo());
+    // An edit after it all is written on the same replica.
+    run(&mut s, "para.indents", json!({ "left": 7.0 }));
+    assert_holds(&s, "an edit after the redos");
+    assert_eq!(s.kdm_resets(), 0);
+}
+
+/// A person's undo whose last step's paragraph an agent deleted since: the replica passes that
+/// step over and takes back the one below in the same call, so the history takes both steps back
+/// together, the replica's steps and the history's stay in line (the blob index follows the
+/// replica's stacks), and the redo brings the step below back.
+#[test]
+fn an_undo_that_passes_over_a_step_takes_the_one_below_with_it() {
+    let mut s = new_session();
+    caret_at(&mut s, 0, 0);
+    run(&mut s, "para.indents", json!({ "left": 12.0 }));
+    caret_at(&mut s, 3, 0);
+    run(&mut s, "para.indents", json!({ "left": 24.0 }));
+    assert_eq!((indent(&s, 0), indent(&s, 3)), (Some(12.0), Some(24.0)));
+    // The agent deletes paragraph 3, the one the person's last step indented.
+    let agent = Origin::agent("test");
+    s.execute_as(
+        "select.range",
+        &json!({ "anchor": pos(2, "Gamma paragraph three.".len()), "focus": pos(3, "Delta paragraph four.".len()) }),
+        &agent,
+    )
+    .unwrap();
+    s.execute_as("text.delete", &json!({}), &agent).unwrap();
+    assert!(!canonical(&s.doc).to_string().contains("Delta paragraph four."));
+    assert_holds(&s, "after the agent's deletion");
+    let after_agent = canonical(&s.doc);
+    let (entries, (undo, redo)) = (s.undo_depth(), s.kdm().unwrap().steps());
+    run(&mut s, "edit.undo", json!({}));
+    assert_eq!(indent(&s, 0), None, "the step below is taken back");
+    assert_eq!(s.undo_depth(), entries - 2, "both history steps are taken back together");
+    assert_eq!(s.kdm().unwrap().steps(), (undo - 2, redo + 1), "the replica's steps, as the index counts them");
+    assert_eq!(s.kdm_resets(), 0);
+    assert_holds(&s, "after the undo");
+    assert!(!canonical(&s.doc).to_string().contains("Delta paragraph four."), "the agent's deletion stays");
+    run(&mut s, "edit.redo", json!({}));
+    assert!(canonical(&s.doc) == after_agent, "the redo brings the step below back:\n{:#?}", differences(&canonical(&s.doc), &after_agent));
+    assert!(!s.can_redo(), "nothing of the person's is left to redo");
+    assert_eq!(s.kdm().unwrap().steps(), (undo - 1, redo), "the one redo step brought back both");
+    assert_holds(&s, "after the redo");
+    // The next undo takes the brought-back step again, exactly.
+    run(&mut s, "edit.undo", json!({}));
+    assert_eq!(indent(&s, 0), None);
+    assert_holds(&s, "after the second undo");
+    assert_eq!(s.kdm_resets(), 0);
 }
 
 /// The first few paths at which two JSON values differ (for a readable failure).

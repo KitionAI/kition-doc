@@ -187,14 +187,15 @@ impl DocDocument {
     }
 
     /// An agent's reply (JSON text) with every object id it holds as a value or a key named as
-    /// the tool interface names it (its tool id, KitObjectModel OM9); unchanged without a replica
-    /// or when the schema declares no tool ids.
+    /// the tool interface names it (its tool id, KitObjectModel OM9); unchanged without a replica,
+    /// when the schema declares no tool ids, or when it names no object. The editor sends every
+    /// `ai/inspect`, `document/check` and `ai/run` reply through it, so the tool ids are read at the
+    /// objects the reply names alone (`ToolIds::show_reply`), not for the whole document.
     pub fn model_reply(&self, value: &str) -> Result<String, String> {
         let value: Value = serde_json::from_str(value).map_err(|error| format!("the reply is not JSON: {error}"))?;
         let session = self.session();
         let Some(kdm) = session.kdm() else { return Ok(value.to_string()) };
-        let ids = kition_kit::kdm::tool_ids::ToolIds::of_replica(kdm.replica());
-        Ok(if ids.is_active() { ids.show_json(&value) } else { value }.to_string())
+        Ok(kition_kit::kdm::tool_ids::ToolIds::show_reply(kdm.replica(), &value).to_string())
     }
 
     /// What changed since the version `since` (empty bytes: since the replica began), a receipt as
@@ -584,12 +585,21 @@ mod tests {
         doc.session().doc.plain_text(kition_doc_engine::doc::StoryRef::Body)
     }
 
-    /// A draft (a replica forked from the document's) merges in as one step of the person's Undo:
+    /// The engine's document, canonical, for exact comparisons.
+    fn view(doc: &DocDocument) -> Value {
+        serde_json::to_value(kdm_model::normalize(&doc.session().doc)).unwrap()
+    }
+
+    /// An agent's draft (a replica forked from the document's) merges in as one step of the
+    /// person's Undo (M12a), as the host merges one (`draft/merge` records the agent's origin):
     /// the comparison beforehand names what the merge does and changes nothing, the engine's
-    /// document follows the merge, an edit made here meanwhile stays, and a refused merge changes
-    /// nothing.
+    /// document follows the merge, the person's edits made here meanwhile stay (a paragraph added
+    /// to the same body list, and the title), the person's Undo gives back the exact state and
+    /// document before the merge and Redo the merged ones, the agent's Undo does not take it, the
+    /// replica's and the engine's histories agree, and a refused merge changes nothing.
     #[test]
     fn a_draft_merges_in_as_one_undo_step_and_the_document_follows() {
+        use kition_kit::kdm::UndoScope;
         let mut doc = DocDocument::open("Document.docx", &fixture()).unwrap();
         let base = doc.version().unwrap();
         let mut draft = DocDocument::open_with_replica("Document.docx", &[], &doc.snapshot().unwrap(), &doc.blobs().unwrap()).unwrap();
@@ -597,28 +607,42 @@ mod tests {
         draft.execute("text.newParagraph", json!({})).unwrap();
         draft.execute("text.insert", json!({ "text": "From the draft" })).unwrap();
         let changes = draft.export_changes(&base).unwrap();
-        // Here meanwhile: the document's title, another object's field than the draft's.
-        doc.execute("file.properties", json!({ "title": "Meanwhile" })).unwrap();
+        // Here meanwhile: a paragraph added at the same place of the body, and the document's title.
+        doc.execute("caret.docEnd", json!({})).unwrap();
+        doc.execute("text.newParagraph", json!({})).unwrap();
+        doc.execute("text.insert", json!({ "text": "Meanwhile" })).unwrap();
+        doc.execute("file.properties", json!({ "title": "Meanwhile title" })).unwrap();
         let version = doc.version().unwrap();
+        let (state, before) = (doc.replicated_state().unwrap(), view(&doc));
         let preview = doc.compare_changes(&changes).unwrap();
         assert_eq!(doc.version().unwrap(), version, "comparing changes nothing");
-        assert!(!body(&doc).contains("From the draft"));
-        let origin = Origin::person("person:local");
-        let answer = doc.merge_changes(&changes, &origin).unwrap();
+        assert_eq!(body(&doc), "Hello world\nMeanwhile");
+        let agent = Origin::agent("agent:writer");
+        let answer = doc.merge_changes(&changes, &agent).unwrap();
         assert_eq!(answer["summary"], preview, "the comparison named what the merge did: {answer}");
         assert_ne!(answer["damage"], json!("none"), "{answer}");
-        let text = body(&doc);
-        assert!(text.contains("From the draft"), "the engine's document follows the merge: {text:?}");
-        assert!(doc.replicated_state().unwrap().to_string().contains("Meanwhile"), "the edit made here stays");
+        assert_eq!(body(&doc), "Hello world\nMeanwhile\nFrom the draft", "both paragraphs, the document's first");
+        assert!(doc.replicated_state().unwrap().to_string().contains("Meanwhile title"), "the title set here stays");
         assert!(doc.dirty());
+        let (merged_state, merged) = (doc.replicated_state().unwrap(), view(&doc));
+        // The merge is the person's step, in the replica and in the engine alike.
+        {
+            let session = doc.session();
+            let kdm = session.kdm().unwrap();
+            assert!(!kdm.can_undo_in(UndoScope::Agent) && !session.can_undo_in(UndoScope::Agent), "no step of the agent's");
+            assert!(kdm.can_undo_in(UndoScope::Person) && session.can_undo_in(UndoScope::Person));
+        }
+        let _ = doc.execute_as("edit.undo", json!({}), &agent);
+        assert_eq!(doc.replicated_state().unwrap(), merged_state, "the agent's undo does not take the merge back");
+        assert_eq!(view(&doc), merged);
         assert!(doc.undo().unwrap().0);
-        let text = body(&doc);
-        assert!(!text.contains("From the draft"), "one undo takes the whole draft back: {text:?}");
-        assert!(doc.replicated_state().unwrap().to_string().contains("Meanwhile"), "and only the draft");
+        assert_eq!(doc.replicated_state().unwrap(), state, "one undo gives back the exact state before the merge");
+        assert_eq!(view(&doc), before, "and the document");
         assert!(doc.redo().unwrap().0);
-        assert!(body(&doc).contains("From the draft"), "and one redo brings it again");
+        assert_eq!(doc.replicated_state().unwrap(), merged_state, "one redo gives back the merged state");
+        assert_eq!(view(&doc), merged);
         let at = doc.version().unwrap();
-        assert!(doc.merge_changes(b"not changes", &origin).is_err());
+        assert!(doc.merge_changes(b"not changes", &agent).is_err());
         assert_eq!(doc.version().unwrap(), at, "a refused merge changes nothing");
     }
 
@@ -675,6 +699,35 @@ mod tests {
         assert_eq!(shown["target"], json!(tool_id), "{shown}");
         assert_eq!(shown["note"], json!(format!("about {block}")), "text that holds an id stays");
         assert!(doc.model_reply("not json").is_err());
+    }
+
+    /// A reply naming one object of a document with many is named as the whole document's tool
+    /// ids name it, though only that object's are read; a reply naming none comes back unchanged.
+    #[test]
+    fn a_reply_reads_the_tool_ids_of_the_objects_it_names() {
+        let mut doc = DocDocument::create("Document.docx", 0, 0).unwrap();
+        for i in 0..300 {
+            if i > 0 {
+                doc.execute("text.newParagraph", json!({})).unwrap();
+            }
+            doc.execute("text.insert", json!({ "text": format!("Paragraph {i}") })).unwrap();
+        }
+        let state = doc.replicated_state().unwrap();
+        let blocks: Vec<String> =
+            state["objects"].as_object().unwrap().iter().filter(|(_, object)| object["$type"] == "Block").map(|(id, _)| id.clone()).collect();
+        assert!(blocks.len() >= 300, "{}", blocks.len());
+        let whole = {
+            let session = doc.session();
+            kition_kit::kdm::tool_ids::ToolIds::of_replica(session.kdm().unwrap().replica())
+        };
+        let one = &blocks[blocks.len() / 2];
+        let about: serde_json::Map<String, Value> = std::iter::once((one.clone(), json!("a paragraph"))).collect();
+        let reply = json!({ "target": one, "range": [one], "about": about });
+        let shown: Value = serde_json::from_str(&doc.model_reply(&reply.to_string()).unwrap()).unwrap();
+        assert_eq!(shown, whole.show_json(&reply), "the same tool ids as the whole document's");
+        assert_ne!(shown, reply, "the object is named by its tool id: {shown}");
+        let plain = json!({ "summary": "Hello", "blocks": ["p1", "p2"], "count": 3 });
+        assert_eq!(serde_json::from_str::<Value>(&doc.model_reply(&plain.to_string()).unwrap()).unwrap(), plain, "a reply naming no object stays");
     }
 
     /// A receipt names what changed since a version the replica's log holds, and says so when it

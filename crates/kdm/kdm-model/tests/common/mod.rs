@@ -12,7 +12,7 @@ use kition_doc_doc::para::{NoteKind, ShapeKind};
 use kition_doc_doc::props::{CharProps, NumRef, PropChange};
 use kition_doc_doc::table::Table;
 use kition_doc_doc::{Block, Comment, Document, InlineObject, ListKind, Paragraph, PartKind, Pos, Revision, RevisionKind, StoryRef, para_block};
-use kition_kit::kdm::{ActorId, DocId, ObjectId, Origin, Replica};
+use kition_kit::kdm::{ActorId, DocId, ObjectId, Origin, Replica, Version};
 use kition_kit::session::{BlobRef, BlobSink, BlobSource, KitError, KitModel, KitSession, sha256_hex};
 
 pub type Session = KitSession<DocModel>;
@@ -196,6 +196,76 @@ pub fn edit(session: &mut Session, blobs: &SharedBlobs, f: impl FnOnce(&mut Docu
         .record(&person("test"), |tx| write_changes(tx, &before, &after, &mut ids, &mut sink).map(|_| ()).map_err(KitError::from))
         .unwrap_or_else(|error| panic!("record: {error}"));
     session.model_mut().adopt(after, ids);
+}
+
+/// [`edit`] recorded with `origin` (an agent's edit, its own undo scope).
+pub fn edit_as(session: &mut Session, blobs: &SharedBlobs, origin: &Origin, f: impl FnOnce(&mut Document)) {
+    let before = session.model().document.clone();
+    let mut after = before.clone();
+    f(&mut after);
+    let mut ids = session.model().ids().clone();
+    let mut sink = blobs.clone();
+    session
+        .record(origin, |tx| write_changes(tx, &before, &after, &mut ids, &mut sink).map(|_| ()).map_err(KitError::from))
+        .unwrap_or_else(|error| panic!("record: {error}"));
+    session.model_mut().adopt(after, ids);
+}
+
+/// A draft of `of` (a fork with actor `value`, as an agent's draft is made) and the version it
+/// follows.
+pub fn draft(of: &Session, value: u64, blobs: &SharedBlobs) -> (Session, Version) {
+    let draft = of.fork(actor(value), Box::new(blobs.clone())).unwrap_or_else(|error| panic!("fork: {error}"));
+    (draft, of.version())
+}
+
+/// Takes `draft`'s changes since `base` into `into` (`mergeChanges`) with `origin`.
+pub fn merge(into: &mut Session, draft: &Session, base: &Version, origin: &Origin) {
+    let bytes = draft.export_changes(base).unwrap_or_else(|error| panic!("export: {error}"));
+    into.merge_changes(&bytes, origin).unwrap_or_else(|error| panic!("merge: {error}"));
+}
+
+/// The view is exactly what a fresh read of the replica gives.
+pub fn assert_fresh(s: &Session) {
+    let fresh = kdm_model::read_document(s.replica(), s.blobs()).unwrap_or_else(|error| panic!("read: {error}")).0;
+    assert_same("fresh read", &fresh, &s.model().document);
+}
+
+/// Writing a fresh read of the replica over a copy of itself sharing no block writes nothing.
+pub fn assert_unchanged_writes_nothing(s: &mut Session, blobs: &SharedBlobs) {
+    let (read, mut ids) = kdm_model::read_document(s.replica(), s.blobs()).unwrap_or_else(|error| panic!("read: {error}"));
+    let mut copy = read.clone();
+    copy.body = copy.body.iter().map(|b| Arc::new((**b).clone())).collect();
+    for part in copy.parts.values_mut() {
+        part.blocks = part.blocks.iter().map(|b| Arc::new((**b).clone())).collect();
+    }
+    let mut sink = blobs.clone();
+    let version = s.version();
+    let wrote = s
+        .record(&person("test"), |tx| write_changes(tx, &read, &copy, &mut ids, &mut sink).map_err(KitError::from))
+        .unwrap_or_else(|error| panic!("record: {error}"));
+    assert!(!wrote, "an unchanged view wrote changes");
+    assert_eq!(s.version(), version, "an unchanged view wrote changes");
+}
+
+/// `theirs` made in a draft of `a` while `mine` is made in `a`, then the draft merged in as the
+/// person's step. What the merge wrote reads back exactly; one Undo gives back the exact state and
+/// view before the merge, and Redo the merged ones. The draft is an agent's, as the host merges
+/// one.
+pub fn merge_draft(a: &mut Session, blobs: &SharedBlobs, theirs: impl FnOnce(&mut Document), mine: impl FnOnce(&mut Document)) {
+    let (mut d, base) = draft(a, 2, blobs);
+    edit(&mut d, blobs, theirs);
+    edit(a, blobs, mine);
+    let (hash, view) = (a.state_hash().ok(), a.model().document.clone());
+    merge(a, &d, &base, &Origin::agent("agent:test"));
+    assert_fresh(a);
+    let (merged_hash, merged_view) = (a.state_hash().ok(), a.model().document.clone());
+    assert!(a.undo().unwrap_or_else(|error| panic!("undo: {error}")).0, "the merge is the person's step");
+    assert_eq!(a.state_hash().ok(), hash, "the undo gives back the state before the merge");
+    assert_same("undone", &a.model().document, &view);
+    assert!(a.redo().unwrap_or_else(|error| panic!("redo: {error}")).0);
+    assert_eq!(a.state_hash().ok(), merged_hash, "the redo gives back the merged state");
+    assert_same("redone", &a.model().document, &merged_view);
+    assert_fresh(a);
 }
 
 pub fn send(from: &Session, to: &mut Session) {
