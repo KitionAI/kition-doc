@@ -482,9 +482,20 @@ impl Session {
             self.trim_kdm();
             return;
         }
-        let Some((taken, past)) = step_replica(kdm, steps, undo, scope) else {
-            self.detach_kdm();
-            return;
+        let (taken, past) = match step_replica(kdm, steps, undo, scope) {
+            Ok(counts) => counts,
+            Err(true) => {
+                self.detach_kdm();
+                return;
+            }
+            Err(false) => {
+                // The replica no longer holds the step (it keeps fewer steps than the history):
+                // this and every older step undo from their snapshots, which the next look writes
+                // as a `system` change.
+                self.none_held();
+                self.trim_kdm();
+                return;
+            }
         };
         let view = kdm.document().clone();
         // The step, now on the other stack, holds the replica steps that one took back; steps
@@ -509,7 +520,7 @@ impl Session {
         if steps == 0 || !can || usize::try_from(steps).unwrap_or(usize::MAX) > available {
             return None;
         }
-        let Some((taken, past)) = step_replica(kdm, steps, undo, scope) else {
+        let Ok((taken, past)) = step_replica(kdm, steps, undo, scope) else {
             self.detach_kdm();
             return None;
         };
@@ -572,7 +583,7 @@ impl Session {
         }
         let scope = self.undo_scope();
         let Some(kdm) = self.link.kdm.as_mut() else { return };
-        let Some((_, past)) = step_replica(kdm, u32::try_from(k).unwrap_or(u32::MAX), true, scope) else {
+        let Ok((_, past)) = step_replica(kdm, u32::try_from(k).unwrap_or(u32::MAX), true, scope) else {
             self.detach_kdm();
             return;
         };
@@ -636,11 +647,12 @@ impl Session {
 
 /// Steps `kdm` back (or forward) over `steps` of its steps in `scope`, one undo (or redo) at a
 /// time, counting what each took off its stack (a step passed over counts too, [`UndoOutcome`]):
-/// answers how many it took back and how many it went past `steps`; stops early when the replica
-/// has nothing left to take. `None` when the replica refused.
+/// answers how many it took back and how many it went past `steps`. Fails with `true` when the
+/// replica refused, `false` when it ran out of steps before it took `steps` off (it keeps fewer
+/// than the history: the oldest of a scope's steps beyond its limit go).
 ///
 /// [`UndoOutcome`]: kdm_model::kition_kit::kdm::UndoOutcome
-fn step_replica(kdm: &mut DocSession, steps: u32, undo: bool, scope: UndoScope) -> Option<(u32, usize)> {
+fn step_replica(kdm: &mut DocSession, steps: u32, undo: bool, scope: UndoScope) -> Result<(u32, usize), bool> {
     let want = usize::try_from(steps).unwrap_or(usize::MAX);
     let (mut consumed, mut taken) = (0usize, 0u32);
     while consumed < want {
@@ -649,11 +661,11 @@ fn step_replica(kdm: &mut DocSession, steps: u32, undo: bool, scope: UndoScope) 
                 consumed = consumed.saturating_add(outcome.steps());
                 taken = taken.saturating_add(u32::from(outcome.is_done()));
             }
-            Ok(_) => break,
-            Err(_) => return None,
+            Ok(_) => return Err(false),
+            Err(_) => return Err(true),
         }
     }
-    Some((taken, consumed.saturating_sub(want)))
+    Ok((taken, consumed.saturating_sub(want)))
 }
 
 fn part_of(story: StoryRef) -> Option<u32> {
