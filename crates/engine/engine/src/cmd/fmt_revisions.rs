@@ -22,9 +22,9 @@ use crate::Session;
 /// Commands whose formatting edits aren't the author's own changes: accepting or rejecting
 /// changes, comparing documents, undo and redo, and opening or replacing the document.
 fn records(id: &str) -> bool {
-    !(id.starts_with("review.accept")
-        || id.starts_with("review.reject")
-        || matches!(id, "review.compare" | "review.combine" | "edit.undo" | "edit.redo")
+    !(id.starts_with("change.accept")
+        || id.starts_with("change.reject")
+        || matches!(id, "file.compare" | "file.combine" | "edit.undo" | "edit.redo")
         || id.starts_with("file."))
 }
 

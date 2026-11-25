@@ -81,7 +81,7 @@ fn paragraph_line_units_affect_spacing_after_and_collapsed_gaps() {
 fn paragraph_line_units_can_be_replaced_by_point_spacing_commands() {
     let mut session = Session::new(document(r#"w:beforeLines="200""#, ""));
     session.run("caret.set", &json!({"pos":{"block":1,"off":0}})).unwrap();
-    session.run("para.spacing", &json!({"before":7})).unwrap();
+    session.run("paragraph.spacing", &json!({"before":7})).unwrap();
     assert!((gap(&session.doc) - 7.0).abs() < 0.01);
 }
 
@@ -97,8 +97,8 @@ fn paragraph_line_units_use_the_active_grid_pitch() {
 fn paragraph_line_units_toggles_remove_inherited_constraints() {
     let mut session = Session::new(document("", r#"w:beforeLines="200" w:afterLines="100""#));
     session.run("caret.set", &json!({"pos":{"block":1,"off":0}})).unwrap();
-    session.run("para.addSpaceBefore", &json!({})).unwrap();
-    session.run("para.removeSpaceAfter", &json!({})).unwrap();
+    session.run("paragraph.addSpaceBefore", &json!({})).unwrap();
+    session.run("paragraph.removeSpaceAfter", &json!({})).unwrap();
     assert!(gap(&session.doc).abs() < 0.01);
     let properties = &session.doc.para(StoryRef::Body, &Path::top(1)).unwrap().props;
     assert_eq!(properties.space_after_lines, Some(0));

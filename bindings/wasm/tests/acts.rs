@@ -25,7 +25,7 @@ fn fixture() -> Vec<u8> {
     doc.execute("select.range", json!({ "anchor": { "block": 3, "off": 0 }, "focus": { "block": 3, "off": 9 } })).unwrap();
     doc.execute("format.bold", json!({})).unwrap();
     doc.execute("select.range", json!({ "anchor": { "block": 5, "off": 0 }, "focus": { "block": 5, "off": 0 } })).unwrap();
-    doc.execute("insert.table", json!({ "rows": 2, "cols": 2 })).unwrap();
+    doc.execute("table.insert", json!({ "rows": 2, "cols": 2 })).unwrap();
     doc.save(None).unwrap()
 }
 
@@ -84,7 +84,7 @@ fn on_selects_the_named_paragraphs_whole() {
     let mut doc = open(&bytes);
     let ids = body_ids(&doc);
     doc.set_context(&CallContext { on: vec![json!(ids[2]), json!(ids[4])], part: None, time: None }).unwrap();
-    let selection = doc.execute("document.selection", json!({})).unwrap();
+    let selection = doc.execute("file.selection", json!({})).unwrap();
     assert_eq!(selection["anchor"]["path"], json!([2]), "{selection}");
     assert_eq!(selection["anchor"]["off"], 0);
     assert_eq!(selection["focus"]["path"], json!([4]));
@@ -113,9 +113,9 @@ fn no_command_depends_on_the_page_the_caret_was_last_seen_on() {
     let commands: Vec<String> = open(&bytes).commands().into_iter().map(|c| c.id).collect();
     let mut differ = Vec::new();
     let mut unstable = Vec::new();
-    // `document.layout` answers where the caret is drawn (a read, no edit): for a caret at a page
+    // `file.layout` answers where the caret is drawn (a read, no edit): for a caret at a page
     // break the page it was last seen on picks which page's line it is drawn on.
-    let reads_page = ["document.layout"];
+    let reads_page = ["file.layout"];
     for command in commands.iter().filter(|id| !id.starts_with("file.") && !id.starts_with("view.") && !reads_page.contains(&id.as_str())) {
         for params in [json!({}), json!({ "text": "x" })] {
             let run = |page: usize| {
@@ -146,47 +146,47 @@ fn the_commands_that_declare_no_reads_give_the_same_result_whatever_the_selectio
     let calls = [
         ("select.range", json!({ "anchor": { "block": 1, "off": 0 }, "focus": { "block": 1, "off": 4 } })),
         ("caret.set", json!({ "pos": { "story": "body", "path": [2], "off": 3 } })),
-        ("document.text", json!({})),
-        ("document.paragraph", json!({ "path": [3] })),
-        ("design.pageColor", json!({ "color": "FFEECC" })),
-        ("design.watermark", json!({ "text": "DRAFT" })),
-        ("design.effects", json!({})),
-        ("design.paragraphSpacing", json!({ "value": "double" })),
-        ("design.styleSet", json!({ "name": "lines" })),
-        ("design.theme", json!({ "name": "Studio" })),
-        ("design.themeColors", json!({ "name": "Gallery" })),
-        ("design.themeFonts", json!({ "heading": "Georgia" })),
-        ("styles.addToGallery", json!({ "style": "Heading1", "value": true })),
-        ("styles.modify", json!({ "style": "Heading1", "name": "Agent heading" })),
+        ("file.text", json!({})),
+        ("file.paragraph", json!({ "path": [3] })),
+        ("page.color", json!({ "color": "FFEECC" })),
+        ("page.watermark", json!({ "text": "DRAFT" })),
+        ("theme.effects", json!({})),
+        ("theme.paragraphSpacing", json!({ "value": "double" })),
+        ("theme.styleSet", json!({ "name": "lines" })),
+        ("theme.set", json!({ "name": "Studio" })),
+        ("theme.colors", json!({ "name": "Gallery" })),
+        ("theme.fonts", json!({ "heading": "Georgia" })),
+        ("style.addToGallery", json!({ "style": "Heading1", "value": true })),
+        ("style.set", json!({ "style": "Heading1", "name": "Agent heading" })),
         // The commands the independent reading found read no editor state (C8-doc-4), with the
         // reading's parameters.
         ("comment.reply", json!({"thread":"c0","text":"ok"})),
         ("comment.resolve", json!({"thread":"c0","resolved":false})),
-        ("document.setText", json!({"text":"x\ny"})),
+        ("file.setText", json!({"text":"x\ny"})),
         ("drawing.arrange", json!({"ids":["7"],"order":"front"})),
         ("file.encrypt", json!({"password":"pw"})),
         ("file.new", json!({"template":"letter"})),
         ("file.properties", json!({"title":"T"})),
         ("file.protect", json!({"mode":"readOnly"})),
-        ("layout.hyphenation", json!({})),
-        ("layout.differentOddEven", json!({ "value": true })),
-        ("mailings.envelopes", json!({"delivery":"Jo\n1 St"})),
-        ("mailings.findRecipient", json!({"text":"ada"})),
-        ("mailings.finish", json!({})),
-        ("mailings.labels", json!({"text":"Hello"})),
-        ("mailings.next", json!({})),
-        ("mailings.preview", json!({})),
-        ("mailings.previous", json!({})),
-        ("para.insert", json!({"after":2,"text":"Mid"})),
-        ("references.noteOptions", json!({"footnoteFormat":"lowerRoman"})),
-        ("references.sources", json!({})),
-        ("review.compare", json!({"text":"Title\nAlpha beta delta."})),
-        ("review.editComment", json!({"id":1,"text":"a\nb"})),
-        ("review.reply", json!({"id":0,"text":"ok"})),
-        ("review.restrict", json!({"mode":"comments"})),
-        ("review.trackChanges", json!({})),
-        ("styles.delete", json!({"style":"Mine"})),
-        ("styles.setVisibility", json!({"style":"Heading 1","gallery":false})),
+        ("page.hyphenation", json!({})),
+        ("page.differentOddEven", json!({ "value": true })),
+        ("mailMerge.envelopes", json!({"delivery":"Jo\n1 St"})),
+        ("mailMerge.findRecipient", json!({"text":"ada"})),
+        ("mailMerge.finish", json!({})),
+        ("mailMerge.labels", json!({"text":"Hello"})),
+        ("mailMerge.next", json!({})),
+        ("mailMerge.preview", json!({})),
+        ("mailMerge.previous", json!({})),
+        ("paragraph.insert", json!({"after":2,"text":"Mid"})),
+        ("footnote.options", json!({"footnoteFormat":"lowerRoman"})),
+        ("citation.sources", json!({})),
+        ("file.compare", json!({"text":"Title\nAlpha beta delta."})),
+        ("comment.edit", json!({"id":1,"text":"a\nb"})),
+        ("comment.replyCurrent", json!({"id":0,"text":"ok"})),
+        ("file.restrictEditing", json!({"mode":"comments"})),
+        ("change.track", json!({})),
+        ("style.delete", json!({"style":"Mine"})),
+        ("style.setVisibility", json!({"style":"Heading 1","gallery":false})),
     ];
     for id in &free {
         let params = calls.iter().find(|(command, _)| command == id).map(|(_, params)| params.clone()).unwrap_or_else(|| panic!("{id}: no call"));
@@ -200,9 +200,9 @@ fn the_commands_that_declare_no_reads_give_the_same_result_whatever_the_selectio
         );
         other["pending"] = json!({ "bold": true });
         b.restore_editor_state(&other).unwrap();
-        let echo = id.starts_with("design.") || matches!(id.as_str(), "styles.addToGallery" | "styles.modify" | "layout.differentOddEven");
+        let echo = id.starts_with("design.") || matches!(id.as_str(), "style.addToGallery" | "style.set" | "page.differentOddEven");
         let selection_echo = |doc: &mut DocDocument| {
-            let selection = doc.execute("document.selection", json!({})).unwrap();
+            let selection = doc.execute("file.selection", json!({})).unwrap();
             json!({ "anchor": selection["anchor"], "focus": selection["focus"] }).to_string()
         };
         let (echo_a, echo_b) = (selection_echo(&mut a), selection_echo(&mut b));
@@ -232,16 +232,16 @@ fn the_mail_merge_list_is_an_external_input_the_merge_commands_rest_on() {
     let fingerprint = |doc: &DocDocument| doc.external_inputs().unwrap().into_iter().find(|i| i.name == "mergeSource").and_then(|i| i.fingerprint);
     let empty = fingerprint(&doc);
     assert!(empty.is_some(), "the list is always observable");
-    doc.execute("mailings.recipients", json!({ "rows": [{ "Name": "Ada" }, { "Name": "Bo" }] })).unwrap();
+    doc.execute("mailMerge.recipients", json!({ "rows": [{ "Name": "Ada" }, { "Name": "Bo" }] })).unwrap();
     let ada = fingerprint(&doc);
     assert_ne!(ada, empty);
-    doc.execute("mailings.recipients", json!({ "rows": [{ "Name": "Cy" }] })).unwrap();
+    doc.execute("mailMerge.recipients", json!({ "rows": [{ "Name": "Cy" }] })).unwrap();
     assert_ne!(fingerprint(&doc), ada, "another list, another fingerprint");
-    for (command, params) in [("mailings.next", json!({})), ("mailings.finish", json!({})), ("mailings.labels", json!({}))] {
+    for (command, params) in [("mailMerge.next", json!({})), ("mailMerge.finish", json!({})), ("mailMerge.labels", json!({}))] {
         let under = doc.under(command, &params).unwrap().unwrap_or_default();
         assert_eq!(under.inputs, vec!["mergeSource".to_owned()], "{command}");
     }
     // Labels and envelopes given their text read no list.
-    let under = doc.under("mailings.labels", &json!({ "text": "Hello" })).unwrap().unwrap_or_default();
+    let under = doc.under("mailMerge.labels", &json!({ "text": "Hello" })).unwrap().unwrap_or_default();
     assert!(under.inputs.is_empty());
 }

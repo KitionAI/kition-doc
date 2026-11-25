@@ -10,11 +10,11 @@ use crate::{CmdError, CmdResult, CommandSpec, Selection, Session, p};
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("insert.pageBreak", "Page Break", "Insert › Pages", |s, _| {
+        CommandSpec::new("page.insertBreak", "Page Break", "Insert › Pages", |s, _| {
             type_text(s, "\u{000C}")?;
             sel_result(s)
         }),
-        CommandSpec::new("insert.blankPage", "Blank Page", "Insert › Pages", |s, _| {
+        CommandSpec::new("page.insertBlank", "Blank Page", "Insert › Pages", |s, _| {
             type_text(s, "\u{000C}")?;
             let at = s.sel.focus.clone();
             let at = split_para(s, &at)?;
@@ -22,33 +22,33 @@ pub fn specs() -> Vec<CommandSpec> {
             s.sel = Selection::caret(at);
             sel_result(s)
         }),
-        CommandSpec::new("insert.coverPage", "Cover Page", "Insert › Pages", cover_page).params(r#"{"title"?: string, "subtitle"?: string, "author"?: string, "date"?: string}"#),
-        CommandSpec::new("insert.table", "Table", "Insert › Tables", table).params(r#"{"rows": n, "cols": n, "style"?: string}"#),
-        CommandSpec::new("insert.picture", "Pictures", "Insert › Illustrations", picture).params(r#"{"path"?: string, "data"?: base64, "width"?: pt, "alt"?: string}"#),
-        CommandSpec::new("insert.shape", "Shapes", "Insert › Illustrations", shape)
+        CommandSpec::new("page.insertCover", "Cover Page", "Insert › Pages", cover_page).params(r#"{"title"?: string, "subtitle"?: string, "author"?: string, "date"?: string}"#),
+        CommandSpec::new("table.insert", "Table", "Insert › Tables", table).params(r#"{"rows": n, "cols": n, "style"?: string}"#),
+        CommandSpec::new("image.insert", "Pictures", "Insert › Illustrations", picture).params(r#"{"path"?: string, "data"?: base64, "width"?: pt, "alt"?: string}"#),
+        CommandSpec::new("shape.insert", "Shapes", "Insert › Illustrations", shape)
             .params(r#"{"kind": "rectangle|roundedRectangle|ellipse|triangle|diamond|line|arrow|star|heart", "width"?: pt, "height"?: pt, "fill"?: "RRGGBB", "stroke"?: "RRGGBB"}"#),
-        CommandSpec::new("insert.textBox", "Text Box", "Insert › Text", text_box)
+        CommandSpec::new("textBox.insert", "Text Box", "Insert › Text", text_box)
             .params(r#"{"text"?: string, "width"?: pt, "height"?: pt}"#)
             .when(|s| {
                 // As in Word: no text box inside a text box.
                 matches!(s.sel.focus.story, StoryRef::Part(id) if s.doc.parts.get(&id).is_some_and(|p| p.kind == PartKind::TextBox))
                     .then_some("text boxes can't go inside a text box")
             }),
-        CommandSpec::new("insert.link", "Link", "Insert › Links", link).key("Mod+K").params(r#"{"url": string, "text"?: string}"#),
-        CommandSpec::new("insert.removeLink", "Remove Hyperlink", "Insert › Links", |s, _| super::format::apply(s, &|c| {
+        CommandSpec::new("link.insert", "Link", "Insert › Links", link).key("Mod+K").params(r#"{"url": string, "text"?: string}"#),
+        CommandSpec::new("link.remove", "Remove Hyperlink", "Insert › Links", |s, _| super::format::apply(s, &|c| {
             c.link = None;
             if c.style.as_deref() == Some("Hyperlink") {
                 c.style = None;
             }
         })),
-        CommandSpec::new("insert.bookmark", "Bookmark", "Insert › Links", bookmark).params(r#"{"name": string}"#),
-        CommandSpec::new("insert.header", "Header", "Insert › Header & Footer", |s, v| header_footer(s, v, true)).params(r#"{"text"?: string, "preset"?: "blank|blankThree|title"}"#),
-        CommandSpec::new("insert.footer", "Footer", "Insert › Header & Footer", |s, v| header_footer(s, v, false)).params(r#"{"text"?: string, "preset"?: "blank|blankThree|pageNumber"}"#),
-        CommandSpec::new("insert.pageNumber", "Page Number", "Insert › Header & Footer", page_number).params(r#"{"position"?: "top|bottom|current", "align"?: "left|center|right", "format"?: "x of y"}"#),
-        CommandSpec::new("insert.editHeader", "Edit Header", "Insert › Header & Footer › Header", |s, _| edit_hf(s, true)),
-        CommandSpec::new("insert.editFooter", "Edit Footer", "Insert › Header & Footer › Footer", |s, _| edit_hf(s, false)),
+        CommandSpec::new("bookmark.insert", "Bookmark", "Insert › Links", bookmark).params(r#"{"name": string}"#),
+        CommandSpec::new("header.insert", "Header", "Insert › Header & Footer", |s, v| header_footer(s, v, true)).params(r#"{"text"?: string, "preset"?: "blank|blankThree|title"}"#),
+        CommandSpec::new("footer.insert", "Footer", "Insert › Header & Footer", |s, v| header_footer(s, v, false)).params(r#"{"text"?: string, "preset"?: "blank|blankThree|pageNumber"}"#),
+        CommandSpec::new("pageNumber.insert", "Page Number", "Insert › Header & Footer", page_number).params(r#"{"position"?: "top|bottom|current", "align"?: "left|center|right", "format"?: "x of y"}"#),
+        CommandSpec::new("header.edit", "Edit Header", "Insert › Header & Footer › Header", |s, _| edit_hf(s, true)),
+        CommandSpec::new("footer.edit", "Edit Footer", "Insert › Header & Footer › Footer", |s, _| edit_hf(s, false)),
         // Like Word, back to where the caret was in the body (a note's reference, for a note).
-        CommandSpec::new("insert.closeHeader", "Close Header and Footer", "Header & Footer", |s, _| {
+        CommandSpec::new("header.close", "Close Header and Footer", "Header & Footer", |s, _| {
             if s.sel.focus.story != StoryRef::Body {
                 let back = s.body_return.clone().filter(|p| p.story == StoryRef::Body).map(|p| s.doc.clamp(&p));
                 s.sel = Selection::caret(back.unwrap_or_else(|| s.doc.start_of(StoryRef::Body)));
@@ -56,7 +56,7 @@ pub fn specs() -> Vec<CommandSpec> {
             sel_result(s)
         })
         .pure(),
-        CommandSpec::new("insert.removeHeader", "Remove Header", "Insert › Header & Footer › Header", |s, _| {
+        CommandSpec::new("header.remove", "Remove Header", "Insert › Header & Footer › Header", |s, _| {
             s.doc.last_section.headers = Default::default();
             for path in s.doc.para_paths(StoryRef::Body) {
                 if s.doc.para(StoryRef::Body, &path).is_some_and(|p| p.section.is_some())
@@ -68,26 +68,26 @@ pub fn specs() -> Vec<CommandSpec> {
             }
             sel_result(s)
         }),
-        CommandSpec::new("insert.removeFooter", "Remove Footer", "Insert › Header & Footer › Footer", |s, _| {
+        CommandSpec::new("footer.remove", "Remove Footer", "Insert › Header & Footer › Footer", |s, _| {
             s.doc.last_section.footers = Default::default();
             sel_result(s)
         }),
-        CommandSpec::new("insert.dateTime", "Date & Time", "Insert › Text", date_time).params(r#"{"format"?: "M/d/yyyy", "update"?: bool}"#),
-        CommandSpec::new("insert.symbol", "Symbol", "Insert › Symbols", symbol).params(r#"{"char": string, "font"?: family (the symbol's own font)}"#),
-        CommandSpec::new("insert.field", "Field", "Insert › Text › Quick Parts", field).key("Mod+F9").params(r#"{"instr": string, "result"?: string}"#),
-        CommandSpec::new("insert.dropCap", "Drop Cap", "Insert › Text", |s, v| {
+        CommandSpec::new("field.insertDateTime", "Date & Time", "Insert › Text", date_time).params(r#"{"format"?: "M/d/yyyy", "update"?: bool}"#),
+        CommandSpec::new("symbol.insert", "Symbol", "Insert › Symbols", symbol).params(r#"{"char": string, "font"?: family (the symbol's own font)}"#),
+        CommandSpec::new("field.insert", "Field", "Insert › Text › Quick Parts", field).key("Mod+F9").params(r#"{"instr": string, "result"?: string}"#),
+        CommandSpec::new("dropCap.set", "Drop Cap", "Insert › Text", |s, v| {
             let lines = p::u64(v, "lines").unwrap_or(3).min(10) as u8;
             super::para::fmt(s, &|p| p.drop_cap = Some(lines))
         })
         .params(r#"{"lines"?: n (0 = none)}"#),
-        CommandSpec::new("insert.horizontalLine", "Horizontal Line", "Home › Paragraph › Borders", |s, _| {
+        CommandSpec::new("horizontalLine.insert", "Horizontal Line", "Home › Paragraph › Borders", |s, _| {
             super::para::fmt(s, &|p| {
                 p.borders = Some(kition_doc_doc::props::Borders { bottom: Some(kition_doc_doc::props::Border::single(1.5)), ..Default::default() })
             })
         }),
         // Art text: a floating text box without fill or outline, its text large and coloured,
         // optionally bent by a preset text warp (KitDrawing 1.3 DR26), as `drawing.insert` makes it.
-        CommandSpec::new("insert.artText", "Art text", "Insert › Text", |s, v| {
+        CommandSpec::new("artText.insert", "Art text", "Insert › Text", |s, v| {
             let text = p::str(v, "text").unwrap_or("Your text here").to_string();
             let runs = json!([{ "text": text, "size": 36, "bold": true, "color": { "rgb": "#156082" } }]);
             let mut params = json!({
@@ -103,7 +103,7 @@ pub fn specs() -> Vec<CommandSpec> {
             s.run("drawing.insert", &params)
         })
         .params(r#"{"text"?: string, "warp"?: preset (textArchUp, textWave1, textInflate…)}"#),
-        CommandSpec::new("insert.textFromFile", "Text from File", "Insert › Text › Object", |s, v| {
+        CommandSpec::new("text.insertFromFile", "Text from File", "Insert › Text › Object", |s, v| {
             let path = p::req_str(v, "path")?;
             let doc = crate::io::open_path(std::path::Path::new(path)).map_err(CmdError::Failed)?;
             let frag = doc.body_fragment();
@@ -692,13 +692,13 @@ mod tests {
     fn symbol_takes_its_own_font() {
         let mut s = Session::new(kition_doc_doc::Document::from_text("ab"));
         s.run("caret.docEnd", &json!({})).unwrap();
-        s.run("insert.symbol", &json!({"char": "\u{2665}", "font": "DejaVu Sans"})).unwrap();
+        s.run("symbol.insert", &json!({"char": "\u{2665}", "font": "DejaVu Sans"})).unwrap();
         s.run("text.insert", &json!({"text": "c"})).unwrap();
         let p = s.doc.para(StoryRef::Body, &Path::top(0)).unwrap();
         assert_eq!(p.text, "ab\u{2665}c");
         assert_eq!(p.props_of_char(2).font.as_deref(), Some("DejaVu Sans"), "the symbol");
         assert_eq!(p.props_of_char(5).font, None, "typing after it (byte offsets)");
-        assert!(s.run("insert.symbol", &json!({"char": ""})).is_err());
+        assert!(s.run("symbol.insert", &json!({"char": ""})).is_err());
     }
 
     #[test]

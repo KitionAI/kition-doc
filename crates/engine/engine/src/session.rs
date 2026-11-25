@@ -310,7 +310,7 @@ pub struct Session {
     host_files: Option<crate::disk::HostFiles>,
     /// What anyone but a person may not run (an agent, a `model.batch` script or extension, a
     /// host's own change), checked before every command however it arrives: directly, as a
-    /// batch's step, as a step of a macro (`tools.macros`) or as a repeat (`edit.repeat`). The
+    /// batch's step, as a step of a macro (`macro.list`) or as a repeat (`edit.repeat`). The
     /// kit's own list: commands that name files or start programs.
     pub agent_gate: Option<fn(&str) -> Result<(), String>>,
     /// Every paragraph and table row keeps a unique `w14:paraId`, its tool id
@@ -1037,8 +1037,8 @@ impl Session {
         if spec.mutates
             && let Some(mode) = self.doc.settings.protection.clone()
         {
-            let allowed = id.starts_with("review.restrict") || id.starts_with("file.") || id == "edit.undo" || id == "edit.redo";
-            let comment_ok = id.starts_with("review.") && (id.contains("Comment") || id == "review.reply");
+            let allowed = id.starts_with("file.restrictEditing") || id.starts_with("file.") || id == "edit.undo" || id == "edit.redo";
+            let comment_ok = id.starts_with("review.") && (id.contains("Comment") || id == "comment.replyCurrent");
             match mode.as_str() {
                 "readOnly" | "forms" if !allowed => return Err(CmdError::Disabled(format!("{id}: the document is protected (read only)"))),
                 "comments" if !allowed && !comment_ok => return Err(CmdError::Disabled(format!("{id}: only comments are allowed in this document"))),
@@ -1047,7 +1047,7 @@ impl Session {
             }
         }
         // Macro recording and Repeat.
-        let record = !matches!(id, "tools.recordMacro" | "tools.macros" | "edit.undo" | "edit.redo" | "edit.repeat")
+        let record = !matches!(id, "macro.record" | "macro.list" | "edit.undo" | "edit.redo" | "edit.repeat")
             && (spec.mutates || id.starts_with("caret.") || id.starts_with("select."));
         if record && let Some((_, steps)) = self.recording.as_mut() {
             steps.push((id.to_string(), params.clone()));
@@ -1239,5 +1239,5 @@ pub(crate) fn stamp_core(core: &mut kition_doc_doc::CoreProps, author: &str) {
 /// The commands that write only comments (rule M23): what a commenter may run.
 pub fn is_comment_command(id: &str) -> bool {
     id.starts_with("comment.")
-        || matches!(id, "review.newComment" | "review.reply" | "review.editComment" | "review.deleteComment" | "review.resolveComment")
+        || matches!(id, "comment.new" | "comment.replyCurrent" | "comment.edit" | "comment.deleteCurrent" | "comment.resolveCurrent")
 }

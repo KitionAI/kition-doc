@@ -2,8 +2,8 @@
 //! commands (as the editor and the agent do), checks the edit took, saves it as .docx, opens the
 //! saved bytes again and compares the document before and after.
 //!
-//! The comparison is `document.inspect` (blocks, table cells, header and footer parts, sections)
-//! plus `document.paragraph` for every body paragraph and every table cell's paragraphs. Left out
+//! The comparison is `file.inspect` (blocks, table cells, header and footer parts, sections)
+//! plus `file.paragraph` for every body paragraph and every table cell's paragraphs. Left out
 //! as volatile: `canUndo` and `canRedo` (a reopened document has no history), `properties` (save
 //! stamps the core properties) and `selection` (a file does not keep the caret).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::panic)]
@@ -37,7 +37,7 @@ fn caret(doc: &mut DocDocument, path: &[usize], off: usize) {
 }
 
 fn paragraph(doc: &mut DocDocument, path: &[usize]) -> Value {
-    exec(doc, "document.paragraph", json!({ "path": path }))
+    exec(doc, "file.paragraph", json!({ "path": path }))
 }
 
 /// The paths of every body paragraph and every table cell's first paragraph.
@@ -62,7 +62,7 @@ fn paragraph_paths(inspect: &Value) -> Vec<Vec<usize>> {
 
 /// What a round trip must keep (see the module comment for what is left out).
 fn state(doc: &mut DocDocument) -> Value {
-    let mut inspect = exec(doc, "document.inspect", json!({}));
+    let mut inspect = exec(doc, "file.inspect", json!({}));
     let paragraphs: Vec<Value> = paragraph_paths(&inspect).iter().map(|path| json!({ "path": path, "details": paragraph(doc, path) })).collect();
     let object = inspect.as_object_mut().unwrap();
     for volatile in ["canUndo", "canRedo", "properties", "selection"] {
@@ -101,7 +101,7 @@ fn differences(before: &Value, after: &Value, at: &str, out: &mut Vec<String>) {
     }
 }
 
-/// The run of `paragraph` (a `document.paragraph` answer) covering character `at`.
+/// The run of `paragraph` (a `file.paragraph` answer) covering character `at`.
 fn run_at(paragraph: &Value, at: usize) -> Value {
     let mut start = 0;
     for run in paragraph["paragraph"]["runs"].as_array().into_iter().flatten() {
@@ -128,8 +128,8 @@ fn character_formatting_survives_save_and_reopen() {
         ("italic", "format.italic", json!({})),
         ("under", "format.underline", json!({})),
         ("strike", "format.strikethrough", json!({})),
-        ("big", "format.size", json!({ "size": 20 })),
-        ("serif", "format.font", json!({ "name": "Georgia" })),
+        ("big", "format.fontSize", json!({ "size": 20 })),
+        ("serif", "format.fontName", json!({ "name": "Georgia" })),
         ("marked", "format.highlight", json!({ "color": "yellow" })),
         ("sup", "format.superscript", json!({})),
         ("red", "format.color", json!({ "color": "C00000" })),
@@ -164,13 +164,13 @@ fn paragraph_formatting_survives_save_and_reopen() {
         exec(&mut doc, "text.insert", json!({ "text": text }));
     }
     caret(&mut doc, &[0], 0);
-    exec(&mut doc, "para.alignCenter", json!({}));
+    exec(&mut doc, "format.alignCenter", json!({}));
     caret(&mut doc, &[1], 0);
-    exec(&mut doc, "para.alignRight", json!({}));
+    exec(&mut doc, "format.alignRight", json!({}));
     caret(&mut doc, &[2], 0);
-    exec(&mut doc, "para.justify", json!({}));
-    exec(&mut doc, "para.indent", json!({}));
-    exec(&mut doc, "para.lineSpacing", json!({ "value": 1.5 }));
+    exec(&mut doc, "format.justify", json!({}));
+    exec(&mut doc, "paragraph.indent", json!({}));
+    exec(&mut doc, "paragraph.lineSpacing", json!({ "value": 1.5 }));
     let resolved = |doc: &mut DocDocument, block: usize| paragraph(doc, &[block])["resolved"].clone();
     assert_eq!(resolved(&mut doc, 0)["align"], json!("center"));
     assert_eq!(resolved(&mut doc, 1)["align"], json!("right"));
@@ -186,23 +186,23 @@ fn bulleted_and_numbered_lists_survive_save_and_reopen() {
     let mut doc = new_document();
     exec(&mut doc, "text.insert", json!({ "text": "Shopping" }));
     exec(&mut doc, "text.newParagraph", json!({}));
-    exec(&mut doc, "para.bullets", json!({}));
+    exec(&mut doc, "paragraph.bullets", json!({}));
     exec(&mut doc, "text.insert", json!({ "text": "Apples" }));
     exec(&mut doc, "text.newParagraph", json!({}));
     exec(&mut doc, "text.insert", json!({ "text": "Pears" }));
     exec(&mut doc, "text.newParagraph", json!({}));
-    exec(&mut doc, "para.bullets", json!({}));
+    exec(&mut doc, "paragraph.bullets", json!({}));
     exec(&mut doc, "text.insert", json!({ "text": "Steps" }));
     exec(&mut doc, "text.newParagraph", json!({}));
-    exec(&mut doc, "para.numbering", json!({}));
+    exec(&mut doc, "paragraph.numbering", json!({}));
     exec(&mut doc, "text.insert", json!({ "text": "First step" }));
     exec(&mut doc, "text.newParagraph", json!({}));
     exec(&mut doc, "text.insert", json!({ "text": "A detail of the first step" }));
-    exec(&mut doc, "para.listLevel", json!({ "level": 1 }));
+    exec(&mut doc, "paragraph.listLevel", json!({ "level": 1 }));
     exec(&mut doc, "text.newParagraph", json!({}));
     exec(&mut doc, "text.insert", json!({ "text": "Second step" }));
-    exec(&mut doc, "para.listLevel", json!({ "level": 0 }));
-    let inspect = exec(&mut doc, "document.inspect", json!({}));
+    exec(&mut doc, "paragraph.listLevel", json!({ "level": 0 }));
+    let inspect = exec(&mut doc, "file.inspect", json!({}));
     let list = |index: usize| inspect["blocks"][index]["list"].clone();
     assert!(list(0).is_null());
     assert_eq!(list(1), list(2), "the two bullets are one list");
@@ -223,12 +223,12 @@ fn heading_and_custom_styles_survive_save_and_reopen() {
         exec(&mut doc, "text.insert", json!({ "text": text }));
     }
     caret(&mut doc, &[0], 0);
-    exec(&mut doc, "para.heading1", json!({}));
+    exec(&mut doc, "paragraph.heading1", json!({}));
     caret(&mut doc, &[1], 0);
-    exec(&mut doc, "para.heading2", json!({}));
+    exec(&mut doc, "paragraph.heading2", json!({}));
     caret(&mut doc, &[3], 0);
-    exec(&mut doc, "para.style", json!({ "style": "Quote" }));
-    let inspect = exec(&mut doc, "document.inspect", json!({}));
+    exec(&mut doc, "paragraph.style", json!({ "style": "Quote" }));
+    let inspect = exec(&mut doc, "file.inspect", json!({}));
     let style = |index: usize| inspect["blocks"][index]["style"].clone();
     assert_eq!(style(0), json!("Heading1"), "{inspect}");
     assert_eq!(style(1), json!("Heading2"), "{inspect}");
@@ -242,9 +242,9 @@ fn tables_survive_save_and_reopen() {
     let mut doc = new_document();
     exec(&mut doc, "text.insert", json!({ "text": "Prices" }));
     exec(&mut doc, "text.newParagraph", json!({}));
-    exec(&mut doc, "insert.table", json!({ "rows": 2, "cols": 2 }));
+    exec(&mut doc, "table.insert", json!({ "rows": 2, "cols": 2 }));
     let table =
-        exec(&mut doc, "document.inspect", json!({}))["blocks"].as_array().unwrap().iter().position(|block| block["type"] == json!("table")).unwrap();
+        exec(&mut doc, "file.inspect", json!({}))["blocks"].as_array().unwrap().iter().position(|block| block["type"] == json!("table")).unwrap();
     for (row, col, text) in [(0, 0, "Item"), (0, 1, "Price"), (1, 0, "Tea"), (1, 1, "3.50")] {
         caret(&mut doc, &[table, row, col, 0], 0);
         exec(&mut doc, "text.insert", json!({ "text": text }));
@@ -259,7 +259,7 @@ fn tables_survive_save_and_reopen() {
     exec(&mut doc, "text.insert", json!({ "text": "Note" }));
     caret(&mut doc, &[table, 0, 0, 0], 0);
     exec(&mut doc, "format.bold", json!({}));
-    let inspect = exec(&mut doc, "document.inspect", json!({}));
+    let inspect = exec(&mut doc, "file.inspect", json!({}));
     let block = &inspect["blocks"][table];
     assert_eq!((block["rows"].clone(), block["cols"].clone()), (json!(3), json!(3)), "{block}");
     assert_eq!(block["cells"][0], json!(["Item", "Price", "Note"]), "{block}");
@@ -272,14 +272,14 @@ fn tables_survive_save_and_reopen() {
 fn headers_footers_and_page_numbers_survive_save_and_reopen() {
     let mut doc = new_document();
     exec(&mut doc, "text.insert", json!({ "text": "A page with a header and a numbered footer." }));
-    exec(&mut doc, "insert.header", json!({}));
+    exec(&mut doc, "header.insert", json!({}));
     exec(&mut doc, "text.insert", json!({ "text": "Quarterly report" }));
-    exec(&mut doc, "insert.closeHeader", json!({}));
-    // Like Word's Page Number gallery, insert.pageNumber makes the footer the page number.
-    exec(&mut doc, "insert.footer", json!({}));
-    exec(&mut doc, "insert.pageNumber", json!({}));
-    exec(&mut doc, "insert.closeHeader", json!({}));
-    let inspect = exec(&mut doc, "document.inspect", json!({}));
+    exec(&mut doc, "header.close", json!({}));
+    // Like Word's Page Number gallery, pageNumber.insert makes the footer the page number.
+    exec(&mut doc, "footer.insert", json!({}));
+    exec(&mut doc, "pageNumber.insert", json!({}));
+    exec(&mut doc, "header.close", json!({}));
+    let inspect = exec(&mut doc, "file.inspect", json!({}));
     let part =
         |kind: &str| inspect["parts"].as_array().into_iter().flatten().find(|part| part["kind"] == json!(kind)).map(|part| part["text"].clone());
     assert_eq!(part("header"), Some(json!("Quarterly report")), "{inspect}");
@@ -291,11 +291,11 @@ fn headers_footers_and_page_numbers_survive_save_and_reopen() {
 fn page_setup_survives_save_and_reopen() {
     let mut doc = new_document();
     exec(&mut doc, "text.insert", json!({ "text": "Wide pages in two columns with narrow margins." }));
-    exec(&mut doc, "layout.size", json!({ "width": 595, "height": 842 }));
-    exec(&mut doc, "layout.orientation", json!({ "value": "landscape" }));
-    exec(&mut doc, "layout.margins", json!({ "top": 36, "bottom": 36, "left": 54, "right": 54 }));
-    exec(&mut doc, "layout.columns", json!({ "count": 2 }));
-    let inspect = exec(&mut doc, "document.inspect", json!({}));
+    exec(&mut doc, "page.size", json!({ "width": 595, "height": 842 }));
+    exec(&mut doc, "page.orientation", json!({ "value": "landscape" }));
+    exec(&mut doc, "page.margins", json!({ "top": 36, "bottom": 36, "left": 54, "right": 54 }));
+    exec(&mut doc, "page.columns", json!({ "count": 2 }));
+    let inspect = exec(&mut doc, "file.inspect", json!({}));
     let section = &inspect["sections"][0]["props"];
     assert_eq!(section["landscape"], json!(true), "{section}");
     assert_eq!((section["pageW"].clone(), section["pageH"].clone()), (json!(842.0), json!(595.0)), "{section}");
@@ -320,7 +320,7 @@ fn typed_breaks_and_tabs_survive_save_and_reopen() {
     exec(&mut doc, "text.insert", json!({ "text": "Before the break" }));
     exec(&mut doc, "text.pageBreak", json!({}));
     exec(&mut doc, "text.insert", json!({ "text": "On the next page" }));
-    let inspect = exec(&mut doc, "document.inspect", json!({}));
+    let inspect = exec(&mut doc, "file.inspect", json!({}));
     let first = inspect["blocks"][0]["text"].as_str().unwrap().to_owned();
     assert!(first.contains('\t') && first.contains('\n'), "{first:?}");
     assert!(inspect["pages"].as_u64().unwrap() >= 2, "{inspect}");

@@ -579,7 +579,7 @@
   }
  },
  "caret.set": {
-  "description": "Puts the caret at a position (a document position, as document.selection answers) or at a point on a page, optionally extending the selection.",
+  "description": "Puts the caret at a position (a document position, as file.selection answers) or at a point on a page, optionally extending the selection.",
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -625,7 +625,7 @@
   "params": {
    "pos": {
     "additionalProperties": true,
-    "description": "a position as document.selection answers",
+    "description": "a position as file.selection answers",
     "properties": {
      "off": {
       "description": "character offset in the paragraph",
@@ -874,13 +874,13 @@
    "type": "array"
   }
  },
- "design.effects": {
+ "theme.effects": {
   "description": "Steps the theme's effects to the next preset."
  },
- "design.pageBorders": {
+ "page.borders": {
   "description": "Puts a border around every page (box with width, colour and line style), or removes it."
  },
- "design.pageColor": {
+ "page.color": {
   "description": "Sets the page background colour as RRGGBB, or removes it with null.",
   "params": {
    "color": {
@@ -896,10 +896,10 @@
    }
   }
  },
- "design.paragraphSpacing": {
+ "theme.paragraphSpacing": {
   "description": "Applies a document-wide paragraph spacing preset (none, compact, tight, open, relaxed, double)."
  },
- "design.setDefault": {
+ "theme.setDefault": {
   "description": "Makes the current theme and style set the default for new documents.",
   "output": {
    "additionalProperties": true,
@@ -944,19 +944,19 @@
    "type": "object"
   }
  },
- "design.styleSet": {
+ "theme.styleSet": {
   "description": "Applies a style set (basic, lines, shaded, casual, centered, minimalist, title) that restyles headings and body text."
  },
- "design.theme": {
+ "theme.set": {
   "description": "Applies a document theme by name, changing theme colours and fonts."
  },
- "design.themeColors": {
+ "theme.colors": {
   "description": "Steps the theme's colour palette to the next one."
  },
- "design.themeFonts": {
+ "theme.fonts": {
   "description": "Sets the theme's heading and body fonts."
  },
- "design.themes": {
+ "theme.list": {
   "description": "Lists the available document themes.",
   "output": {
    "items": {
@@ -965,11 +965,11 @@
    "type": "array"
   }
  },
- "design.watermark": {
+ "page.watermark": {
   "description": "Adds a text watermark (diagonal or horizontal, with colour) behind every page, or removes it."
  },
- "document.inspect": {
-  "description": "Answers the document's structure: pages, sections, paragraphs by index with their styles and short text, the selection and counts; with text true it includes each paragraph's full text. Use document.text for all the text.",
+ "file.inspect": {
+  "description": "Answers the document's structure: pages, sections, paragraphs by index with their styles and short text, the selection and counts; with text true it includes each paragraph's full text. Use file.text for all the text.",
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -1256,7 +1256,7 @@
    "type": "object"
   }
  },
- "document.layout": {
+ "file.layout": {
   "description": "Answers a summary of the laid-out pages: page count, size and which paragraphs fall on each page.",
   "output": {
    "additionalProperties": true,
@@ -1319,8 +1319,8 @@
    "type": "object"
   }
  },
- "document.paragraph": {
-  "description": "Answers one paragraph's details by its path (index from document.inspect): text, runs with formatting, style and paragraph properties.",
+ "file.paragraph": {
+  "description": "Answers one paragraph's details by its path (index from file.inspect): text, runs with formatting, style and paragraph properties.",
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -1495,7 +1495,7 @@
    }
   }
  },
- "document.selection": {
+ "file.selection": {
   "description": "Answers the selection: its anchor and focus positions, the selected text and the formatting there.",
   "output": {
    "additionalProperties": true,
@@ -1588,10 +1588,10 @@
    "type": "object"
   }
  },
- "document.setText": {
+ "file.setText": {
   "description": "Replaces the whole body with the given plain text, one paragraph per line, in the Normal style."
  },
- "document.text": {
+ "file.text": {
   "description": "Answers the document's whole body text as plain text, one paragraph per line; read this before editing, since inspect alone shows little content.",
   "output": {
    "additionalProperties": true,
@@ -1603,10 +1603,10 @@
    "type": "object"
   }
  },
- "draw.erase": {
+ "ink.erase": {
   "description": "Deletes the ink stroke at a point on a page."
  },
- "draw.eraser": {
+ "ink.eraser": {
   "description": "Selects the ink eraser in the editor, or with a point deletes the ink stroke there.",
   "output": {
    "additionalProperties": true,
@@ -1663,7 +1663,7 @@
    "type": "object"
   }
  },
- "draw.highlighter": {
+ "ink.highlighter": {
   "description": "Selects the highlighter ink tool in the editor with a colour and width.",
   "output": {
    "additionalProperties": true,
@@ -1726,7 +1726,7 @@
    "type": "object"
   }
  },
- "draw.pen": {
+ "ink.pen": {
   "description": "Selects the pen ink tool in the editor with a colour and width.",
   "output": {
    "additionalProperties": true,
@@ -1789,7 +1789,7 @@
    "type": "object"
   }
  },
- "draw.pencil": {
+ "ink.pencil": {
   "description": "Selects the pencil ink tool in the editor with a colour and width.",
   "output": {
    "additionalProperties": true,
@@ -1852,7 +1852,7 @@
    "type": "object"
   }
  },
- "draw.select": {
+ "ink.select": {
   "description": "Switches the editor back to selecting objects from an ink tool.",
   "output": {
    "additionalProperties": true,
@@ -1909,7 +1909,7 @@
    "type": "object"
   }
  },
- "draw.shape": {
+ "ink.shape": {
   "description": "Selects a shape preset to draw next in the editor, or none.",
   "output": {
    "additionalProperties": true,
@@ -1934,7 +1934,7 @@
    }
   }
  },
- "draw.state": {
+ "ink.state": {
   "description": "Answers the editor's current ink tool, colour and width.",
   "output": {
    "additionalProperties": true,
@@ -1952,7 +1952,7 @@
    "type": "object"
   }
  },
- "draw.stroke": {
+ "ink.stroke": {
   "description": "Draws one ink stroke through points on a page (page points, at most 5000) with a tool, colour and width."
  },
  "drawing.arrange": {
@@ -2345,7 +2345,7 @@
   }
  },
  "edit.goto": {
-  "description": "Moves the caret to a page (numbered from 1), a bookmark, or a body paragraph or table by its document.inspect index (from 0).",
+  "description": "Moves the caret to a page (numbered from 1), a bookmark, or a body paragraph or table by its file.inspect index (from 0).",
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -3006,7 +3006,7 @@
    "type": "object"
   }
  },
- "file.inspect": {
+ "file.removeHiddenContent": {
   "description": "Removes chosen kinds of hidden content (comments, revisions, properties, hidden text, headers) and answers what was found."
  },
  "file.new": {
@@ -3263,7 +3263,7 @@
  "format.engrave": {
   "description": "Toggles the engrave text effect on the selection."
  },
- "format.font": {
+ "format.fontName": {
   "description": "Sets the font family of the selection."
  },
  "format.fontDialog": {
@@ -3311,10 +3311,10 @@
    "type": "object"
   }
  },
- "format.growFont": {
+ "format.increaseFontSize": {
   "description": "Steps the selection's font size up to the next size in the size list."
  },
- "format.growFont1": {
+ "format.increaseFontSizeByOne": {
   "description": "Makes the selection's font one point larger."
  },
  "format.hidden": {
@@ -3364,13 +3364,13 @@
  "format.shadow": {
   "description": "Toggles the shadow text effect on the selection."
  },
- "format.shrinkFont": {
+ "format.decreaseFontSize": {
   "description": "Steps the selection's font size down to the previous size in the size list."
  },
- "format.shrinkFont1": {
+ "format.decreaseFontSizeByOne": {
   "description": "Makes the selection's font one point smaller."
  },
- "format.size": {
+ "format.fontSize": {
   "description": "Sets the font size in points of the selection."
  },
  "format.smallCaps": {
@@ -3442,7 +3442,7 @@
  "format.wordUnderline": {
   "description": "Toggles underlining of words only (not the spaces) on the selection."
  },
- "hf.next": {
+ "headerFooter.next": {
   "description": "Moves to the header or footer of the next section.",
   "output": {
    "additionalProperties": true,
@@ -3499,10 +3499,10 @@
    "type": "object"
   }
  },
- "hf.position": {
+ "headerFooter.position": {
   "description": "Sets the distance of the header and footer from the page edge in points."
  },
- "hf.previous": {
+ "headerFooter.previous": {
   "description": "Moves to the header or footer of the previous section.",
   "output": {
    "additionalProperties": true,
@@ -3559,19 +3559,19 @@
    "type": "object"
   }
  },
- "insert.autoText": {
+ "autoText.insert": {
   "description": "Saves the selection as an AutoText entry or inserts one by name."
  },
- "insert.blankPage": {
+ "page.insertBlank": {
   "description": "Inserts an empty page at the caret."
  },
- "insert.bookmark": {
+ "bookmark.insert": {
   "description": "Adds a named bookmark at the selection, for edit.goto and cross-references."
  },
- "insert.chart": {
+ "chart.insert": {
   "description": "Inserts a chart (column, bar, line, pie…) with categories and series values at the caret."
  },
- "insert.closeHeader": {
+ "header.close": {
   "description": "Leaves the header, footer or note and returns the caret to where it was in the body (after a note's reference mark).",
   "output": {
    "additionalProperties": true,
@@ -3616,55 +3616,55 @@
    "type": "object"
   }
  },
- "insert.coverPage": {
+ "page.insertCover": {
   "description": "Inserts a one-page cover at the start of the document with a title, subtitle, author and, when given, a date (no date otherwise); title, subtitle and author default to the document's Title, Subject and Author properties. The caret stays where it was."
  },
- "insert.crossReference": {
+ "crossReference.insert": {
   "description": "Inserts a cross-reference to a heading, bookmark, figure or table, showing its text, number or page."
  },
- "insert.dateTime": {
+ "field.insertDateTime": {
   "description": "Inserts the current date or time at the caret in a format, as fixed text or as a field that updates."
  },
- "insert.docProperty": {
+ "field.insertDocProperty": {
   "description": "Inserts a document property (Title, Author, Subject…) as a field at the caret."
  },
- "insert.dropCap": {
+ "dropCap.set": {
   "description": "Makes the first letter of the paragraph at the caret a drop cap over a number of lines (0 removes it)."
  },
- "insert.editFooter": {
+ "footer.edit": {
   "description": "Moves the caret into the footer of the current section for editing."
  },
- "insert.editHeader": {
+ "header.edit": {
   "description": "Moves the caret into the header of the current section for editing."
  },
- "insert.equation": {
+ "equation.insert": {
   "description": "Inserts an equation at the caret from linear format, LaTeX or a built-in equation (Pythagoras, quadratic…), and puts the caret in it."
  },
- "insert.field": {
+ "field.insert": {
   "description": "Inserts a field code (PAGE, DATE, REF…) at the caret with an optional result text."
  },
- "insert.footer": {
+ "footer.insert": {
   "description": "Sets the footer of the current section from text or a preset layout."
  },
- "insert.header": {
+ "header.insert": {
   "description": "Sets the header of the current section from text or a preset layout."
  },
- "insert.horizontalLine": {
+ "horizontalLine.insert": {
   "description": "Inserts a horizontal line paragraph at the caret."
  },
- "insert.link": {
+ "link.insert": {
   "description": "Turns the selection into a hyperlink to a URL, or inserts linked text at the caret."
  },
- "insert.object": {
+ "object.insert": {
   "description": "Inserts the contents of a file as an object at the caret."
  },
- "insert.pageBreak": {
+ "page.insertBreak": {
   "description": "Inserts a page break at the caret so the following text starts on a new page."
  },
- "insert.pageNumber": {
+ "pageNumber.insert": {
   "description": "Inserts a page number field at the top or bottom of the page or at the caret, aligned left, centre or right (at the caret: the caret's paragraph, when align is given), optionally as Page x of y."
  },
- "insert.picture": {
+ "image.insert": {
   "description": "Inserts a picture from a path or base64 data at the caret, with a width in points and alternative text.",
   "params": {
    "data": {
@@ -3673,40 +3673,40 @@
    }
   }
  },
- "insert.quickParts": {
+ "quickPart.insert": {
   "description": "Saves the selection as a named building block, inserts one, or deletes one, and answers the list."
  },
- "insert.removeFooter": {
+ "footer.remove": {
   "description": "Removes the footer of the current section."
  },
- "insert.removeHeader": {
+ "header.remove": {
   "description": "Removes the header of the current section."
  },
- "insert.removeLink": {
+ "link.remove": {
   "description": "Removes the hyperlink at the caret or selection, keeping its text."
  },
- "insert.shape": {
+ "shape.insert": {
   "description": "Inserts a floating shape (rectangle, ellipse, triangle, arrow, star…) at the caret with a size, fill and text."
  },
- "insert.signatureLine": {
+ "signatureLine.insert": {
   "description": "Inserts a signature line with the signer's name and title at the caret."
  },
- "insert.spreadsheet": {
+ "spreadsheet.insert": {
   "description": "Inserts a table from CSV text at the caret."
  },
- "insert.symbol": {
+ "symbol.insert": {
   "description": "Inserts a character at the caret, optionally in its own symbol font."
  },
- "insert.table": {
+ "table.insert": {
   "description": "Inserts a table with the given rows and columns at the caret, optionally with a table style; the caret moves into its first cell."
  },
- "insert.textBox": {
+ "textBox.insert": {
   "description": "Inserts a floating text box at the caret with text and a size."
  },
- "insert.textFromFile": {
+ "text.insertFromFile": {
   "description": "Inserts the text of a file at the caret."
  },
- "insert.artText": {
+ "artText.insert": {
   "description": "Inserts decorative art text, optionally warped by a preset.",
   "params": {
    "warp": {
@@ -3727,10 +3727,10 @@
    }
   }
  },
- "layout.break": {
+ "page.break": {
   "description": "Inserts a page, column or text-wrapping break, or a section break (next page, continuous, even or odd page), at the caret."
  },
- "layout.columns": {
+ "page.columns": {
   "description": "Sets the number of text columns (1 to 12) of the current section, with spacing, a separator line or set widths.",
   "params": {
    "count": {
@@ -3739,41 +3739,41 @@
    }
   }
  },
- "layout.differentFirstPage": {
+ "page.differentFirstPage": {
   "description": "Toggles a different header and footer on the first page of the current section."
  },
- "layout.differentOddEven": {
+ "page.differentOddEven": {
   "description": "Toggles different headers and footers on odd and even pages."
  },
- "layout.hyphenation": {
+ "page.hyphenation": {
   "description": "Toggles automatic hyphenation for the document."
  },
- "layout.lineNumbers": {
+ "page.lineNumbers": {
   "description": "Turns line numbers in the margin off, continuous, or restarting each page or section."
  },
- "layout.linkToPrevious": {
+ "page.linkToPrevious": {
   "description": "Toggles linking the current section's header (or footer) to the previous section's."
  },
- "layout.margins": {
+ "page.margins": {
   "description": "Sets the page margins of the current section from a preset or in points per side."
  },
- "layout.orientation": {
+ "page.orientation": {
   "description": "Sets the current section's page orientation to portrait or landscape."
  },
- "layout.pageNumberFormat": {
+ "page.pageNumberFormat": {
   "description": "Sets the page number format (1, i, I, a, A) and starting number of the current section."
  },
- "layout.pageSetup": {
+ "page.pageSetup": {
   "description": "Changes the current section's page setup in one call: only the fields given (size, orientation, margins, columns, vertical alignment…) change, the others keep their values.",
   "params": {
    "section": {
     "additionalProperties": true,
-    "description": "the section fields to change, named as layout.section answers them (pageW, marginLeft, valign…); fields not given are kept, unknown ones are refused",
+    "description": "the section fields to change, named as page.section answers them (pageW, marginLeft, valign…); fields not given are kept, unknown ones are refused",
     "type": "object"
    }
   }
  },
- "layout.section": {
+ "page.section": {
   "description": "Answers the current section's page properties: size, orientation, margins, columns and header settings.",
   "output": {
    "additionalProperties": true,
@@ -3884,10 +3884,10 @@
    "type": "object"
   }
  },
- "layout.size": {
+ "page.size": {
   "description": "Sets the current section's paper size: by name (Letter, A4…), keeping the orientation, or as a width and height in points, kept as given (wider than tall is landscape)."
  },
- "layout.verticalAlign": {
+ "page.verticalAlign": {
   "description": "Sets the current section's vertical alignment of text on its pages: top, center or bottom."
  },
  "list.define": {
@@ -3971,10 +3971,10 @@
    }
   }
  },
- "mailings.addressBlock": {
+ "mailMerge.addressBlock": {
   "description": "Inserts an address block merge field at the caret."
  },
- "mailings.checkErrors": {
+ "mailMerge.checkErrors": {
   "description": "Checks the merge for missing fields or recipients and answers the problems.",
   "output": {
    "additionalProperties": true,
@@ -3992,7 +3992,7 @@
    "type": "object"
   }
  },
- "mailings.editRecipients": {
+ "mailMerge.editRecipients": {
   "description": "Replaces the mail merge recipient rows or fields.",
   "output": {
    "additionalProperties": true,
@@ -4028,19 +4028,19 @@
    }
   }
  },
- "mailings.envelopes": {
+ "mailMerge.envelopes": {
   "description": "Turns the document into an envelope with a delivery and a return address and a size."
  },
- "mailings.findRecipient": {
+ "mailMerge.findRecipient": {
   "description": "Moves the merge preview to a recipient."
  },
- "mailings.finish": {
+ "mailMerge.finish": {
   "description": "Merges the document with every recipient (or a range of records) into one merged document, optionally saved to a path."
  },
- "mailings.greetingLine": {
+ "mailMerge.greetingLine": {
   "description": "Inserts a greeting line merge field at the caret."
  },
- "mailings.highlightFields": {
+ "mailMerge.highlightFields": {
   "description": "Toggles highlighting of merge fields in the editor.",
   "output": {
    "additionalProperties": true,
@@ -4052,13 +4052,13 @@
    "type": "object"
   }
  },
- "mailings.insertField": {
+ "mailMerge.insertField": {
   "description": "Inserts a merge field for a recipient field at the caret."
  },
- "mailings.labels": {
+ "mailMerge.labels": {
   "description": "Turns the document into a sheet of labels with text or the recipients, in rows and columns."
  },
- "mailings.matchFields": {
+ "mailMerge.matchFields": {
   "description": "Answers how the document's merge fields match the recipient fields.",
   "output": {
    "additionalProperties": true,
@@ -4103,16 +4103,16 @@
    "type": "object"
   }
  },
- "mailings.next": {
+ "mailMerge.next": {
   "description": "Shows the next recipient's data in the merge preview."
  },
- "mailings.preview": {
+ "mailMerge.preview": {
   "description": "Toggles previewing the merge results with a recipient's data in place of the fields."
  },
- "mailings.previous": {
+ "mailMerge.previous": {
   "description": "Shows the previous recipient's data in the merge preview."
  },
- "mailings.recipients": {
+ "mailMerge.recipients": {
   "description": "Sets the mail merge recipients from CSV text, a file, or rows, with their field names.",
   "output": {
    "additionalProperties": true,
@@ -4148,7 +4148,7 @@
    }
   }
  },
- "mailings.rules": {
+ "mailMerge.rules": {
   "description": "Inserts a merge rule field (IF, SKIPIF, NEXT, MERGEREC) at the caret.",
   "params": {
    "else": {
@@ -4169,7 +4169,7 @@
    }
   }
  },
- "mailings.start": {
+ "mailMerge.start": {
   "description": "Starts a mail merge of a kind (letters, emails, envelopes, labels, directory) or turns it off with normal.",
   "output": {
    "additionalProperties": true,
@@ -4181,25 +4181,25 @@
    "type": "object"
   }
  },
- "para.addSpaceBefore": {
+ "paragraph.addSpaceBefore": {
   "description": "Adds 12 points of space before the selected paragraphs."
  },
- "para.align": {
+ "paragraph.align": {
   "description": "Sets the alignment of the selected paragraphs by name, as seen on the page (left, center, right, justify, distribute) or in reading order (start, end)."
  },
- "para.alignCenter": {
+ "format.alignCenter": {
   "description": "Centres the selected paragraphs."
  },
- "para.alignLeft": {
+ "format.alignLeft": {
   "description": "Aligns the selected paragraphs to the left."
  },
- "para.alignRight": {
+ "format.alignRight": {
   "description": "Aligns the selected paragraphs to the right."
  },
- "para.asianTypography": {
+ "paragraph.asianTypography": {
   "description": "Sets East Asian typography options of the selected paragraphs: line-breaking rules, word wrap and punctuation compression."
  },
- "para.borders": {
+ "paragraph.borders": {
   "description": "Applies a paragraph border (bottom, top, box, inside, none…) to the selected paragraphs, with width and colour.",
   "params": {
    "sides": {
@@ -4283,7 +4283,7 @@
    }
   }
  },
- "para.bullets": {
+ "paragraph.bullets": {
   "description": "Makes the selected paragraphs a bulleted list (with a bullet kind or character), or removes the bullets with off.",
   "params": {
    "kind": {
@@ -4292,14 +4292,14 @@
    }
   }
  },
- "para.defineBullet": {
+ "paragraph.defineBullet": {
   "description": "Defines a bullet character and applies it to the selected list paragraphs."
  },
- "para.defineNumber": {
+ "paragraph.defineNumber": {
   "description": "Defines a number format (decimal, Roman, letters), number text and start, and applies it to the selected list."
  },
- "para.dialog": {
-  "description": "Answers a paragraph's formatting as the Paragraph dialog shows it: the caret's paragraph, or the one at path. props is in the form para.set takes; direct holds only the paragraph's own settings.",
+ "paragraph.dialog": {
+  "description": "Answers a paragraph's formatting as the Paragraph dialog shows it: the caret's paragraph, or the one at path. props is in the form paragraph.set takes; direct holds only the paragraph's own settings.",
   "output": {
    "type": "object",
    "additionalProperties": true,
@@ -4351,46 +4351,46 @@
    }
   }
  },
- "para.distribute": {
+ "paragraph.distribute": {
   "description": "Distributes the characters of the selected paragraphs evenly across the line."
  },
- "para.double": {
+ "paragraph.double": {
   "description": "Sets double line spacing on the selected paragraphs."
  },
- "para.hangingIndent": {
+ "paragraph.hangingIndent": {
   "description": "Adds a hanging indent to the selected paragraphs, or increases it."
  },
- "para.heading1": {
+ "paragraph.heading1": {
   "description": "Applies the Heading 1 style to the selected paragraphs."
  },
- "para.heading2": {
+ "paragraph.heading2": {
   "description": "Applies the Heading 2 style to the selected paragraphs."
  },
- "para.heading3": {
+ "paragraph.heading3": {
   "description": "Applies the Heading 3 style to the selected paragraphs."
  },
- "para.indent": {
+ "paragraph.indent": {
   "description": "Increases the left indent of the selected paragraphs by one step."
  },
- "para.indents": {
+ "paragraph.indents": {
   "description": "Sets the left, right and first-line indents of the selected paragraphs in points (a negative first line is hanging)."
  },
- "para.insert": {
-  "description": "Inserts a new paragraph with text after or before the paragraph at an index (as document.inspect numbers them), keeping the neighbouring style."
+ "paragraph.insert": {
+  "description": "Inserts a new paragraph with text after or before the paragraph at an index (as file.inspect numbers them), keeping the neighbouring style."
  },
- "para.justify": {
+ "format.justify": {
   "description": "Justifies the selected paragraphs between the margins."
  },
- "para.keepLines": {
+ "paragraph.keepLines": {
   "description": "Toggles keeping all lines of the selected paragraphs on one page."
  },
- "para.keepNext": {
+ "paragraph.keepNext": {
   "description": "Toggles keep-with-next on the selected paragraphs so they stay on the page with the following one."
  },
- "para.lineSpacing": {
+ "paragraph.lineSpacing": {
   "description": "Sets the line spacing of the selected paragraphs as a multiple, as at least some points, or as exactly some points."
  },
- "para.listLevel": {
+ "paragraph.listLevel": {
   "description": "Sets the list level (0 to 8) of the selected list paragraphs.",
   "params": {
    "level": {
@@ -4399,56 +4399,56 @@
    }
   }
  },
- "para.ltr": {
+ "paragraph.ltr": {
   "description": "Makes the selected paragraphs left to right (true) or right to left (false)."
  },
- "para.multilevel": {
+ "paragraph.multilevel": {
   "description": "Applies a multilevel list (legal or outline numbering) to the selected paragraphs."
  },
- "para.normal": {
+ "paragraph.normal": {
   "description": "Applies the Normal style to the selected paragraphs."
  },
- "para.numbering": {
+ "paragraph.numbering": {
   "description": "Makes the selected paragraphs a numbered list in a format (1., 1), A., a., i., outline), or removes numbering with off."
  },
- "para.oneAndHalf": {
+ "paragraph.oneAndHalf": {
   "description": "Sets 1.5 line spacing on the selected paragraphs."
  },
- "para.outdent": {
+ "paragraph.outdent": {
   "description": "Decreases the left indent of the selected paragraphs by one step."
  },
- "para.outlineLevel": {
+ "paragraph.outlineLevel": {
   "description": "Steps the outline level of the selected paragraphs."
  },
- "para.pageBreakBefore": {
+ "paragraph.pageBreakBefore": {
   "description": "Toggles a page break before the selected paragraphs."
  },
- "para.removeHanging": {
+ "paragraph.removeHanging": {
   "description": "Reduces the hanging indent of the selected paragraphs."
  },
- "para.removeSpaceAfter": {
+ "paragraph.removeSpaceAfter": {
   "description": "Removes the space after the selected paragraphs."
  },
- "para.restartNumbering": {
+ "paragraph.restartNumbering": {
   "description": "Restarts the numbering of the list at the caret from 1."
  },
- "para.rtl": {
+ "paragraph.rtl": {
   "description": "Makes the selected paragraphs right to left (true) or left to right (false)."
  },
- "para.set": {
+ "paragraph.set": {
   "description": "Sets several paragraph properties of the selected paragraphs in one call (alignment, indents, spacing, line spacing, keep options…).",
   "params": {
    "props": {
     "additionalProperties": true,
-    "description": "paragraph properties as para.dialog answers them (alignment, indents, spacing…); colours (shading, border colors) are \"RRGGBB\"",
+    "description": "paragraph properties as paragraph.dialog answers them (alignment, indents, spacing…); colours (shading, border colors) are \"RRGGBB\"",
     "type": "object"
    }
   }
  },
- "para.setNumberingValue": {
+ "paragraph.setNumberingValue": {
   "description": "Sets the number of the list item at the caret, renumbering the items after it."
  },
- "para.shading": {
+ "paragraph.shading": {
   "description": "Sets the background shading of the selected paragraphs as RRGGBB, or removes it with null.",
   "params": {
    "color": {
@@ -4464,34 +4464,34 @@
    }
   }
  },
- "para.single": {
+ "paragraph.single": {
   "description": "Sets single line spacing on the selected paragraphs."
  },
- "para.sort": {
+ "paragraph.sort": {
   "description": "Sorts the selected paragraphs alphabetically, ascending or descending."
  },
- "para.spacing": {
+ "paragraph.spacing": {
   "description": "Sets the space before and after the selected paragraphs in points."
  },
- "para.style": {
-  "description": "Applies a paragraph style (by name or id, such as Heading 1 or Quote) to the selected paragraphs; styles.list names them."
+ "paragraph.style": {
+  "description": "Applies a paragraph style (by name or id, such as Heading 1 or Quote) to the selected paragraphs; style.list names them."
  },
- "para.tabs": {
+ "paragraph.tabs": {
   "description": "Replaces, sets or clears tab stops (position, alignment, leader) of the selected paragraphs."
  },
- "para.text": {
+ "paragraph.text": {
   "description": "Replaces the text of the paragraph at an index, keeping its style and paragraph formatting."
  },
- "para.widowControl": {
+ "paragraph.widowControl": {
   "description": "Toggles widow and orphan control on the selected paragraphs."
  },
- "picture.altText": {
+ "image.altText": {
   "description": "Sets the alternative text of the selected picture."
  },
- "picture.border": {
+ "image.border": {
   "description": "Sets the border colour and width of the selected picture."
  },
- "picture.change": {
+ "image.change": {
   "description": "Replaces the selected picture's image from a path or base64 data, keeping its size and position.",
   "params": {
    "data": {
@@ -4500,34 +4500,34 @@
    }
   }
  },
- "picture.color": {
+ "image.color": {
   "description": "Recolours the selected picture (grayscale, sepia, washout, black and white, saturation, tint)."
  },
- "picture.compress": {
+ "image.compress": {
   "description": "Downsamples the selected picture to at most a number of pixels to make the file smaller."
  },
- "picture.corrections": {
+ "image.corrections": {
   "description": "Adjusts the selected picture's brightness, contrast and sharpness (-100 to 100)."
  },
- "picture.crop": {
+ "image.crop": {
   "description": "Crops the selected picture by fractions (0 to 0.45) of its width and height from each side."
  },
- "picture.effects": {
+ "image.effects": {
   "description": "Applies an artistic effect (blur, sharpen, invert, posterize, pixelate) to the selected picture."
  },
- "picture.removeBackground": {
+ "image.removeBackground": {
   "description": "Removes the selected picture's background colour within a tolerance."
  },
- "picture.reset": {
+ "image.reset": {
   "description": "Removes every adjustment from the selected picture."
  },
- "picture.size": {
+ "image.size": {
   "description": "Sets the selected picture's width and height in points or a scale percentage, keeping the aspect ratio when asked."
  },
- "picture.style": {
+ "image.style": {
   "description": "Applies a picture style (simple frame, thick frame, rounded, soft edge, shadow) to the selected picture."
  },
- "picture.transparency": {
+ "image.transparency": {
   "description": "Sets the selected picture's transparency from 0 to 100 percent."
  },
  "presence.caret": {
@@ -4830,7 +4830,7 @@
    "type": "object"
   }
  },
- "references.addText": {
+ "toc.addText": {
   "description": "Sets the table-of-contents level of the paragraphs at the selection (0 keeps them out).",
   "params": {
    "level": {
@@ -4839,13 +4839,13 @@
    }
   }
  },
- "references.bibliography": {
+ "bibliography.insert": {
   "description": "Inserts a bibliography of the cited sources at the caret with a title."
  },
- "references.caption": {
+ "caption.insert": {
   "description": "Inserts a numbered caption (Figure, Table, Equation) with text at the caret or below the selected object."
  },
- "references.citation": {
+ "citation.insert": {
   "description": "Inserts a citation of a source (by tag, adding the source when given) at the caret, with pages.",
   "params": {
    "source": {
@@ -4887,25 +4887,25 @@
    }
   }
  },
- "references.citationStyle": {
+ "citation.style": {
   "description": "Sets the citation and bibliography style (APA, MLA, Chicago, IEEE)."
  },
- "references.endnote": {
-  "description": "Inserts an endnote reference at the caret with the note's text; with text the caret stays after the reference, without it goes into the note (insert.closeHeader returns to the reference)."
+ "endnote.insert": {
+  "description": "Inserts an endnote reference at the caret with the note's text; with text the caret stays after the reference, without it goes into the note (header.close returns to the reference)."
  },
- "references.footnote": {
-  "description": "Inserts a footnote reference at the caret with the note's text; with text the caret stays after the reference, without it goes into the note (insert.closeHeader returns to the reference)."
+ "footnote.insert": {
+  "description": "Inserts a footnote reference at the caret with the note's text; with text the caret stays after the reference, without it goes into the note (header.close returns to the reference)."
  },
- "references.index": {
+ "index.insert": {
   "description": "Inserts an index of the marked entries at the caret."
  },
- "references.markCitation": {
+ "tableOfAuthorities.markCitation": {
   "description": "Marks the selection (or a given text) as a citation for the table of authorities."
  },
- "references.markEntry": {
+ "index.markEntry": {
   "description": "Marks the selection (or a given entry text) as an index entry."
  },
- "references.nextFootnote": {
+ "footnote.next": {
   "description": "Moves to the next footnote reference and answers it.",
   "output": {
    "additionalProperties": true,
@@ -4950,7 +4950,7 @@
    "type": "object"
   }
  },
- "references.noteOptions": {
+ "footnote.options": {
   "description": "Sets footnote and endnote number formats, starting numbers and placement.",
   "params": {
    "endnoteFormat": {
@@ -4965,16 +4965,16 @@
    }
   }
  },
- "references.notes": {
+ "footnote.show": {
   "description": "Lists the footnotes and endnotes with their numbers and text.",
   "output": {
    "type": "array"
   }
  },
- "references.removeToc": {
+ "toc.remove": {
   "description": "Removes the table of contents."
  },
- "references.researcher": {
+ "research.open": {
   "description": "Opens the Researcher pane in the editor.",
   "output": {
    "additionalProperties": true,
@@ -4986,7 +4986,7 @@
    "type": "object"
   }
  },
- "references.sources": {
+ "citation.sources": {
   "description": "Adds or removes a bibliography source and answers the source list.",
   "params": {
    "add": {
@@ -5032,13 +5032,13 @@
    }
   }
  },
- "references.tableOfAuthorities": {
+ "tableOfAuthorities.insert": {
   "description": "Inserts a table of authorities from the marked citations at the caret."
  },
- "references.tableOfFigures": {
+ "tableOfFigures.insert": {
   "description": "Inserts a table of figures (or tables, or equations) built from captions at the caret."
  },
- "references.toc": {
+ "toc.insert": {
   "description": "Inserts a table of contents at the caret built from headings down to a level, with a title.",
   "params": {
    "levels": {
@@ -5047,25 +5047,25 @@
    }
   }
  },
- "references.updateFields": {
+ "field.updateAll": {
   "description": "Updates the fields in the selection (or the whole document): page numbers, dates, cross-references, tables of contents."
  },
- "references.updateFigures": {
+ "tableOfFigures.update": {
   "description": "Rebuilds the table of figures from the current captions."
  },
- "references.updateIndex": {
+ "index.update": {
   "description": "Rebuilds the index from the marked entries."
  },
- "references.updateToc": {
+ "toc.update": {
   "description": "Rebuilds the table of contents from the current headings and page numbers."
  },
- "review.accept": {
+ "change.accept": {
   "description": "Accepts the tracked change at the caret or in the selection."
  },
- "review.acceptAll": {
+ "change.acceptAll": {
   "description": "Accepts every tracked change in the document."
  },
- "review.addToDictionary": {
+ "spelling.addToDictionary": {
   "description": "Adds a word (default: the word at the caret) to the dictionary so it is no longer flagged.",
   "output": {
    "additionalProperties": true,
@@ -5077,34 +5077,34 @@
    "type": "object"
   }
  },
- "review.applySuggestion": {
+ "spelling.applySuggestion": {
   "description": "Replaces the flagged word at the caret with a suggestion text."
  },
- "review.changes": {
+ "change.list": {
   "description": "Lists the tracked changes with their kind, author, date and text.",
   "output": {
    "type": "array"
   }
  },
- "review.combine": {
+ "file.combine": {
   "description": "Combines another document's tracked changes and comments into this one."
  },
- "review.comments": {
+ "comment.pane": {
   "description": "Lists the document's comments with their ids, authors, text and the text they are on.",
   "output": {
    "type": "array"
   }
  },
- "review.compare": {
+ "file.compare": {
   "description": "Compares the document with a revised version (a file or text) and marks the differences as tracked changes."
  },
- "review.deleteComment": {
+ "comment.deleteCurrent": {
   "description": "Deletes a comment by id, the comment at the caret, or all comments."
  },
- "review.editComment": {
+ "comment.edit": {
   "description": "Replaces the text of a comment by its id."
  },
- "review.editor": {
+ "spelling.editor": {
   "description": "Answers the Editor pane's summary of spelling, grammar and refinement issues.",
   "output": {
    "additionalProperties": true,
@@ -5116,7 +5116,7 @@
    "type": "object"
   }
  },
- "review.hideInk": {
+ "ink.hide": {
   "description": "Hides or shows ink in the editor.",
   "output": {
    "additionalProperties": true,
@@ -5128,7 +5128,7 @@
    "type": "object"
   }
  },
- "review.ignoreAll": {
+ "spelling.ignoreAll": {
   "description": "Ignores every occurrence of the flagged word at the caret in this document.",
   "output": {
    "additionalProperties": true,
@@ -5140,16 +5140,16 @@
    "type": "object"
   }
  },
- "review.issues": {
+ "spelling.issues": {
   "description": "Lists every spelling and grammar issue in the document with its position and suggestions.",
   "output": {
    "type": "array"
   }
  },
- "review.language": {
+ "spelling.language": {
   "description": "Sets the proofing language of the selection, or marks it not to be proofed."
  },
- "review.markup": {
+ "change.markup": {
   "description": "Steps how revisions display in the editor (simple, all markup, no markup, original).",
   "output": {
    "additionalProperties": true,
@@ -5161,10 +5161,10 @@
    "type": "object"
   }
  },
- "review.newComment": {
+ "comment.new": {
   "description": "Adds a comment with text on the selection (or the word at the caret)."
  },
- "review.nextChange": {
+ "change.next": {
   "description": "Moves to the next tracked change and answers it.",
   "output": {
    "additionalProperties": true,
@@ -5209,7 +5209,7 @@
    "type": "object"
   }
  },
- "review.nextComment": {
+ "comment.next": {
   "description": "Moves to the next comment and answers it.",
   "output": {
    "additionalProperties": true,
@@ -5254,7 +5254,7 @@
    "type": "object"
   }
  },
- "review.previousChange": {
+ "change.previous": {
   "description": "Moves to the previous tracked change and answers it.",
   "output": {
    "additionalProperties": true,
@@ -5299,7 +5299,7 @@
    "type": "object"
   }
  },
- "review.previousComment": {
+ "comment.previous": {
   "description": "Moves to the previous comment and answers it.",
   "output": {
    "additionalProperties": true,
@@ -5344,7 +5344,7 @@
    "type": "object"
   }
  },
- "review.proofing": {
+ "spelling.proofing": {
   "description": "Toggles checking spelling as you type in the editor.",
   "output": {
    "additionalProperties": true,
@@ -5356,7 +5356,7 @@
    "type": "object"
   }
  },
- "review.readAloud": {
+ "readAloud.open": {
   "description": "Starts reading the document aloud from the caret, optionally skipping citations.",
   "output": {
    "additionalProperties": true,
@@ -5431,22 +5431,22 @@
    "type": "object"
   }
  },
- "review.reject": {
+ "change.reject": {
   "description": "Rejects the tracked change at the caret or in the selection."
  },
- "review.rejectAll": {
+ "change.rejectAll": {
   "description": "Rejects every tracked change in the document."
  },
- "review.reply": {
+ "comment.replyCurrent": {
   "description": "Replies to a comment by its id."
  },
- "review.resolveComment": {
+ "comment.resolveCurrent": {
   "description": "Marks the comment at the caret as resolved."
  },
- "review.restrict": {
+ "file.restrictEditing": {
   "description": "Restricts editing to read only, comments, tracked changes or forms, or removes the restriction."
  },
- "review.showMarkup": {
+ "change.showMarkup": {
   "description": "Toggles showing revision markup in the editor.",
   "output": {
    "additionalProperties": true,
@@ -5458,7 +5458,7 @@
    "type": "object"
   }
  },
- "review.spelling": {
+ "spelling.check": {
   "description": "Answers the first spelling or grammar issue from the caret onward, with suggestions; changes nothing.",
   "output": {
    "additionalProperties": true,
@@ -5470,7 +5470,7 @@
    "type": "object"
   }
  },
- "review.suggestions": {
+ "spelling.suggestions": {
   "description": "Answers spelling suggestions for the word at the caret or at a position.",
   "output": {
    "oneOf": [
@@ -5540,7 +5540,7 @@
   "params": {
    "pos": {
     "additionalProperties": true,
-    "description": "a position as document.selection answers (or {\"block\", \"off\"?} in the body)",
+    "description": "a position as file.selection answers (or {\"block\", \"off\"?} in the body)",
     "properties": {
      "off": {
       "description": "character offset in the paragraph",
@@ -5579,7 +5579,7 @@
    }
   }
  },
- "review.thesaurus": {
+ "spelling.thesaurus": {
   "description": "Answers synonyms for the word at the caret.",
   "output": {
    "additionalProperties": true,
@@ -5594,10 +5594,10 @@
    "type": "object"
   }
  },
- "review.trackChanges": {
+ "change.track": {
   "description": "Turns Track Changes on or off; without value it toggles. Tracked edits are kept as revisions to accept or reject."
  },
- "review.trackingOptions": {
+ "change.options": {
   "description": "Sets which revisions show in the editor (comments, ink, insertions and deletions, formatting, balloons).",
   "output": {
    "additionalProperties": true,
@@ -5642,7 +5642,7 @@
    "type": "object"
   }
  },
- "review.wordCount": {
+ "file.wordCount": {
   "description": "Answers the document's (or selection's) pages, words, characters, paragraphs and lines, optionally counting text boxes; each Chinese or Japanese character counts as a word, as in Word.",
   "output": {
    "additionalProperties": true,
@@ -5704,7 +5704,7 @@
   "params": {
    "pos": {
     "additionalProperties": true,
-    "description": "a position as document.selection answers (or {\"block\", \"off\"?} in the body)",
+    "description": "a position as file.selection answers (or {\"block\", \"off\"?} in the body)",
     "properties": {
      "off": {
       "description": "character offset in the paragraph",
@@ -5743,7 +5743,7 @@
    }
   }
  },
- "select.all": {
+ "edit.selectAll": {
   "description": "Selects the whole body of the document (Ctrl+A).",
   "output": {
    "additionalProperties": true,
@@ -5889,7 +5889,7 @@
   "params": {
    "anchor": {
     "additionalProperties": true,
-    "description": "a position as document.selection answers",
+    "description": "a position as file.selection answers",
     "properties": {
      "off": {
       "description": "character offset in the paragraph",
@@ -5910,7 +5910,7 @@
    },
    "focus": {
     "additionalProperties": true,
-    "description": "a position as document.selection answers",
+    "description": "a position as file.selection answers",
     "properties": {
      "off": {
       "description": "character offset in the paragraph",
@@ -6112,7 +6112,7 @@
   }
  },
  "select.range": {
-  "description": "Selects from an anchor position to a focus position (positions as document.selection answers).",
+  "description": "Selects from an anchor position to a focus position (positions as file.selection answers).",
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -6158,7 +6158,7 @@
   "params": {
    "anchor": {
     "additionalProperties": true,
-    "description": "a position as document.selection answers",
+    "description": "a position as file.selection answers",
     "properties": {
      "off": {
       "description": "character offset in the paragraph",
@@ -6179,7 +6179,7 @@
    },
    "focus": {
     "additionalProperties": true,
-    "description": "a position as document.selection answers",
+    "description": "a position as file.selection answers",
     "properties": {
      "off": {
       "description": "character offset in the paragraph",
@@ -6440,10 +6440,10 @@
    }
   }
  },
- "styles.addToGallery": {
+ "style.addToGallery": {
   "description": "Adds the selection's style to the Styles gallery."
  },
- "styles.apply": {
+ "style.apply": {
   "description": "Opens the Apply Styles box in the editor, or applies a style by name when given.",
   "output": {
    "additionalProperties": true,
@@ -6455,13 +6455,13 @@
    "type": "object"
   }
  },
- "styles.create": {
+ "style.add": {
   "description": "Creates a new paragraph style, based on another style or on the selection's formatting."
  },
- "styles.delete": {
+ "style.delete": {
   "description": "Deletes a custom style; paragraphs that used it fall back to its base style."
  },
- "styles.inspect": {
+ "style.inspect": {
   "description": "Answers the formatting layers at the selection: paragraph style, direct paragraph formatting, character style and direct character formatting.",
   "output": {
    "additionalProperties": true,
@@ -6512,7 +6512,7 @@
    "type": "object"
   }
  },
- "styles.inspector": {
+ "style.inspector": {
   "description": "Shows or hides the Style Inspector pane in the editor.",
   "output": {
    "additionalProperties": true,
@@ -6566,10 +6566,10 @@
    "type": "object"
   }
  },
- "styles.inspectorClear": {
+ "style.inspectorClear": {
   "description": "Clears one formatting layer at the selection (paragraph style, paragraph formatting, character style or character formatting)."
  },
- "styles.list": {
+ "style.list": {
   "description": "Lists the styles shown in the Styles gallery with their names and ids.",
   "output": {
    "items": {
@@ -6596,7 +6596,7 @@
    "type": "array"
   }
  },
- "styles.manage": {
+ "style.manage": {
   "description": "Lists the document's styles with their id, name, type and whether they show in the gallery, sorted as recommended or alphabetically.",
   "output": {
    "items": {
@@ -6635,7 +6635,7 @@
    "type": "array"
   }
  },
- "styles.modify": {
+ "style.set": {
   "description": "Changes a style's character or paragraph properties, its name or its next style; every paragraph using it changes.",
   "params": {
    "chr": {
@@ -6645,12 +6645,12 @@
    },
    "para": {
     "additionalProperties": true,
-    "description": "paragraph properties as para.dialog answers them (alignment, indents, spacing…); colours (shading, border colors) are \"RRGGBB\"",
+    "description": "paragraph properties as paragraph.dialog answers them (alignment, indents, spacing…); colours (shading, border colors) are \"RRGGBB\"",
     "type": "object"
    }
   }
  },
- "styles.pane": {
+ "style.pane": {
   "description": "Shows or hides the Styles pane in the editor.",
   "output": {
    "additionalProperties": true,
@@ -6695,10 +6695,10 @@
    "type": "object"
   }
  },
- "styles.setVisibility": {
+ "style.setVisibility": {
   "description": "Shows or hides a style in the Styles gallery and the style lists."
  },
- "styles.updateToMatch": {
+ "style.updateToMatch": {
   "description": "Updates a style (default: the selection's) to match the selection's formatting."
  },
  "table.autofit": {
@@ -6793,7 +6793,7 @@
  "table.merge": {
   "description": "Merges the selected table cells into one cell."
  },
- "table.modifyStyle": {
+ "table.setStyle": {
   "description": "Changes a table style's name, base style or region formatting; default: the current table's style.",
   "params": {
    "bandedColumns": {
@@ -7206,7 +7206,7 @@
    },
    "para": {
     "additionalProperties": true,
-    "description": "paragraph properties as para.dialog answers them (alignment, indents, spacing…)",
+    "description": "paragraph properties as paragraph.dialog answers them (alignment, indents, spacing…)",
     "type": "object"
    },
    "wholeTable": {
@@ -7692,7 +7692,7 @@
    },
    "para": {
     "additionalProperties": true,
-    "description": "paragraph properties as para.dialog answers them (alignment, indents, spacing…); colours (shading, border colors) are \"RRGGBB\"; as in Word, a paragraph style that sets a property itself (Normal included) wins over the table style's",
+    "description": "paragraph properties as paragraph.dialog answers them (alignment, indents, spacing…); colours (shading, border colors) are \"RRGGBB\"; as in Word, a paragraph style that sets a property itself (Normal included) wins over the table style's",
     "type": "object"
    },
    "wholeTable": {
@@ -8015,7 +8015,7 @@
   "description": "Deletes from the caret to the start of the next word."
  },
  "text.insert": {
-  "description": "Types text at the caret, replacing the selection, with the formatting at the caret; use para.insert or para.text to write whole paragraphs by index."
+  "description": "Types text at the caret, replacing the selection, with the formatting at the caret; use paragraph.insert or paragraph.text to write whole paragraphs by index."
  },
  "text.lineBreak": {
   "description": "Inserts a line break (Shift+Enter) at the caret, staying in the same paragraph."
@@ -8038,7 +8038,7 @@
  "text.tab": {
   "description": "Inserts a tab at the caret; in a list item it demotes the item one level, in a table it moves to the next cell."
  },
- "tools.autocorrect": {
+ "autocorrect.options": {
   "description": "Turns AutoCorrect on or off, or adds a replacement (from, to), and answers the AutoCorrect list.",
   "output": {
    "additionalProperties": true,
@@ -8056,14 +8056,14 @@
    "type": "object"
   }
  },
- "tools.macros": {
+ "macro.list": {
   "description": "Runs, defines or deletes a macro (a named list of command steps) and answers the macro list.",
   "output": {
    "additionalProperties": true,
    "type": "object"
   }
  },
- "tools.recordMacro": {
+ "macro.record": {
   "description": "Starts recording commands into a named macro; calling it again stops and saves the recording.",
   "output": {
    "additionalProperties": true,

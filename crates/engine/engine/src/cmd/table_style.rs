@@ -31,7 +31,7 @@ macro_rules! style_params {
 pub fn specs() -> Vec<CommandSpec> {
     vec![
         CommandSpec::new("table.newStyle", "New Table Style", "Table Design › Table Styles", new_style).params(style_params!(r#""name": string"#)),
-        CommandSpec::new("table.modifyStyle", "Modify Table Style", "Table Design › Table Styles", modify_style)
+        CommandSpec::new("table.setStyle", "Modify Table Style", "Table Design › Table Styles", modify_style)
             .params(style_params!(r#""style"?: string (default: the current table's), "name"?: string"#)),
         CommandSpec::new("table.deleteStyle", "Delete Table Style", "Table Design › Table Styles", delete_style)
             .params(r#"{"style"?: string (default: the current table's)}"#),
@@ -102,7 +102,7 @@ fn modify_style(s: &mut Session, v: &Value) -> CmdResult {
     Ok(json!({"id": id}))
 }
 
-/// The style `table.modifyStyle` would store for `v`, validated.
+/// The style `table.setStyle` would store for `v`, validated.
 fn build_modified(s: &Session, v: &Value) -> Result<Style, CmdError> {
     let id = target(s, v)?;
     let rename = p::str(v, "name").map(str::trim).filter(|n| !n.is_empty()).map(str::to_string);
@@ -134,7 +134,7 @@ fn build_modified(s: &Session, v: &Value) -> Result<Style, CmdError> {
 }
 
 /// How table style `v["style"]` (or, without it, a new style) would look with the formatting
-/// params of `table.modifyStyle` / `table.newStyle` applied, for a dialog's live preview. Names
+/// params of `table.setStyle` / `table.newStyle` applied, for a dialog's live preview. Names
 /// aren't checked; `None` when the params don't validate.
 pub fn preview(s: &Session, v: &Value) -> Option<TableStyleProps> {
     if !v.is_object() {
@@ -165,7 +165,7 @@ fn delete_style(s: &mut Session, v: &Value) -> CmdResult {
     delete(s, &id)
 }
 
-/// Delete table style `id` (also what `styles.delete` runs for a table style): see
+/// Delete table style `id` (also what `style.delete` runs for a table style): see
 /// [`delete_style`].
 pub fn delete(s: &mut Session, id: &str) -> CmdResult {
     let id = id.to_string();

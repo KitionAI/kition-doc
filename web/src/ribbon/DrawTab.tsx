@@ -5,7 +5,7 @@ export function DrawTab() {
   return (
     <>
       <InkGroup testId="doc-ink" />
-      <CommandTab menu="Draw" exclude={['draw.select', 'draw.eraser', 'draw.pen', 'draw.pencil', 'draw.highlighter', 'draw.erase', 'draw.stroke', 'draw.state']} />
+      <CommandTab menu="Draw" exclude={['ink.select', 'ink.eraser', 'ink.pen', 'ink.pencil', 'ink.highlighter', 'ink.erase', 'ink.stroke', 'ink.state']} />
     </>
   )
 }

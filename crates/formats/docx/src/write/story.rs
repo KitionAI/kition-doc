@@ -163,7 +163,7 @@ impl Writer<'_> {
             w.close("w:pPr");
         }
         // A note's (or a comment's) first paragraph starts with its reference mark. When the paragraph holds the
-        // note's reference to itself (notes read from a file, or made by references.footnote),
+        // note's reference to itself (notes read from a file, or made by footnote.insert),
         // the mark is written there instead, with that reference's formatting.
         if !self.holds_own_ref(p)
             && let Some(mark) = self.pending_mark.take()

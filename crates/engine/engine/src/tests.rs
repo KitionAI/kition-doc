@@ -73,11 +73,11 @@ fn typing_enter_undo() {
 fn joined_commands_are_one_undo_step() {
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": "Hello"}));
-    run(&mut s, "para.indents", json!({"left": 9.0}));
-    run(&mut s, "para.indents", json!({"left": 18.0}));
+    run(&mut s, "paragraph.indents", json!({"left": 9.0}));
+    run(&mut s, "paragraph.indents", json!({"left": 18.0}));
     for x in [27.0, 36.0] {
         s.join_next_undo();
-        run(&mut s, "para.indents", json!({"left": x}));
+        run(&mut s, "paragraph.indents", json!({"left": x}));
     }
     let indent = |s: &Session| s.doc.para_at(&s.sel.focus).and_then(|p| p.props.indent_left);
     assert_eq!(indent(&s), Some(36.0));
@@ -106,7 +106,7 @@ fn restore_takes_a_command_back_exactly() {
     assert_eq!(snap.doc(), &doc);
     assert_eq!(snap.undo_depth(), depth);
     assert!(!snap.dirty());
-    run(&mut s, "select.all", json!({}));
+    run(&mut s, "edit.selectAll", json!({}));
     run(&mut s, "format.bold", json!({}));
     assert_ne!(s.doc, doc);
     assert_eq!(s.undo_depth(), depth + 1);
@@ -129,7 +129,7 @@ fn restore_is_exact_at_the_undo_limit() {
         let mut s = s();
         run(&mut s, "text.insert", json!({"text": "alpha"}));
         for i in 0..510 {
-            run(&mut s, "para.indents", json!({"left": f64::from(i)}));
+            run(&mut s, "paragraph.indents", json!({"left": f64::from(i)}));
         }
         s
     };
@@ -149,7 +149,7 @@ fn restore_is_exact_at_the_undo_limit() {
         let mut s = build();
         let snap = s.edit_snapshot();
         for _ in 0..n {
-            run(&mut s, "insert.table", json!({"rows": 1, "cols": 1}));
+            run(&mut s, "table.insert", json!({"rows": 1, "cols": 1}));
         }
         assert_eq!(s.undo_label(), Some("Table"));
         assert_eq!(s.undo_depth(), 500);
@@ -160,8 +160,8 @@ fn restore_is_exact_at_the_undo_limit() {
     // restore doesn't bring back a step that never left.
     let mut s = build();
     let snap = s.edit_snapshot();
-    assert!(s.run("para.align", &json!({"value": "bogus"})).is_err());
-    run(&mut s, "insert.table", json!({"rows": 1, "cols": 1}));
+    assert!(s.run("paragraph.align", &json!({"value": "bogus"})).is_err());
+    run(&mut s, "table.insert", json!({"rows": 1, "cols": 1}));
     s.restore(snap);
     assert_eq!(walk(&mut s), expected, "a failed command between snapshot and restore");
     // An automatic change recorded after the fact (`push_undo`) at the limit counts its eviction.
@@ -180,18 +180,18 @@ fn restore_keeps_the_open_undo_step() {
     run(&mut s, "text.insert", json!({"text": "alpha"}));
     let depth = s.undo_depth();
     let snap = s.edit_snapshot();
-    run(&mut s, "para.alignCenter", json!({}));
+    run(&mut s, "format.alignCenter", json!({}));
     s.restore(snap);
     run(&mut s, "text.insert", json!({"text": " beta"}));
     assert_eq!(s.undo_depth(), depth, "still one typing step");
     // A drag in progress (`join_next_undo`): its next frame joins the same undo step.
-    run(&mut s, "para.indents", json!({"left": 9.0}));
+    run(&mut s, "paragraph.indents", json!({"left": 9.0}));
     s.join_next_undo();
     let depth = s.undo_depth();
     let snap = s.edit_snapshot();
-    run(&mut s, "para.indents", json!({"left": 18.0}));
+    run(&mut s, "paragraph.indents", json!({"left": 18.0}));
     s.restore(snap);
-    run(&mut s, "para.indents", json!({"left": 27.0}));
+    run(&mut s, "paragraph.indents", json!({"left": 27.0}));
     assert_eq!(s.undo_depth(), depth, "still one drag step");
     run(&mut s, "edit.undo", json!({}));
     assert_eq!(s.doc.para_at(&Pos::body(0, 0)).and_then(|p| p.props.indent_left), None);
@@ -201,7 +201,7 @@ fn restore_keeps_the_open_undo_step() {
 fn failed_command_keeps_undo_and_redo() {
     // A command that fails after its undo checkpoint leaves the history exactly as it was:
     // the redo stack survives, and no empty undo step is added.
-    for (id, params) in [("text.insert", json!({})), ("para.align", json!({"value": "bogus"}))] {
+    for (id, params) in [("text.insert", json!({})), ("paragraph.align", json!({"value": "bogus"}))] {
         let mut s = s();
         run(&mut s, "text.insert", json!({"text": "Hello"}));
         run(&mut s, "edit.undo", json!({}));
@@ -217,11 +217,11 @@ fn failed_command_keeps_undo_and_redo() {
     let mut s = s();
     let steps = 600;
     for i in 1..=steps {
-        run(&mut s, "para.indents", json!({"left": i as f32}));
+        run(&mut s, "paragraph.indents", json!({"left": i as f32}));
     }
     let kept = s.undo_labels().len();
     assert!(kept < steps, "the history should be at its limit");
-    assert!(s.run("para.align", &json!({"value": "bogus"})).is_err());
+    assert!(s.run("paragraph.align", &json!({"value": "bogus"})).is_err());
     assert_eq!(s.undo_labels().len(), kept);
     while s.can_undo() {
         run(&mut s, "edit.undo", json!({}));
@@ -232,8 +232,8 @@ fn failed_command_keeps_undo_and_redo() {
 
 #[test]
 fn failed_command_restores_history_changed_by_nested_commands() {
-    // `file.inspect` runs `review.deleteComment` (allowed in a comments-only document, and it
-    // checkpoints), then `review.acceptAll` (refused). The refusal must leave the undo and
+    // `file.removeHiddenContent` runs `comment.deleteCurrent` (allowed in a comments-only document, and it
+    // checkpoints), then `change.acceptAll` (refused). The refusal must leave the undo and
     // redo stacks exactly as they were, including at and next to the history limit, where the
     // outer and nested checkpoints each evict the oldest step.
     fn timeline(s: &mut Session) -> Vec<(Vec<String>, kition_doc_doc::Document)> {
@@ -256,7 +256,7 @@ fn failed_command_restores_history_changed_by_nested_commands() {
     let kept = {
         let mut s = s();
         for i in 1..=600 {
-            run(&mut s, "para.indents", json!({"left": i as f32}));
+            run(&mut s, "paragraph.indents", json!({"left": i as f32}));
         }
         s.undo_labels().len()
     };
@@ -266,11 +266,11 @@ fn failed_command_restores_history_changed_by_nested_commands() {
             let mut s = s();
             run(&mut s, "text.insert", json!({"text": "note"}));
             for i in 1..=len + usize::from(redo.is_some()) - 4 {
-                run(&mut s, "para.indents", json!({"left": i as f32}));
+                run(&mut s, "paragraph.indents", json!({"left": i as f32}));
             }
-            run(&mut s, "review.restrict", json!({"mode": "comments"}));
-            run(&mut s, "review.newComment", json!({"text": "one"}));
-            run(&mut s, "review.newComment", json!({"text": "two"}));
+            run(&mut s, "file.restrictEditing", json!({"mode": "comments"}));
+            run(&mut s, "comment.new", json!({"text": "one"}));
+            run(&mut s, "comment.new", json!({"text": "two"}));
             if redo.is_some() {
                 run(&mut s, "edit.undo", json!({}));
             }
@@ -279,7 +279,7 @@ fn failed_command_restores_history_changed_by_nested_commands() {
             s
         };
         let mut failed = session();
-        let err = failed.run("file.inspect", &json!({"remove": ["comments", "revisions"]}));
+        let err = failed.run("file.removeHiddenContent", &json!({"remove": ["comments", "revisions"]}));
         assert!(matches!(err, Err(crate::CmdError::Disabled(_))), "{len}: {err:?}");
         assert_eq!(failed.undo_labels().len(), len, "{len}: undo steps");
         assert_eq!(failed.redo_label(), redo, "{len}: redo step");
@@ -368,11 +368,11 @@ fn pending_format_applies_to_typing() {
 fn styles_and_lists() {
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": "Title"}));
-    run(&mut s, "para.heading1", json!({}));
+    run(&mut s, "paragraph.heading1", json!({}));
     run(&mut s, "text.newParagraph", json!({}));
     // Heading's next style is Normal.
     assert_eq!(s.doc.para_at(&s.sel.focus).unwrap().props.style.as_deref(), Some("Normal"));
-    run(&mut s, "para.bullets", json!({}));
+    run(&mut s, "paragraph.bullets", json!({}));
     run(&mut s, "text.insert", json!({"text": "one"}));
     run(&mut s, "text.newParagraph", json!({}));
     run(&mut s, "text.insert", json!({"text": "two"}));
@@ -393,10 +393,10 @@ fn applying_a_heading_clears_list_numbering() {
     // Applying a heading (or Title/Normal) to a numbered paragraph removes its direct list
     // numbering. A dead `&& id == "Normal"` term used to let only Normal clear it, so headings
     // kept the numbering.
-    for style_cmd in ["para.heading1", "para.heading2", "para.normal"] {
+    for style_cmd in ["paragraph.heading1", "paragraph.heading2", "paragraph.normal"] {
         let mut s = s();
         run(&mut s, "text.insert", json!({"text": "item"}));
-        run(&mut s, "para.bullets", json!({}));
+        run(&mut s, "paragraph.bullets", json!({}));
         assert!(
             s.doc.para_at(&Pos::body(0, 0)).unwrap().props.numbering.is_some_and(|n| n.num != 0),
             "{style_cmd}: expected list numbering before applying the style"
@@ -412,7 +412,7 @@ fn applying_a_heading_clears_list_numbering() {
 #[test]
 fn find_replace() {
     let mut s = s();
-    run(&mut s, "document.setText", json!({"text": "cat dog cat\nCat bird"}));
+    run(&mut s, "file.setText", json!({"text": "cat dog cat\nCat bird"}));
     let r = run(&mut s, "edit.find", json!({"text": "cat"}));
     assert_eq!(r["count"], 3);
     let r = run(&mut s, "edit.replaceAll", json!({"text": "cat", "with": "fox", "matchCase": true}));
@@ -427,8 +427,8 @@ fn replace_under_track_changes_skips_deleted_text() {
     // Replace marks the match deleted and leaves it in the text; the next
     // step must not find it again, or Replace never advances.
     let mut s = s();
-    run(&mut s, "document.setText", json!({"text": "one cat two cat"}));
-    run(&mut s, "review.trackChanges", json!({"value": true}));
+    run(&mut s, "file.setText", json!({"text": "one cat two cat"}));
+    run(&mut s, "change.track", json!({"value": true}));
     run(&mut s, "caret.docStart", json!({}));
     assert_eq!(run(&mut s, "edit.find", json!({"text": "cat"}))["count"], 2);
     let mut remaining = Vec::new();
@@ -437,13 +437,13 @@ fn replace_under_track_changes_skips_deleted_text() {
     }
     assert_eq!(remaining, [json!(1), json!(0), json!(0), json!(0)]);
     assert_eq!(run(&mut s, "edit.find", json!({"text": "cat"}))["count"], 0);
-    run(&mut s, "review.acceptAll", json!({}));
+    run(&mut s, "change.acceptAll", json!({}));
     assert_eq!(text(&s), "one dog two dog");
 
     // A match that runs across tracked-deleted text is not in the document.
     let mut s = self::s();
-    run(&mut s, "document.setText", json!({"text": "cat"}));
-    run(&mut s, "review.trackChanges", json!({"value": true}));
+    run(&mut s, "file.setText", json!({"text": "cat"}));
+    run(&mut s, "change.track", json!({"value": true}));
     run(&mut s, "select.range", json!({"anchor": {"block": 0, "off": 1}, "focus": {"block": 0, "off": 2}}));
     run(&mut s, "text.delete", json!({}));
     assert_eq!(text(&s), "cat", "the deletion is tracked, not applied");
@@ -452,7 +452,7 @@ fn replace_under_track_changes_skips_deleted_text() {
 
     // Without Track Changes, Replace steps through every match as before.
     let mut s = self::s();
-    run(&mut s, "document.setText", json!({"text": "one cat two cat"}));
+    run(&mut s, "file.setText", json!({"text": "one cat two cat"}));
     run(&mut s, "caret.docStart", json!({}));
     run(&mut s, "edit.find", json!({"text": "cat"}));
     run(&mut s, "edit.replace", json!({"text": "cat", "with": "dog"}));
@@ -466,8 +466,8 @@ fn find_reads_the_text_around_tracked_deletions() {
     // `edits` are (start, end) byte ranges deleted with Track Changes on, last first.
     fn tracked(text: &str, edits: &[(usize, usize)]) -> Session {
         let mut s = self::s();
-        run(&mut s, "document.setText", json!({"text": text}));
-        run(&mut s, "review.trackChanges", json!({"value": true}));
+        run(&mut s, "file.setText", json!({"text": text}));
+        run(&mut s, "change.track", json!({"value": true}));
         for (a, b) in edits {
             run(&mut s, "select.range", json!({"anchor": {"block": 0, "off": a}, "focus": {"block": 0, "off": b}}));
             run(&mut s, "text.delete", json!({}));
@@ -509,14 +509,14 @@ fn find_reads_the_text_around_tracked_deletions() {
 #[test]
 fn clipboard_round_trip() {
     let mut s = s();
-    run(&mut s, "document.setText", json!({"text": "alpha beta\ngamma"}));
+    run(&mut s, "file.setText", json!({"text": "alpha beta\ngamma"}));
     run(&mut s, "select.range", json!({"anchor": {"block": 0, "off": 6}, "focus": {"block": 1, "off": 2}}));
     run(&mut s, "edit.copy", json!({}));
     assert_eq!(s.clipboard_text, "beta\nga");
     run(&mut s, "caret.docEnd", json!({}));
     run(&mut s, "edit.paste", json!({}));
     assert_eq!(text(&s), "alpha beta\ngammabeta\nga");
-    run(&mut s, "select.all", json!({}));
+    run(&mut s, "edit.selectAll", json!({}));
     run(&mut s, "edit.cut", json!({}));
     assert_eq!(text(&s), "");
     run(&mut s, "edit.paste", json!({"text": "plain\ntext"}));
@@ -531,7 +531,7 @@ fn bold_at(s: &Session, block: usize, off: usize) -> bool {
 #[test]
 fn paste_special_lists_formats_and_pastes_text_without_formatting() {
     let mut s = s();
-    run(&mut s, "document.setText", json!({"text": "Bold words"}));
+    run(&mut s, "file.setText", json!({"text": "Bold words"}));
     run(&mut s, "select.text", json!({"text": "Bold"}));
     run(&mut s, "format.bold", json!({}));
     run(&mut s, "edit.copy", json!({}));
@@ -559,7 +559,7 @@ fn paste_special_lists_formats_and_pastes_text_without_formatting() {
 #[test]
 fn paste_special_html_and_rtf_keep_bold() {
     let mut s = s();
-    run(&mut s, "document.setText", json!({"text": "x"}));
+    run(&mut s, "file.setText", json!({"text": "x"}));
     run(&mut s, "caret.docEnd", json!({}));
     let html = "<p>plain <b>strong</b></p>";
     let r = run(&mut s, "edit.pasteSpecial", json!({"html": html, "text": "plain strong"}));
@@ -570,12 +570,12 @@ fn paste_special_html_and_rtf_keep_bold() {
     assert!(!bold_at(&s, 0, 2));
     assert!(bold_at(&s, 0, 8), "the <b> run stays bold");
     // HTML source copied as text can be pasted as HTML too.
-    run(&mut s, "document.setText", json!({"text": ""}));
+    run(&mut s, "file.setText", json!({"text": ""}));
     run(&mut s, "edit.pasteSpecial", json!({"as": "html", "text": "<b>hi</b> there</p>"}));
     assert_eq!(text(&s), "hi there");
     assert!(bold_at(&s, 0, 0) && !bold_at(&s, 0, 4));
     // RTF.
-    run(&mut s, "document.setText", json!({"text": ""}));
+    run(&mut s, "file.setText", json!({"text": ""}));
     run(&mut s, "edit.pasteSpecial", json!({"as": "rtf", "rtf": r"{\rtf1\ansi {\b bold}\b0  then}"}));
     assert!(text(&s).starts_with("bold"), "{}", text(&s));
     assert!(bold_at(&s, 0, 0));
@@ -589,22 +589,22 @@ fn paste_special_html_and_rtf_keep_bold() {
 #[test]
 fn paste_special_respects_track_changes_and_brings_lists() {
     let mut s = s();
-    run(&mut s, "review.trackChanges", json!({"value": true}));
+    run(&mut s, "change.track", json!({"value": true}));
     run(&mut s, "edit.pasteSpecial", json!({"as": "html", "html": "<ul><li>one</li><li>two</li></ul>"}));
     assert!(text(&s).starts_with("one\ntwo"), "{}", text(&s));
-    let ch = run(&mut s, "review.changes", json!({}));
+    let ch = run(&mut s, "change.list", json!({}));
     assert!(!ch.as_array().unwrap().is_empty(), "the paste is a tracked insertion");
     let first = s.doc.body.first().and_then(|b| b.as_para()).unwrap();
     let n = first.props.numbering.expect("list kept");
     assert!(s.doc.numbering.nums.iter().any(|x| x.id == n.num), "the list definition came along");
-    run(&mut s, "review.acceptAll", json!({}));
+    run(&mut s, "change.acceptAll", json!({}));
     assert!(text(&s).starts_with("one\ntwo"));
 }
 
 #[test]
 fn clipboard_pane_collects_copies_and_pastes_one_undoably() {
     let mut s = s();
-    run(&mut s, "document.setText", json!({"text": "one two three"}));
+    run(&mut s, "file.setText", json!({"text": "one two three"}));
     for (a, b) in [(0, 3), (4, 7), (8, 13)] {
         run(&mut s, "select.range", json!({"anchor": {"block": 0, "off": a}, "focus": {"block": 0, "off": b}}));
         run(&mut s, "edit.copy", json!({}));
@@ -640,7 +640,7 @@ fn clipboard_pane_collects_copies_and_pastes_one_undoably() {
 fn clipboard_pane_is_capped_and_rejects_bad_indexes() {
     let mut s = s();
     let words: Vec<String> = (0..30).map(|i| format!("w{i}")).collect();
-    run(&mut s, "document.setText", json!({"text": words.join(" ")}));
+    run(&mut s, "file.setText", json!({"text": words.join(" ")}));
     // Cutting each word in turn leaves the spaces: word `off` starts at `off`.
     for (off, w) in words.iter().enumerate() {
         run(&mut s, "select.range", json!({"anchor": {"block": 0, "off": off}, "focus": {"block": 0, "off": off + w.len()}}));
@@ -661,8 +661,8 @@ fn clipboard_pane_is_capped_and_rejects_bad_indexes() {
     assert_eq!(s.clip_history.len(), 24);
 
     // A huge copy still reaches the clipboard but is not collected.
-    run(&mut s, "document.setText", json!({"text": "x".repeat(3 << 20)}));
-    run(&mut s, "select.all", json!({}));
+    run(&mut s, "file.setText", json!({"text": "x".repeat(3 << 20)}));
+    run(&mut s, "edit.selectAll", json!({}));
     run(&mut s, "edit.copy", json!({}));
     assert_eq!(s.clipboard_text.len(), 3 << 20);
     assert_eq!(s.clip_history.items()[0].text, "w29");
@@ -671,7 +671,7 @@ fn clipboard_pane_is_capped_and_rejects_bad_indexes() {
 #[test]
 fn tables_commands() {
     let mut s = s();
-    run(&mut s, "insert.table", json!({"rows": 2, "cols": 3}));
+    run(&mut s, "table.insert", json!({"rows": 2, "cols": 3}));
     assert!(s.sel.focus.path.cell().is_some());
     run(&mut s, "text.insert", json!({"text": "A1"}));
     run(&mut s, "text.tab", json!({}));
@@ -691,7 +691,7 @@ fn tables_commands() {
 #[test]
 fn autofit_contents_sizes_columns_to_their_text() {
     let mut s = s();
-    run(&mut s, "insert.table", json!({"rows": 2, "cols": 3}));
+    run(&mut s, "table.insert", json!({"rows": 2, "cols": 3}));
     let grid = |s: &Session| s.doc.body.iter().find_map(|b| b.as_table()).unwrap().grid.clone();
     let before = grid(&s);
     run(&mut s, "text.insert", json!({"text": "A"}));
@@ -717,7 +717,7 @@ fn autofit_contents_sizes_columns_to_their_text() {
     // Short text only: every column gets just what its text needs.
     s.doc = kition_doc_doc::Document::new();
     s.sel = crate::Selection::caret(Pos::body(0, 0));
-    run(&mut s, "insert.table", json!({"rows": 1, "cols": 2}));
+    run(&mut s, "table.insert", json!({"rows": 1, "cols": 2}));
     run(&mut s, "text.insert", json!({"text": "Name"}));
     run(&mut s, "text.tab", json!({}));
     run(&mut s, "text.insert", json!({"text": "Quantity"}));
@@ -738,7 +738,7 @@ fn autofit_contents_sizes_columns_to_their_text() {
 fn cell_size_boxes_set_row_height_and_column_width() {
     use kition_doc_doc::props::HeightRule;
     let mut s = s();
-    run(&mut s, "insert.table", json!({"rows": 2, "cols": 2}));
+    run(&mut s, "table.insert", json!({"rows": 2, "cols": 2}));
     run(&mut s, "table.autofit", json!({"mode": "window"}));
     let t0 = s.doc.body.iter().find_map(|b| b.as_table()).unwrap().clone();
     run(&mut s, "table.columnWidth", json!({"width": 100.0}));
@@ -765,7 +765,7 @@ fn cell_size_boxes_set_row_height_and_column_width() {
 fn table_properties_apply_in_one_step() {
     use kition_doc_doc::props::{Align, HeightRule, VAlign};
     let mut s = s();
-    run(&mut s, "insert.table", json!({"rows": 2, "cols": 2}));
+    run(&mut s, "table.insert", json!({"rows": 2, "cols": 2}));
     let t0 = s.doc.body.iter().find_map(|b| b.as_table()).unwrap().clone();
     run(
         &mut s,
@@ -801,7 +801,7 @@ fn table_properties_apply_in_one_step() {
 fn table_text_direction_cycles_and_turns_the_text() {
     use kition_doc_doc::props::TextDirection;
     let mut s = s();
-    run(&mut s, "insert.table", json!({"rows": 1, "cols": 3}));
+    run(&mut s, "table.insert", json!({"rows": 1, "cols": 3}));
     run(&mut s, "text.insert", json!({"text": "Turned"}));
     let dirs = |s: &Session| -> Vec<TextDirection> {
         s.doc.body.iter().find_map(|b| b.as_table()).unwrap().rows[0].cells.iter().map(|c| c.props.text_direction).collect()
@@ -849,7 +849,7 @@ fn table_border_presets_mask_the_sides_they_clear() {
     // sides they clear; without it those sides inherit the style's grid and every
     // preset renders like "all".
     let mut s = s();
-    run(&mut s, "insert.table", json!({"rows": 2, "cols": 2}));
+    run(&mut s, "table.insert", json!({"rows": 2, "cols": 2}));
     // Distinct vertical/horizontal rule positions on page 0.
     let rule_pos = |s: &mut Session| {
         let (mut vx, mut hy) = (Vec::new(), Vec::new());
@@ -886,34 +886,34 @@ fn table_border_presets_mask_the_sides_they_clear() {
 #[test]
 fn page_setup_and_breaks() {
     let mut s = s();
-    run(&mut s, "layout.orientation", json!({"value": "landscape"}));
+    run(&mut s, "page.orientation", json!({"value": "landscape"}));
     assert!(s.doc.last_section.landscape);
-    run(&mut s, "layout.size", json!({"name": "A4"}));
+    run(&mut s, "page.size", json!({"name": "A4"}));
     assert!((s.doc.last_section.page_w - 841.89).abs() < 0.1);
-    run(&mut s, "layout.margins", json!({"preset": "narrow"}));
+    run(&mut s, "page.margins", json!({"preset": "narrow"}));
     assert_eq!(s.doc.last_section.margin_left, 36.0);
     run(&mut s, "text.insert", json!({"text": "one"}));
-    run(&mut s, "layout.break", json!({"kind": "nextPage"}));
+    run(&mut s, "page.break", json!({"kind": "nextPage"}));
     run(&mut s, "text.insert", json!({"text": "two"}));
     assert_eq!(s.doc.sections().len(), 2);
     assert_eq!(s.layout().pages.len(), 2);
-    assert!(s.run("layout.margins", &json!({"left": 1000.0})).is_err());
+    assert!(s.run("page.margins", &json!({"left": 1000.0})).is_err());
 }
 
 #[test]
 fn track_changes_and_accept() {
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": "original"}));
-    run(&mut s, "review.trackChanges", json!({"value": true}));
+    run(&mut s, "change.track", json!({"value": true}));
     run(&mut s, "text.insert", json!({"text": " added"}));
     run(&mut s, "select.text", json!({"text": "orig"}));
     s.author = "Someone Else".into();
     run(&mut s, "text.delete", json!({}));
     // Deleted text stays (marked) until accepted.
     assert_eq!(text(&s), "original added");
-    let ch = run(&mut s, "review.changes", json!({}));
+    let ch = run(&mut s, "change.list", json!({}));
     assert_eq!(ch.as_array().unwrap().len(), 2);
-    run(&mut s, "review.acceptAll", json!({}));
+    run(&mut s, "change.acceptAll", json!({}));
     assert_eq!(text(&s), "inal added");
 }
 
@@ -926,7 +926,7 @@ fn author_of(s: &Session, rid: Option<u32>) -> Option<String> {
 fn tracked_delete_keeps_another_authors_deletion() {
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": "alpha beta gamma"}));
-    run(&mut s, "review.trackChanges", json!({"value": true}));
+    run(&mut s, "change.track", json!({"value": true}));
     s.author = "Ana".into();
     run(&mut s, "select.text", json!({"text": "beta"}));
     run(&mut s, "text.delete", json!({}));
@@ -947,7 +947,7 @@ fn tracked_split_gives_the_new_paragraph_mark_to_its_author() {
     for off in [None, Some(8)] {
         let mut s = s();
         run(&mut s, "text.insert", json!({"text": "alpha"}));
-        run(&mut s, "review.trackChanges", json!({"value": true}));
+        run(&mut s, "change.track", json!({"value": true}));
         s.author = "Ana".into();
         run(&mut s, "text.insert", json!({"text": " beta"}));
         s.author = "Ben".into();
@@ -973,7 +973,7 @@ fn tracked_split(text: &str) -> Session {
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": text}));
     run(&mut s, "file.setAuthor", json!({"name": "Owned Bob"}));
-    run(&mut s, "review.trackChanges", json!({"value": true}));
+    run(&mut s, "change.track", json!({"value": true}));
     run(&mut s, "caret.set", json!({"pos": {"block": 0, "off": 12}}));
     run(&mut s, "text.newParagraph", json!({}));
     s
@@ -986,10 +986,10 @@ fn reject_all_removes_a_tracked_paragraph_break() {
         let mut s = tracked_split(text);
         assert_eq!(body_texts(&s), [head, &text[12..]]);
         // The break is listed as a change, by its author.
-        let ch = run(&mut s, "review.changes", json!({}));
+        let ch = run(&mut s, "change.list", json!({}));
         assert_eq!(ch.as_array().map(Vec::len), Some(1), "{ch}");
         assert_eq!((ch[0]["kind"].as_str(), ch[0]["author"].as_str()), (Some("insert"), Some("Owned Bob")));
-        run(&mut s, "review.rejectAll", json!({}));
+        run(&mut s, "change.rejectAll", json!({}));
         assert_eq!(body_texts(&s), [text]);
         assert!(s.doc.revisions.is_empty());
         let p = s.doc.para_at(&Pos::body(0, 0)).unwrap();
@@ -1006,18 +1006,18 @@ fn reject_all_removes_a_tracked_paragraph_break() {
     run(&mut s, "edit.undo", json!({}));
     assert_eq!(body_texts(&s), ["Owned ALPHA Owned BETA"]);
     run(&mut s, "edit.redo", json!({}));
-    run(&mut s, "review.rejectAll", json!({}));
+    run(&mut s, "change.rejectAll", json!({}));
     assert_eq!(body_texts(&s), ["Owned ALPHA Owned BETA"]);
 }
 
 #[test]
 fn accept_all_keeps_a_tracked_paragraph_break() {
     let mut s = tracked_split("Owned ALPHA Owned BETA");
-    run(&mut s, "review.acceptAll", json!({}));
+    run(&mut s, "change.acceptAll", json!({}));
     assert_eq!(body_texts(&s), ["Owned ALPHA ", "Owned BETA"]);
     assert!(s.doc.revisions.is_empty());
     assert!(s.doc.body.iter().filter_map(|b| b.as_para()).all(|p| p.mark.ins.is_none() && p.mark.del.is_none()));
-    assert_eq!(run(&mut s, "review.changes", json!({})), json!([]));
+    assert_eq!(run(&mut s, "change.list", json!({})), json!([]));
 }
 
 #[test]
@@ -1025,26 +1025,26 @@ fn reject_one_paragraph_break_and_rejecting_a_typed_paragraph() {
     // Reject with the caret on the break (Next Change selects it), or at the end of its paragraph.
     let mut s = tracked_split("Owned ALPHA Owned BETA");
     run(&mut s, "caret.set", json!({"pos": {"block": 0, "off": 0}}));
-    run(&mut s, "review.nextChange", json!({}));
-    run(&mut s, "review.reject", json!({}));
+    run(&mut s, "change.next", json!({}));
+    run(&mut s, "change.reject", json!({}));
     assert_eq!(body_texts(&s), ["Owned ALPHA Owned BETA"]);
     let mut s = tracked_split("Owned ALPHA Owned BETA");
     run(&mut s, "caret.set", json!({"pos": {"block": 0, "off": 12}}));
-    run(&mut s, "review.accept", json!({}));
+    run(&mut s, "change.accept", json!({}));
     assert_eq!(body_texts(&s), ["Owned ALPHA ", "Owned BETA"]);
-    assert_eq!(run(&mut s, "review.changes", json!({})), json!([]));
+    assert_eq!(run(&mut s, "change.list", json!({})), json!([]));
 
     // Enter at the end of a heading, then a typed paragraph: rejecting everything restores
     // the heading alone, with its style.
     let mut s = self::s();
     run(&mut s, "text.insert", json!({"text": "Title"}));
-    run(&mut s, "para.style", json!({"style": "Heading1"}));
-    run(&mut s, "review.trackChanges", json!({"value": true}));
+    run(&mut s, "paragraph.style", json!({"style": "Heading1"}));
+    run(&mut s, "change.track", json!({"value": true}));
     run(&mut s, "text.newParagraph", json!({}));
     run(&mut s, "text.insert", json!({"text": "Body"}));
     run(&mut s, "text.newParagraph", json!({}));
     assert_eq!(body_texts(&s), ["Title", "Body", ""]);
-    run(&mut s, "review.rejectAll", json!({}));
+    run(&mut s, "change.rejectAll", json!({}));
     assert_eq!(body_texts(&s), ["Title"]);
     assert_eq!(s.doc.para_at(&Pos::body(0, 0)).unwrap().props.style.as_deref(), Some("Heading1"));
 }
@@ -1056,7 +1056,7 @@ fn tracked_backspace_and_delete_mark_a_paragraph_break_deleted() {
         run(&mut s, "text.insert", json!({"text": "One"}));
         run(&mut s, "text.newParagraph", json!({}));
         run(&mut s, "text.insert", json!({"text": "Two"}));
-        run(&mut s, "review.trackChanges", json!({"value": true}));
+        run(&mut s, "change.track", json!({"value": true}));
         s.author = "Ana".into();
         s
     };
@@ -1068,13 +1068,13 @@ fn tracked_backspace_and_delete_mark_a_paragraph_break_deleted() {
         assert_eq!(body_texts(&s), ["One", "Two"], "a tracked deletion stays in the text");
         assert_eq!(s.sel.focus, Pos::body(0, 3));
         assert_eq!(author_of(&s, s.doc.para_at(&Pos::body(0, 0)).unwrap().mark.del).as_deref(), Some("Ana"));
-        let ch = run(&mut s, "review.changes", json!({}));
+        let ch = run(&mut s, "change.list", json!({}));
         assert_eq!(ch[0]["kind"], "delete", "{ch}");
         if accept {
-            run(&mut s, "review.acceptAll", json!({}));
+            run(&mut s, "change.acceptAll", json!({}));
             assert_eq!(body_texts(&s), ["OneTwo"]);
         } else {
-            run(&mut s, "review.rejectAll", json!({}));
+            run(&mut s, "change.rejectAll", json!({}));
             assert_eq!(body_texts(&s), ["One", "Two"]);
             assert_eq!(s.doc.para_at(&Pos::body(0, 0)).unwrap().mark.del, None);
         }
@@ -1087,7 +1087,7 @@ fn tracked_backspace_and_delete_mark_a_paragraph_break_deleted() {
     assert_eq!(body_texts(&s), ["One", "Two"]);
     assert_eq!(s.sel.focus, Pos::body(1, 0));
     assert!(s.doc.para_at(&Pos::body(0, 0)).unwrap().mark.del.is_some());
-    run(&mut s, "review.acceptAll", json!({}));
+    run(&mut s, "change.acceptAll", json!({}));
     assert_eq!(body_texts(&s), ["OneTwo"]);
 
     // A break the same author inserted is simply removed again.
@@ -1108,17 +1108,17 @@ fn set_author_names_tracked_changes_headlessly() {
     let r = run(&mut s, "file.setAuthor", json!({"name": "  Claude (copyedit)\n"}));
     assert_eq!(r["name"], "Claude (copyedit)");
     assert!(s.ui_requests.is_empty(), "programmatic calls never open dialogs");
-    run(&mut s, "review.trackChanges", json!({"value": true}));
+    run(&mut s, "change.track", json!({"value": true}));
     run(&mut s, "text.insert", json!({"text": " added"}));
     run(&mut s, "select.text", json!({"text": "orig"}));
     run(&mut s, "text.delete", json!({}));
-    let ch = run(&mut s, "review.changes", json!({}));
+    let ch = run(&mut s, "change.list", json!({}));
     let ch = ch.as_array().unwrap();
     assert_eq!(ch.len(), 2);
     assert!(ch.iter().all(|c| c["author"] == "Claude (copyedit)"), "{ch:?}");
     // Comments use the same name.
     run(&mut s, "select.text", json!({"text": "added"}));
-    run(&mut s, "review.newComment", json!({"text": "Tightened."}));
+    run(&mut s, "comment.new", json!({"text": "Tightened."}));
     assert!(s.doc.comments.values().all(|c| c.author == "Claude (copyedit)" && c.initials == "C("));
 }
 
@@ -1139,11 +1139,11 @@ fn set_author_refuses_blank_names_and_clamps_long_ones() {
 fn track_changes_and_set_author_list_their_params() {
     // Scripts that only read the command list must find the explicit, idempotent form.
     let reg = cmd::registry();
-    assert!(reg.get("review.trackChanges").unwrap().params.contains(r#""value"?: bool"#));
+    assert!(reg.get("change.track").unwrap().params.contains(r#""value"?: bool"#));
     assert!(reg.get("file.setAuthor").unwrap().params.contains(r#""name": string"#));
     let mut s = s();
     for _ in 0..2 {
-        assert_eq!(run(&mut s, "review.trackChanges", json!({"value": true}))["value"], true);
+        assert_eq!(run(&mut s, "change.track", json!({"value": true}))["value"], true);
     }
 }
 
@@ -1151,7 +1151,7 @@ fn track_changes_and_set_author_list_their_params() {
 fn no_markup_view_lays_out_the_final_text() {
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": "original"}));
-    run(&mut s, "review.trackChanges", json!({"value": true}));
+    run(&mut s, "change.track", json!({"value": true}));
     run(&mut s, "select.text", json!({"text": "orig"}));
     run(&mut s, "text.delete", json!({}));
     let gap = |s: &mut Session| {
@@ -1160,11 +1160,11 @@ fn no_markup_view_lays_out_the_final_text() {
         x(4) - x(0)
     };
     assert!(gap(&mut s) > 5.0, "markup shows the deletion");
-    run(&mut s, "review.markup", json!({"value": "noMarkup"}));
+    run(&mut s, "change.markup", json!({"value": "noMarkup"}));
     assert!(gap(&mut s).abs() < 0.01, "No Markup leaves it out");
-    run(&mut s, "review.showMarkup", json!({"value": true}));
+    run(&mut s, "change.showMarkup", json!({"value": true}));
     assert!(gap(&mut s) > 5.0);
-    run(&mut s, "review.showMarkup", json!({"value": false}));
+    run(&mut s, "change.showMarkup", json!({"value": false}));
     assert!(gap(&mut s).abs() < 0.01);
 }
 
@@ -1172,13 +1172,13 @@ fn no_markup_view_lays_out_the_final_text() {
 fn replace_all_is_tracked() {
     let mut s = s();
     let original = "We walked towards the light, then towards home.";
-    run(&mut s, "document.setText", json!({"text": original}));
-    run(&mut s, "review.trackChanges", json!({"value": true}));
+    run(&mut s, "file.setText", json!({"text": original}));
+    run(&mut s, "change.track", json!({"value": true}));
     let r = run(&mut s, "edit.replaceAll", json!({"text": "towards", "with": "toward", "matchCase": true}));
     assert_eq!(r["replaced"], 2);
-    let ch = run(&mut s, "review.changes", json!({}));
+    let ch = run(&mut s, "change.list", json!({}));
     assert!(!ch.as_array().unwrap().is_empty(), "replace all must leave tracked revisions");
-    run(&mut s, "review.rejectAll", json!({}));
+    run(&mut s, "change.rejectAll", json!({}));
     assert_eq!(text(&s), original);
 }
 
@@ -1187,20 +1187,20 @@ fn comments() {
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": "Some text here"}));
     run(&mut s, "select.text", json!({"text": "text"}));
-    let r = run(&mut s, "review.newComment", json!({"text": "Nice"}));
+    let r = run(&mut s, "comment.new", json!({"text": "Nice"}));
     let id = r["id"].as_u64().unwrap();
-    let l = run(&mut s, "review.comments", json!({}));
+    let l = run(&mut s, "comment.pane", json!({}));
     assert_eq!(l[0]["text"], "Nice");
     assert_eq!(text(&s), "Some text here");
     // Editing the text is one undo step; replies hang off their comment.
-    run(&mut s, "review.editComment", json!({"id": id, "text": "Nicer\nTwo lines"}));
-    assert_eq!(run(&mut s, "review.comments", json!({}))[0]["text"], "Nicer\nTwo lines");
+    run(&mut s, "comment.edit", json!({"id": id, "text": "Nicer\nTwo lines"}));
+    assert_eq!(run(&mut s, "comment.pane", json!({}))[0]["text"], "Nicer\nTwo lines");
     assert!(s.undo());
-    assert_eq!(run(&mut s, "review.comments", json!({}))[0]["text"], "Nice");
-    assert!(s.run("review.editComment", &json!({"id": 999, "text": "x"})).is_err());
-    let r = run(&mut s, "review.reply", json!({"id": id, "text": "Agreed"}));
+    assert_eq!(run(&mut s, "comment.pane", json!({}))[0]["text"], "Nice");
+    assert!(s.run("comment.edit", &json!({"id": 999, "text": "x"})).is_err());
+    let r = run(&mut s, "comment.replyCurrent", json!({"id": id, "text": "Agreed"}));
     assert_eq!(s.doc.comments.get(&(r["id"].as_u64().unwrap() as u32)).unwrap().parent, Some(id as u32));
-    run(&mut s, "review.deleteComment", json!({"id": id}));
+    run(&mut s, "comment.deleteCurrent", json!({"id": id}));
     assert!(s.doc.comments.is_empty());
     assert_eq!(s.doc.para_at(&Pos::body(0, 0)).unwrap().objects.len(), 0);
 }
@@ -1209,26 +1209,26 @@ fn comments() {
 fn toc_and_fields() {
     let mut s = Session::new(crate::sample::report());
     run(&mut s, "caret.docStart", json!({}));
-    run(&mut s, "references.toc", json!({}));
+    run(&mut s, "toc.insert", json!({}));
     let t = text(&s);
     assert!(t.contains("Contents"), "{t}");
     assert!(t.contains("Summary\t1"), "{t}");
-    run(&mut s, "references.updateToc", json!({}));
+    run(&mut s, "toc.update", json!({}));
     assert_eq!(s.doc.plain_text(StoryRef::Body).matches("Summary\t").count(), 1, "one TOC entry after update");
 }
 
 #[test]
 fn toc_page_numbers_follow_headings() {
     let mut s = s();
-    run(&mut s, "references.toc", json!({}));
+    run(&mut s, "toc.insert", json!({}));
     run(&mut s, "caret.docEnd", json!({}));
     for name in ["Alpha", "Bravo", "Charlie"] {
         run(&mut s, "text.pageBreak", json!({}));
         run(&mut s, "text.insert", json!({"text": name}));
-        run(&mut s, "para.heading1", json!({}));
+        run(&mut s, "paragraph.heading1", json!({}));
         run(&mut s, "text.newParagraph", json!({}));
     }
-    run(&mut s, "references.updateToc", json!({}));
+    run(&mut s, "toc.update", json!({}));
     let t = text(&s);
     for (name, page) in [("Alpha", 2), ("Bravo", 3), ("Charlie", 4)] {
         assert!(t.contains(&format!("{name}\t{page}")), "{name} should be on page {page}: {t}");
@@ -1241,18 +1241,18 @@ fn toc_page_numbers_follow_headings() {
 fn toc_page_number_for_heading_above_toc() {
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": "Preface"}));
-    run(&mut s, "para.heading1", json!({}));
+    run(&mut s, "paragraph.heading1", json!({}));
     run(&mut s, "text.newParagraph", json!({}));
     run(&mut s, "text.pageBreak", json!({}));
-    run(&mut s, "references.toc", json!({}));
+    run(&mut s, "toc.insert", json!({}));
     run(&mut s, "caret.docEnd", json!({}));
     for name in ["Alpha", "Bravo"] {
         run(&mut s, "text.pageBreak", json!({}));
         run(&mut s, "text.insert", json!({"text": name}));
-        run(&mut s, "para.heading1", json!({}));
+        run(&mut s, "paragraph.heading1", json!({}));
         run(&mut s, "text.newParagraph", json!({}));
     }
-    run(&mut s, "references.updateToc", json!({}));
+    run(&mut s, "toc.update", json!({}));
     let t = text(&s);
     for (name, page) in [("Preface", 1), ("Alpha", 3), ("Bravo", 4)] {
         assert!(t.contains(&format!("{name}\t{page}")), "{name} should be on page {page}: {t:?}");
@@ -1264,7 +1264,7 @@ fn failed_command_leaves_document_unchanged() {
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": "keep"}));
     let before = text(&s);
-    assert!(s.run("format.size", &json!({"size": -3})).is_err());
+    assert!(s.run("format.fontSize", &json!({"size": -3})).is_err());
     assert!(s.run("no.such", &json!({})).is_err());
     assert!(s.run("text.insert", &json!({})).is_err());
     assert_eq!(text(&s), before);
@@ -1280,9 +1280,9 @@ fn hostile_params_never_panic() {
         json!({"value": -1e308, "rows": 1e9}),
     ];
     for spec in reg.all() {
-        // These reach outside the session (files). Read Aloud (`review.readAloud`, `readAloud.*`)
+        // These reach outside the session (files). Read Aloud (`readAloud.open`, `readAloud.*`)
         // is fuzzed too: under `cfg(test)` its backend is the silent `Hold`, asserted below.
-        if spec.id.starts_with("file.") || spec.id == "insert.picture" || spec.id == "insert.textFromFile" {
+        if spec.id.starts_with("file.") || spec.id == "image.insert" || spec.id == "text.insertFromFile" {
             continue;
         }
         for j in &junk {
@@ -1298,7 +1298,7 @@ fn hostile_params_never_panic() {
 #[test]
 fn inspect_reports_structure() {
     let mut s = Session::new(crate::sample::sample_document());
-    let r = run(&mut s, "document.inspect", json!({}));
+    let r = run(&mut s, "file.inspect", json!({}));
     assert!(r["pages"].as_u64().unwrap() >= 1);
     assert!(r["blocks"].as_array().unwrap().iter().any(|b| b["type"] == "table"));
     let f = run(&mut s, "format.state", json!({}));
@@ -1308,7 +1308,7 @@ fn inspect_reports_structure() {
 #[test]
 fn caret_navigation() {
     let mut s = s();
-    run(&mut s, "document.setText", json!({"text": "first line\nsecond line"}));
+    run(&mut s, "file.setText", json!({"text": "first line\nsecond line"}));
     run(&mut s, "caret.down", json!({}));
     assert_eq!(s.sel.focus.path.last(), 1);
     run(&mut s, "caret.end", json!({}));
@@ -1327,7 +1327,7 @@ fn caret_navigation() {
 fn text_box_insert_puts_the_caret_inside() {
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": "Before "}));
-    let id = run(&mut s, "insert.textBox", json!({}))["story"].as_u64().unwrap() as u32;
+    let id = run(&mut s, "textBox.insert", json!({}))["story"].as_u64().unwrap() as u32;
     let boxed = StoryRef::Part(id);
     assert_eq!(s.sel.focus.story, boxed);
     run(&mut s, "text.insert", json!({"text": "Hello"}));
@@ -1346,16 +1346,16 @@ fn text_box_insert_puts_the_caret_inside() {
     assert_eq!(s.sel.focus.story, StoryRef::Body);
     assert_eq!(text(&s), "Before ");
     // Given text: the caret ends after it.
-    let id = run(&mut s, "insert.textBox", json!({"text": "Note"}))["story"].as_u64().unwrap() as u32;
+    let id = run(&mut s, "textBox.insert", json!({"text": "Note"}))["story"].as_u64().unwrap() as u32;
     assert_eq!(s.sel.focus, Pos { story: StoryRef::Part(id), path: kition_doc_doc::Path::top(0), off: 4 });
 }
 
 #[test]
 fn text_box_in_a_table_cell_shows_its_text() {
     let mut s = s();
-    run(&mut s, "insert.table", json!({"rows": 1, "cols": 1}));
+    run(&mut s, "table.insert", json!({"rows": 1, "cols": 1}));
     assert!(s.sel.focus.path.0.len() > 1);
-    let id = run(&mut s, "insert.textBox", json!({}))["story"].as_u64().unwrap() as u32;
+    let id = run(&mut s, "textBox.insert", json!({}))["story"].as_u64().unwrap() as u32;
     // The caret goes into the box, and typing shows there (it has a caret position).
     assert_eq!(s.sel.focus.story, StoryRef::Part(id));
     run(&mut s, "text.insert", json!({"text": "In a cell"}));
@@ -1363,14 +1363,14 @@ fn text_box_in_a_table_cell_shows_its_text() {
     let cell = s.layout().find_object(0, |o| o.text_box == Some(id)).unwrap();
     assert!(cell.rect.contains(kition_doc_geom::Point::new(caret.x, caret.top)), "{caret:?} in {:?}", cell.rect);
     // No text box inside a text box.
-    assert!(s.run("insert.textBox", &json!({})).is_err());
+    assert!(s.run("textBox.insert", &json!({})).is_err());
 }
 
 #[test]
 fn copy_paste_text_box_makes_an_independent_copy() {
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": "A"}));
-    let id = run(&mut s, "insert.textBox", json!({"text": "Original"}))["story"].as_u64().unwrap() as u32;
+    let id = run(&mut s, "textBox.insert", json!({"text": "Original"}))["story"].as_u64().unwrap() as u32;
     // Select "A" and the box in the body, copy, paste at the end.
     run(&mut s, "select.range", json!({"anchor": Pos::body(0, 0), "focus": Pos::body(0, 1 + 3)}));
     run(&mut s, "edit.copy", json!({}));
@@ -1405,19 +1405,19 @@ fn copy_paste_text_box_makes_an_independent_copy() {
 fn word_count_includes_text_boxes_by_default() {
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": "one two "}));
-    run(&mut s, "insert.textBox", json!({"text": "three four five"}));
+    run(&mut s, "textBox.insert", json!({"text": "three four five"}));
     run(&mut s, "caret.set", json!({"pos": Pos::body(0, 0)}));
     assert_eq!(s.word_count(), 5);
-    let v = run(&mut s, "review.wordCount", json!({}));
+    let v = run(&mut s, "file.wordCount", json!({}));
     assert_eq!((v["words"].as_u64(), v["includeTextBoxes"].as_bool()), (Some(5), Some(true)));
     assert_eq!(v["paragraphs"].as_u64(), Some(2));
     // Turned off: body only, and it sticks.
-    let v = run(&mut s, "review.wordCount", json!({"includeTextBoxes": false}));
+    let v = run(&mut s, "file.wordCount", json!({"includeTextBoxes": false}));
     assert_eq!(v["words"].as_u64(), Some(2));
     assert_eq!(s.word_count(), 2);
-    assert_eq!(run(&mut s, "review.wordCount", json!({}))["words"].as_u64(), Some(2));
+    assert_eq!(run(&mut s, "file.wordCount", json!({}))["words"].as_u64(), Some(2));
     // Deleting the box drops its words (its story stays behind, unused).
-    run(&mut s, "review.wordCount", json!({"includeTextBoxes": true}));
+    run(&mut s, "file.wordCount", json!({"includeTextBoxes": true}));
     run(&mut s, "select.range", json!({"anchor": Pos::body(0, 8), "focus": Pos::body(0, 8 + 3)}));
     run(&mut s, "text.delete", json!({}));
     assert_eq!(s.word_count(), 2);
@@ -1440,7 +1440,7 @@ fn arrange_bounds_resizes_and_moves_objects() {
     use kition_doc_doc::para::{Anchor, Wrap};
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": "Some text "}));
-    run(&mut s, "insert.textBox", json!({"text": "Box"}));
+    run(&mut s, "textBox.insert", json!({"text": "Box"}));
     select_box(&mut s);
     // Resize: stays inline, keeps a text box's minimum.
     run(&mut s, "arrange.bounds", json!({"width": 200, "height": 5}));
@@ -1482,7 +1482,7 @@ fn nudging_an_aligned_object_moves_it_from_where_it_is() {
     use kition_doc_doc::para::{Anchor, FloatAlign};
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": "Some text "}));
-    run(&mut s, "insert.textBox", json!({"text": "Box"}));
+    run(&mut s, "textBox.insert", json!({"text": "Box"}));
     select_box(&mut s);
     run(&mut s, "arrange.position", json!({"preset": "topLeft"}));
     // As a .docx can place it: centred on the page, at the bottom margin.
@@ -1517,7 +1517,7 @@ fn arrange_bounds_moves_an_object_to_another_page() {
         run(&mut s, "text.newParagraph", json!({}));
     }
     run(&mut s, "caret.set", json!({"pos": Pos::body(0, 0)}));
-    run(&mut s, "insert.textBox", json!({"text": "Traveller"}));
+    run(&mut s, "textBox.insert", json!({"text": "Traveller"}));
     select_box(&mut s);
     assert!(s.layout().pages.len() >= 2);
     run(&mut s, "arrange.bounds", json!({"page": 1, "x": 100, "y": 200}));
@@ -1542,7 +1542,7 @@ fn moved_text_box_makes_the_text_it_lands_on_wrap() {
         run(&mut s, "text.newParagraph", json!({}));
     }
     run(&mut s, "caret.set", json!({"pos": Pos::body(4, 0)}));
-    run(&mut s, "insert.textBox", json!({"text": "Box"}));
+    run(&mut s, "textBox.insert", json!({"text": "Box"}));
     select_box(&mut s);
     // Drop it over paragraph 1, right half of the page: well above its own paragraph (4).
     let l = s.layout();
@@ -1566,7 +1566,7 @@ fn moved_text_box_makes_the_text_it_lands_on_wrap() {
 fn deleted_text_box_takes_its_text_with_it_until_undo() {
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": "A"}));
-    let id = run(&mut s, "insert.textBox", json!({"text": "Inside"}))["story"].as_u64().unwrap() as u32;
+    let id = run(&mut s, "textBox.insert", json!({"text": "Inside"}))["story"].as_u64().unwrap() as u32;
     let box_sel = json!({"anchor": Pos::body(0, 1), "focus": Pos::body(0, 1 + 3)});
     run(&mut s, "select.range", box_sel.clone());
     run(&mut s, "text.delete", json!({}));
@@ -1588,12 +1588,12 @@ fn deleted_text_box_takes_its_text_with_it_until_undo() {
 fn word_count_with_an_object_selected_counts_the_document() {
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": "one two "}));
-    run(&mut s, "insert.textBox", json!({"text": "three"}));
+    run(&mut s, "textBox.insert", json!({"text": "three"}));
     run(&mut s, "select.range", json!({"anchor": Pos::body(0, 8), "focus": Pos::body(0, 8 + 3)}));
-    assert_eq!(run(&mut s, "review.wordCount", json!({}))["words"].as_u64(), Some(3));
+    assert_eq!(run(&mut s, "file.wordCount", json!({}))["words"].as_u64(), Some(3));
     // A real text selection still counts just itself.
     run(&mut s, "select.range", json!({"anchor": Pos::body(0, 0), "focus": Pos::body(0, 3)}));
-    assert_eq!(run(&mut s, "review.wordCount", json!({}))["words"].as_u64(), Some(1));
+    assert_eq!(run(&mut s, "file.wordCount", json!({}))["words"].as_u64(), Some(1));
 }
 
 #[test]
@@ -1641,11 +1641,11 @@ fn mailings_results_are_new_untitled_documents() {
     let original = dir.join("letter.docx");
     let saved_as = dir.join("saved-as.docx");
     let on_file = |p: &std::path::Path| crate::io::open_path(p).unwrap().plain_text(StoryRef::Body);
-    for id in ["mailings.envelopes", "mailings.labels", "mailings.finish"] {
+    for id in ["mailMerge.envelopes", "mailMerge.labels", "mailMerge.finish"] {
         let mut s = s();
-        run(&mut s, "mailings.recipients", json!({"csv": "First Name\nAda\nAlan"}));
+        run(&mut s, "mailMerge.recipients", json!({"csv": "First Name\nAda\nAlan"}));
         run(&mut s, "text.insert", json!({"text": "Dear "}));
-        run(&mut s, "mailings.insertField", json!({"field": "First Name"}));
+        run(&mut s, "mailMerge.insertField", json!({"field": "First Name"}));
         run(&mut s, "file.save", json!({"path": original.to_string_lossy()}));
         let on_disk = std::fs::read(&original).unwrap();
         run(&mut s, "text.insert", json!({"text": ", unsaved"}));
@@ -1837,7 +1837,7 @@ fn para_style(s: &Session, i: usize) -> Option<String> {
 fn styles_apply_by_name() {
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": "Title text"}));
-    run(&mut s, "styles.apply", json!({"style": "Heading 1"}));
+    run(&mut s, "style.apply", json!({"style": "Heading 1"}));
     assert_eq!(para_style(&s, 0).as_deref(), Some("Heading1"));
     assert_eq!(s.undo_label(), Some("Apply Style"));
     assert!(s.dirty);
@@ -1850,17 +1850,17 @@ fn styles_apply_pane_is_not_an_edit() {
     s.dirty = false;
     let undo = s.undo_labels();
     s.view.styles_pane = false;
-    assert_eq!(run(&mut s, "styles.apply", json!({})), json!({"pane": true}));
+    assert_eq!(run(&mut s, "style.apply", json!({})), json!({"pane": true}));
     assert!(s.view.styles_pane);
     // Shows, never toggles.
-    run(&mut s, "styles.apply", json!({}));
+    run(&mut s, "style.apply", json!({}));
     assert!(s.view.styles_pane);
     assert_eq!(s.undo_labels(), undo);
     assert!(!s.dirty);
     // Works on a read-only document.
     s.doc.settings.protection = Some("readOnly".into());
     s.view.styles_pane = false;
-    run(&mut s, "styles.apply", json!({}));
+    run(&mut s, "style.apply", json!({}));
     assert!(s.view.styles_pane);
 }
 
@@ -1871,7 +1871,7 @@ fn styles_apply_rejects_bad_style_params() {
     let undo = s.undo_labels();
     let before = text(&s);
     for bad in [json!(5), json!(null), json!([]), json!({}), json!(""), json!("   "), json!(true)] {
-        let r = s.run("styles.apply", &json!({"style": bad}));
+        let r = s.run("style.apply", &json!({"style": bad}));
         assert!(matches!(r, Err(crate::CmdError::Params(_))), "{bad}: {r:?}");
     }
     assert_eq!(s.undo_labels(), undo);
@@ -1885,7 +1885,7 @@ fn styles_apply_unknown_style_changes_nothing() {
     run(&mut s, "text.insert", json!({"text": "Hello"}));
     let undo = s.undo_labels();
     let doc = s.doc.clone();
-    assert!(s.run("styles.apply", &json!({"style": "No Such Style"})).is_err());
+    assert!(s.run("style.apply", &json!({"style": "No Such Style"})).is_err());
     assert_eq!(s.undo_labels(), undo);
     assert_eq!(s.doc, doc);
     assert!(!s.can_redo());
@@ -1895,7 +1895,7 @@ fn styles_apply_unknown_style_changes_nothing() {
 fn styles_apply_undo_redo() {
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": "Hello"}));
-    run(&mut s, "styles.apply", json!({"style": "Heading 2"}));
+    run(&mut s, "style.apply", json!({"style": "Heading 2"}));
     assert_eq!(para_style(&s, 0).as_deref(), Some("Heading2"));
     run(&mut s, "edit.undo", json!({}));
     assert_eq!(para_style(&s, 0), None);
@@ -1909,7 +1909,7 @@ fn styles_apply_character_style() {
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": "make this strong"}));
     run(&mut s, "select.text", json!({"text": "this"}));
-    run(&mut s, "styles.apply", json!({"style": "Strong"}));
+    run(&mut s, "style.apply", json!({"style": "Strong"}));
     let p = s.doc.para_at(&Pos::body(0, 0)).unwrap();
     assert_eq!(p.props_of_char(6).style.as_deref(), Some("Strong"));
     assert_eq!(p.props_of_char(0).style, None);
@@ -1925,8 +1925,8 @@ fn styles_apply_multi_paragraph_selection() {
     run(&mut s, "text.insert", json!({"text": "Two"}));
     run(&mut s, "text.newParagraph", json!({}));
     run(&mut s, "text.insert", json!({"text": "Three"}));
-    run(&mut s, "select.all", json!({}));
-    run(&mut s, "styles.apply", json!({"style": "Quote"}));
+    run(&mut s, "edit.selectAll", json!({}));
+    run(&mut s, "style.apply", json!({"style": "Quote"}));
     for i in 0..3 {
         assert_eq!(para_style(&s, i).as_deref(), Some("Quote"), "paragraph {i}");
     }
@@ -1943,7 +1943,7 @@ fn styles_apply_rejected_on_protected_document() {
     run(&mut s, "text.insert", json!({"text": "Hello"}));
     s.doc.settings.protection = Some("readOnly".into());
     let undo = s.undo_labels();
-    let r = s.run("styles.apply", &json!({"style": "Heading 1"}));
+    let r = s.run("style.apply", &json!({"style": "Heading 1"}));
     assert!(matches!(r, Err(crate::CmdError::Disabled(_))), "{r:?}");
     assert_eq!(para_style(&s, 0), None);
     assert_eq!(s.undo_labels(), undo);
@@ -1951,7 +1951,7 @@ fn styles_apply_rejected_on_protected_document() {
 
 fn column_doc() -> Session {
     let mut s = s();
-    run(&mut s, "document.setText", json!({"text": "abcdef\nabcdef\nabcdef"}));
+    run(&mut s, "file.setText", json!({"text": "abcdef\nabcdef\nabcdef"}));
     s
 }
 
@@ -2063,12 +2063,12 @@ fn column_selection_from_points() {
 fn style_inspector_reports_and_clears_levels() {
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": "Chapter one"}));
-    run(&mut s, "para.heading1", json!({}));
-    run(&mut s, "select.all", json!({}));
+    run(&mut s, "paragraph.heading1", json!({}));
+    run(&mut s, "edit.selectAll", json!({}));
     run(&mut s, "format.bold", json!({"value": true}));
-    run(&mut s, "para.alignCenter", json!({}));
+    run(&mut s, "format.alignCenter", json!({}));
 
-    let r = run(&mut s, "styles.inspect", json!({}));
+    let r = run(&mut s, "style.inspect", json!({}));
     assert_eq!(r["paragraph"]["style"], "Heading1");
     assert_eq!(r["paragraph"]["styleName"], "Heading 1");
     let pdirect = r["paragraph"]["direct"].as_array().unwrap();
@@ -2078,60 +2078,60 @@ fn style_inspector_reports_and_clears_levels() {
     assert_eq!(cdirect, &vec![json!({"prop": "bold", "value": true})]);
 
     // Formatting that matches the style isn't a difference (Heading 1 is 20 pt).
-    run(&mut s, "format.size", json!({"size": 20}));
-    let r = run(&mut s, "styles.inspect", json!({}));
+    run(&mut s, "format.fontSize", json!({"size": 20}));
+    let r = run(&mut s, "style.inspect", json!({}));
     assert_eq!(r["character"]["direct"].as_array().unwrap().len(), 1, "{r}");
 
     // Character style level.
     run(&mut s, "format.charStyle", json!({"style": "Emphasis"}));
-    let r = run(&mut s, "styles.inspect", json!({}));
+    let r = run(&mut s, "style.inspect", json!({}));
     assert_eq!(r["character"]["style"], "Emphasis");
     assert_eq!(r["character"]["styleName"], "Emphasis");
-    run(&mut s, "styles.inspectorClear", json!({"level": "characterStyle"}));
-    assert!(run(&mut s, "styles.inspect", json!({}))["character"]["style"].is_null());
+    run(&mut s, "style.inspectorClear", json!({"level": "characterStyle"}));
+    assert!(run(&mut s, "style.inspect", json!({}))["character"]["style"].is_null());
 
     // Clearing character formatting removes the bold and keeps the paragraph levels.
-    run(&mut s, "styles.inspectorClear", json!({"level": "characterFormatting"}));
-    let r = run(&mut s, "styles.inspect", json!({}));
+    run(&mut s, "style.inspectorClear", json!({"level": "characterFormatting"}));
+    let r = run(&mut s, "style.inspect", json!({}));
     assert!(r["character"]["direct"].as_array().unwrap().is_empty(), "{r}");
     assert!(!run(&mut s, "format.state", json!({}))["bold"].as_bool().unwrap());
     assert_eq!(r["paragraph"]["style"], "Heading1");
     assert!(!r["paragraph"]["direct"].as_array().unwrap().is_empty());
 
-    run(&mut s, "styles.inspectorClear", json!({"level": "paragraphFormatting"}));
-    let r = run(&mut s, "styles.inspect", json!({}));
+    run(&mut s, "style.inspectorClear", json!({"level": "paragraphFormatting"}));
+    let r = run(&mut s, "style.inspect", json!({}));
     assert!(r["paragraph"]["direct"].as_array().unwrap().is_empty(), "{r}");
     assert_eq!(r["paragraph"]["style"], "Heading1");
 
-    run(&mut s, "styles.inspectorClear", json!({"level": "paragraphStyle"}));
-    assert_eq!(run(&mut s, "styles.inspect", json!({}))["paragraph"]["style"], "Normal");
+    run(&mut s, "style.inspectorClear", json!({"level": "paragraphStyle"}));
+    assert_eq!(run(&mut s, "style.inspect", json!({}))["paragraph"]["style"], "Normal");
 
     // Each clear is one undo step.
     run(&mut s, "edit.undo", json!({}));
-    assert_eq!(run(&mut s, "styles.inspect", json!({}))["paragraph"]["style"], "Heading1");
+    assert_eq!(run(&mut s, "style.inspect", json!({}))["paragraph"]["style"], "Heading1");
     assert_eq!(text(&s), "Chapter one");
 }
 
 #[test]
 fn style_inspector_pane_and_hostile_params() {
     let mut s = Session::new(crate::sample::sample_document());
-    let r = run(&mut s, "styles.inspector", json!({}));
+    let r = run(&mut s, "style.inspector", json!({}));
     assert_eq!(r["pane"], true);
     assert!(s.view.style_inspector);
     assert_eq!(r["paragraph"]["styleName"], "Title");
-    let r = run(&mut s, "styles.inspector", json!({"value": false}));
+    let r = run(&mut s, "style.inspector", json!({"value": false}));
     assert_eq!(r["pane"], false);
     let before = text(&s);
     for junk in [json!(null), json!({}), json!({"level": 5}), json!({"level": "everything"}), json!({"level": ""})] {
-        assert!(s.run("styles.inspectorClear", &junk).is_err(), "{junk}");
+        assert!(s.run("style.inspectorClear", &junk).is_err(), "{junk}");
     }
     assert_eq!(text(&s), before);
-    assert!(s.run("styles.inspector", &json!({"value": "yes"})).is_ok());
+    assert!(s.run("style.inspector", &json!({"value": "yes"})).is_ok());
     // A selection reaching far outside the document.
     s.sel.focus = Pos::body(9999, 99999);
     s.sel.anchor = Pos::body(0, 0);
-    assert!(s.run("styles.inspect", &json!({})).is_ok());
-    assert!(s.run("styles.inspectorClear", &json!({"level": "characterFormatting"})).is_ok());
+    assert!(s.run("style.inspect", &json!({})).is_ok());
+    assert!(s.run("style.inspectorClear", &json!({"level": "characterFormatting"})).is_ok());
 }
 
 /// Home › Editing › Find › Advanced Find: every match, in the body or a selection, with Reading Highlight.
@@ -2160,7 +2160,7 @@ fn advanced_find_lists_and_highlights_matches() {
     // Hostile params.
     assert!(s.run("edit.advancedFind", &json!({"text": "x", "in": "elsewhere"})).is_err());
     assert!(s.run("edit.advancedFind", &json!({"text": "(", "regex": true})).is_err());
-    run(&mut s, "select.all", json!({}));
+    run(&mut s, "edit.selectAll", json!({}));
     run(&mut s, "text.delete", json!({}));
     assert!(s.run("edit.advancedFind", &json!({"text": "x", "in": "selection"})).is_err());
 }
@@ -2171,7 +2171,7 @@ fn advanced_find_lists_and_highlights_matches() {
 fn custom_table_style_applies_modifies_and_saves() {
     use kition_doc_doc::{Rgb, StyleKind, TextColor};
     let mut s = s();
-    run(&mut s, "insert.table", json!({"rows": 3, "cols": 2}));
+    run(&mut s, "table.insert", json!({"rows": 3, "cols": 2}));
     run(&mut s, "text.insert", json!({"text": "Head"}));
     run(&mut s, "table.look", json!({"headerRow": true, "bandedRows": true}));
     let (tp, _, _) = s.sel.focus.path.cell().unwrap();
@@ -2211,7 +2211,7 @@ fn custom_table_style_applies_modifies_and_saves() {
     assert_eq!(rc.color, TextColor::Rgb(Rgb::WHITE));
 
     // Modify the current table's style: the table follows.
-    run(&mut s, "table.modifyStyle", json!({"headerRow": {"fill": "C00000", "bold": false}, "bandSize": 2}));
+    run(&mut s, "table.setStyle", json!({"headerRow": {"fill": "C00000", "bold": false}, "bandSize": 2}));
     assert_eq!(fills(&mut s, Rgb(0x1F, 0x38, 0x64)), 0);
     assert_eq!(fills(&mut s, Rgb(0xC0, 0, 0)), 2);
     assert_eq!(fills(&mut s, Rgb(0xEE, 0xEE, 0xEE)), 4, "two rows per band");
@@ -2310,8 +2310,8 @@ fn timestamps_come_from_the_clock() {
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": "Dated"}));
     run(&mut s, "select.text", json!({"text": "Dated"}));
-    run(&mut s, "review.newComment", json!({"text": "When?"}));
-    let date = run(&mut s, "review.comments", json!({}))[0]["date"].as_str().unwrap_or_default().to_string();
+    run(&mut s, "comment.new", json!({"text": "When?"}));
+    let date = run(&mut s, "comment.pane", json!({}))[0]["date"].as_str().unwrap_or_default().to_string();
     // Fixed-width ISO strings sort by time.
     assert!(date >= cmd::iso_from_unix_secs(before) && date <= cmd::iso_from_unix_secs(cmd::now_unix()), "{date}");
 }
@@ -2331,7 +2331,7 @@ fn diagrams_are_selected_and_deleted_but_not_moved_and_charts_resize() {
     assert!(crate::cmd::objects::object_selection(&s).is_some(), "the diagram is selected");
     for (id, v) in [
         ("arrange.bounds", json!({"width": 50})),
-        ("picture.size", json!({"width": 50})),
+        ("image.size", json!({"width": 50})),
         ("arrange.wrap", json!({"wrap": "square"})),
         ("arrange.position", json!({"preset": "topLeft"})),
         ("arrange.align", json!({"value": "left"})),
@@ -2371,7 +2371,7 @@ fn para_tabs_set_clear_and_undo() {
     use kition_doc_doc::props::{TabAlign, TabLeader};
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": "Name\tPrice"}));
-    run(&mut s, "para.style", json!({"style": "Header"}));
+    run(&mut s, "paragraph.style", json!({"style": "Header"}));
     let stops = |s: &Session| {
         let p = s.doc.para_at(&s.sel.focus).map(|p| p.props.clone()).unwrap_or_default();
         s.doc.styles.resolve_para(&p).tabs.iter().map(|t| (t.pos, t.align, t.leader)).collect::<Vec<_>>()
@@ -2379,7 +2379,7 @@ fn para_tabs_set_clear_and_undo() {
     assert_eq!(stops(&s).len(), 2, "Header's own stops");
     run(
         &mut s,
-        "para.tabs",
+        "paragraph.tabs",
         json!({"set": [{"pos": 100.0, "align": "decimal", "leader": "dot"}, {"pos": 300.0}], "clear": [234.0], "default": 18.0}),
     );
     assert_eq!(
@@ -2388,9 +2388,9 @@ fn para_tabs_set_clear_and_undo() {
     );
     assert_eq!(s.doc.settings.default_tab, 18.0);
     // Setting a stop at an existing position replaces it.
-    run(&mut s, "para.tabs", json!({"set": [{"pos": 300.0, "align": "bar"}]}));
+    run(&mut s, "paragraph.tabs", json!({"set": [{"pos": 300.0, "align": "bar"}]}));
     assert!(stops(&s).contains(&(300.0, TabAlign::Bar, TabLeader::None)));
-    run(&mut s, "para.tabs", json!({"clearAll": true}));
+    run(&mut s, "paragraph.tabs", json!({"clearAll": true}));
     assert!(stops(&s).is_empty(), "Clear All removes inherited stops too");
     run(&mut s, "edit.undo", json!({}));
     assert_eq!(stops(&s).len(), 3);
@@ -2398,8 +2398,8 @@ fn para_tabs_set_clear_and_undo() {
     run(&mut s, "edit.undo", json!({}));
     assert_eq!(stops(&s).len(), 2);
     assert_eq!(s.doc.settings.default_tab, 36.0, "one undo step restores stops and default together");
-    assert!(s.run("para.tabs", &json!({"set": [{"pos": f64::MAX}]})).is_err());
-    assert!(s.run("para.tabs", &json!({"clear": "x"})).is_err());
+    assert!(s.run("paragraph.tabs", &json!({"set": [{"pos": f64::MAX}]})).is_err());
+    assert!(s.run("paragraph.tabs", &json!({"clear": "x"})).is_err());
 }
 
 /// Changing only the default tab interval (a document setting) is its own undo step,
@@ -2409,7 +2409,7 @@ fn para_tabs_default_only_undoes() {
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": "a\tb"}));
     let before = s.doc.settings.default_tab;
-    run(&mut s, "para.tabs", json!({"default": 72.0}));
+    run(&mut s, "paragraph.tabs", json!({"default": 72.0}));
     assert_eq!(s.doc.settings.default_tab, 72.0);
     run(&mut s, "edit.undo", json!({}));
     assert_eq!(s.doc.settings.default_tab, before, "undo restores the default interval");
@@ -2424,22 +2424,22 @@ fn border_sides_apply_exactly() {
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": "Boxed"}));
     let side = json!({"style": "double", "width": 1.5, "color": "C00000"});
-    run(&mut s, "para.borders", json!({"sides": {"top": side, "bottom": side, "left": side, "right": side}}));
+    run(&mut s, "paragraph.borders", json!({"sides": {"top": side, "bottom": side, "left": side, "right": side}}));
     let b = s.doc.para_at(&s.sel.focus).and_then(|p| p.props.borders).unwrap();
     for x in [b.top, b.bottom, b.left, b.right] {
         let x = x.unwrap();
         assert_eq!((x.style, x.width, x.color), (BorderStyle::Double, 1.5, Some(kition_doc_doc::props::Rgb(0xC0, 0, 0))));
     }
     assert!(b.between.is_none());
-    run(&mut s, "para.borders", json!({"sides": {}}));
+    run(&mut s, "paragraph.borders", json!({"sides": {}}));
     assert!(!s.doc.para_at(&s.sel.focus).and_then(|p| p.props.borders).unwrap().any_visible());
-    run(&mut s, "design.pageBorders", json!({"sides": {"top": {"style": "dashed", "width": 3.0}}, "applyTo": "document"}));
+    run(&mut s, "page.borders", json!({"sides": {"top": {"style": "dashed", "width": 3.0}}, "applyTo": "document"}));
     let pb = s.doc.last_section.page_borders.unwrap();
     assert_eq!(pb.top.map(|t| (t.style, t.width)), Some((BorderStyle::Dashed, 3.0)));
     assert!(pb.left.is_none());
-    run(&mut s, "design.pageBorders", json!({"kind": "box", "style": "thick"}));
+    run(&mut s, "page.borders", json!({"kind": "box", "style": "thick"}));
     assert_eq!(s.doc.last_section.page_borders.unwrap().left.map(|t| t.style), Some(BorderStyle::Thick));
-    run(&mut s, "design.pageBorders", json!({"sides": {}}));
+    run(&mut s, "page.borders", json!({"sides": {}}));
     assert!(s.doc.last_section.page_borders.is_none());
 }
 
@@ -2452,7 +2452,7 @@ fn password_protected_documents_round_trip() {
     let path = dir.join("secret.docx");
     let path_str = path.to_string_lossy().to_string();
     let mut a = s();
-    run(&mut a, "document.setText", json!({"text": "Quarterly numbers"}));
+    run(&mut a, "file.setText", json!({"text": "Quarterly numbers"}));
     let r = run(&mut a, "file.save", json!({"path": path_str, "password": "hunter2"}));
     assert_eq!(r["encrypted"], true);
     assert!(kition_doc_docx::is_encrypted(&std::fs::read(&path).unwrap()));
@@ -2495,7 +2495,7 @@ fn password_protected_documents_round_trip() {
 fn shape_effects_apply_and_undo() {
     use kition_doc_doc::effects::{MAX_BLUR, MAX_DISTANCE, Shadow};
     let mut s = s();
-    run(&mut s, "insert.shape", json!({"kind": "ellipse"}));
+    run(&mut s, "shape.insert", json!({"kind": "ellipse"}));
     let effects = |s: &Session| match cmd::objects::selected(s) {
         Some((_, kition_doc_doc::InlineObject::Shape { effects, float, .. })) => (effects, float.effect),
         o => panic!("{o:?}"),
@@ -2531,9 +2531,9 @@ fn shape_effects_apply_and_undo() {
 #[test]
 fn asian_typography_sets_flags_on_selected_paragraphs_and_undoes() {
     let mut s = s();
-    run(&mut s, "document.setText", json!({"text": "一\n二\n三"}));
-    run(&mut s, "select.all", json!({}));
-    let r = run(&mut s, "para.asianTypography", json!({"kinsoku": false, "wordWrap": false, "topLinePunct": true}));
+    run(&mut s, "file.setText", json!({"text": "一\n二\n三"}));
+    run(&mut s, "edit.selectAll", json!({}));
+    let r = run(&mut s, "paragraph.asianTypography", json!({"kinsoku": false, "wordWrap": false, "topLinePunct": true}));
     assert_eq!(r["asianTypography"]["kinsoku"], false);
     assert_eq!(r["asianTypography"]["autoSpaceDE"], true, "a flag left out keeps its default");
     for p in s.doc.body.iter().filter_map(|b| b.as_para()) {
@@ -2545,14 +2545,14 @@ fn asian_typography_sets_flags_on_selected_paragraphs_and_undoes() {
     run(&mut s, "edit.undo", json!({}));
     assert!(s.doc.body.iter().filter_map(|b| b.as_para()).all(|p| p.props.kinsoku.is_none() && p.props.word_wrap.is_none()));
     // Without flags it only reports them.
-    let r = run(&mut s, "para.asianTypography", json!({}));
+    let r = run(&mut s, "paragraph.asianTypography", json!({}));
     assert_eq!(r["asianTypography"]["kinsoku"], true);
 }
 
 #[test]
 fn manage_styles_lists_paragraph_character_linked_and_table_styles() {
     let mut s = s();
-    let list = run(&mut s, "styles.manage", json!({"sort": "alphabetical"}));
+    let list = run(&mut s, "style.manage", json!({"sort": "alphabetical"}));
     let list = list.as_array().unwrap();
     let find = |name: &str| list.iter().find(|x| x["name"] == name).unwrap_or_else(|| panic!("{name} listed"));
     assert_eq!(find("Normal")["type"], "paragraph");
@@ -2568,9 +2568,9 @@ fn manage_styles_lists_paragraph_character_linked_and_table_styles() {
     let names: Vec<String> = list.iter().map(|x| x["name"].as_str().unwrap().to_lowercase()).collect();
     assert!(names.windows(2).all(|w| w[0] <= w[1]), "alphabetical");
     // Recommended order starts with Normal (priority 0); listing is not an edit.
-    let rec = run(&mut s, "styles.manage", json!({}));
+    let rec = run(&mut s, "style.manage", json!({}));
     assert_eq!(rec[0]["name"], "Normal");
-    assert!(s.run("styles.manage", &json!({"sort": "sideways"})).is_err());
+    assert!(s.run("style.manage", &json!({"sort": "sideways"})).is_err());
     assert!(!s.dirty);
 }
 
@@ -2578,11 +2578,11 @@ fn manage_styles_lists_paragraph_character_linked_and_table_styles() {
 fn deleting_a_style_falls_back_to_its_base_and_undoes() {
     let mut s = s();
     run(&mut s, "text.insert", json!({"text": "Styled"}));
-    run(&mut s, "styles.create", json!({"name": "Mine", "basedOn": "Heading 1"}));
-    run(&mut s, "styles.create", json!({"name": "Child", "basedOn": "Mine", "fromSelection": false}));
-    run(&mut s, "styles.apply", json!({"style": "Mine"}));
+    run(&mut s, "style.add", json!({"name": "Mine", "basedOn": "Heading 1"}));
+    run(&mut s, "style.add", json!({"name": "Child", "basedOn": "Mine", "fromSelection": false}));
+    run(&mut s, "style.apply", json!({"style": "Mine"}));
     assert_eq!(para_style(&s, 0).as_deref(), Some("Mine"));
-    let r = run(&mut s, "styles.delete", json!({"style": "Mine"}));
+    let r = run(&mut s, "style.delete", json!({"style": "Mine"}));
     assert_eq!(r["restyled"], 1);
     assert!(s.doc.styles.get("Mine").is_none());
     assert_eq!(para_style(&s, 0).as_deref(), Some("Heading1"), "falls back to its base");
@@ -2591,8 +2591,8 @@ fn deleting_a_style_falls_back_to_its_base_and_undoes() {
     assert!(s.doc.styles.get("Mine").is_some());
     assert_eq!(para_style(&s, 0).as_deref(), Some("Mine"));
     // Built-in styles are refused, unknown ones are errors.
-    assert!(s.run("styles.delete", &json!({"style": "Heading 1"})).is_err());
-    assert!(s.run("styles.delete", &json!({"style": "No Such Style"})).is_err());
+    assert!(s.run("style.delete", &json!({"style": "Heading 1"})).is_err());
+    assert!(s.run("style.delete", &json!({"style": "No Such Style"})).is_err());
     assert!(s.doc.styles.get("Heading1").is_some());
 }
 
@@ -2602,19 +2602,19 @@ fn deleting_a_style_falls_back_to_its_base_and_undoes() {
 fn deleting_a_table_style_from_manage_styles_uses_table_style_deletion() {
     use kition_doc_doc::Rgb;
     let mut s = s();
-    run(&mut s, "insert.table", json!({"rows": 2, "cols": 2}));
+    run(&mut s, "table.insert", json!({"rows": 2, "cols": 2}));
     let (tp, _, _) = s.sel.focus.path.cell().unwrap();
     run(&mut s, "table.newStyle", json!({"name": "Base", "headerRow": {"fill": "C00000"}}));
     run(&mut s, "table.newStyle", json!({"name": "Child", "basedOn": "Base", "apply": false}));
-    let r = run(&mut s, "styles.delete", json!({"style": "Base"}));
+    let r = run(&mut s, "style.delete", json!({"style": "Base"}));
     assert_eq!((r["deleted"][0].as_str(), r["restyled"].as_u64()), (Some("Base"), Some(1)));
     assert_eq!(s.doc.table(StoryRef::Body, &tp).unwrap().props.style.as_deref(), Some("TableGrid"));
     assert_eq!(s.doc.styles.table_style("Child").unwrap().parts.header_fill, Some(Rgb(0xC0, 0, 0)), "the child keeps its look");
     for st in s.doc.styles.styles.iter_mut() {
         st.builtin = false;
     }
-    assert!(s.run("styles.delete", &json!({"style": "Table Grid"})).is_err());
-    let list = run(&mut s, "styles.manage", json!({}));
+    assert!(s.run("style.delete", &json!({"style": "Table Grid"})).is_err());
+    let list = run(&mut s, "style.manage", json!({}));
     let grid = list.as_array().unwrap().iter().find(|x| x["name"] == "Table Grid").unwrap();
     assert_eq!(grid["builtIn"], true);
 }
@@ -2622,11 +2622,11 @@ fn deleting_a_table_style_from_manage_styles_uses_table_style_deletion() {
 #[test]
 fn style_visibility_round_trips_through_docx() {
     let mut s = s();
-    run(&mut s, "styles.create", json!({"name": "Mine", "fromSelection": false}));
-    run(&mut s, "styles.setVisibility", json!({"style": "Heading 1", "gallery": false}));
-    run(&mut s, "styles.setVisibility", json!({"style": "Mine", "hidden": true}));
-    run(&mut s, "styles.setVisibility", json!({"style": "Heading 4", "gallery": true}));
-    assert!(s.run("styles.setVisibility", &json!({"style": "Mine"})).is_err());
+    run(&mut s, "style.add", json!({"name": "Mine", "fromSelection": false}));
+    run(&mut s, "style.setVisibility", json!({"style": "Heading 1", "gallery": false}));
+    run(&mut s, "style.setVisibility", json!({"style": "Mine", "hidden": true}));
+    run(&mut s, "style.setVisibility", json!({"style": "Heading 4", "gallery": true}));
+    assert!(s.run("style.setVisibility", &json!({"style": "Mine"})).is_err());
     let gallery: Vec<String> = s.doc.styles.gallery().iter().map(|x| x.id.clone()).collect();
     assert!(!gallery.contains(&"Heading1".to_string()) && !gallery.contains(&"Mine".to_string()) && gallery.contains(&"Heading4".to_string()));
     let bytes = crate::io::save_bytes("v.docx", &s.doc).unwrap();
@@ -2645,7 +2645,7 @@ fn style_visibility_round_trips_through_docx() {
 fn custom_table_style_column_and_total_regions() {
     use kition_doc_doc::Rgb;
     let mut s = s();
-    run(&mut s, "insert.table", json!({"rows": 3, "cols": 4}));
+    run(&mut s, "table.insert", json!({"rows": 3, "cols": 4}));
     run(
         &mut s,
         "table.look",
@@ -2686,7 +2686,7 @@ fn custom_table_style_column_and_total_regions() {
 fn delete_table_style_falls_back_and_undoes() {
     use kition_doc_doc::Rgb;
     let mut s = s();
-    run(&mut s, "insert.table", json!({"rows": 2, "cols": 2}));
+    run(&mut s, "table.insert", json!({"rows": 2, "cols": 2}));
     let (tp, _, _) = s.sel.focus.path.cell().unwrap();
     run(&mut s, "table.newStyle", json!({"name": "Base", "headerRow": {"fill": "C00000"}}));
     run(&mut s, "table.newStyle", json!({"name": "Child", "basedOn": "Base", "apply": false, "wholeTable": {"bold": true}}));
@@ -2714,7 +2714,7 @@ fn delete_table_style_falls_back_and_undoes() {
 #[test]
 fn builtin_table_styles_marked_custom_in_a_docx_cant_be_deleted() {
     let mut s = s();
-    run(&mut s, "insert.table", json!({"rows": 1, "cols": 1}));
+    run(&mut s, "table.insert", json!({"rows": 1, "cols": 1}));
     for st in s.doc.styles.styles.iter_mut() {
         st.builtin = false;
     }
@@ -2731,7 +2731,7 @@ fn builtin_table_styles_marked_custom_in_a_docx_cant_be_deleted() {
 #[test]
 fn deleting_the_last_cell_column_never_leaves_a_table_without_rows() {
     let mut s = s();
-    run(&mut s, "insert.table", json!({"rows": 1, "cols": 2}));
+    run(&mut s, "table.insert", json!({"rows": 1, "cols": 2}));
     run(&mut s, "table.deleteCells", json!({}));
     run(&mut s, "table.deleteColumn", json!({}));
     for b in s.doc.body.iter() {
@@ -2763,7 +2763,7 @@ fn design_theme_re_resolves_theme_references_and_keeps_them() {
     title.chr.color = Some(TextColor::Rgb(Rgb(1, 2, 3)));
     title.chr.color_theme = Some(shaded);
     let mut s = Session::new(doc);
-    run(&mut s, "design.theme", json!({"name": "Studio"}));
+    run(&mut s, "theme.set", json!({"name": "Studio"}));
     let accent2 = s.doc.settings.theme_colors[5];
     let expect = ThemeColor { rgb: accent2, ..old }.resolve(&s.doc.settings.theme_colors).unwrap();
     let quote = s.doc.styles.get("Quote").unwrap();
@@ -2844,7 +2844,7 @@ fn saving_with_nothing_new_writes_the_same_bytes() {
     assert_eq!(std::fs::read(&fresh).unwrap(), first);
 }
 
-/// `edit.goto {paragraph}` takes the index `document.inspect` gives a body block, from 0,
+/// `edit.goto {paragraph}` takes the index `file.inspect` gives a body block, from 0,
 /// not from 1; a table's index goes to its first cell.
 #[test]
 fn goto_paragraph_takes_the_inspect_index() {
@@ -2853,10 +2853,10 @@ fn goto_paragraph_takes_the_inspect_index() {
         run(&mut a, "text.insert", json!({"text": text}));
         run(&mut a, "text.newParagraph", json!({}));
     }
-    run(&mut a, "insert.table", json!({"rows": 2, "cols": 2}));
+    run(&mut a, "table.insert", json!({"rows": 2, "cols": 2}));
     run(&mut a, "caret.docEnd", json!({}));
     run(&mut a, "text.insert", json!({"text": "Last"}));
-    let blocks = run(&mut a, "document.inspect", json!({}))["blocks"].clone();
+    let blocks = run(&mut a, "file.inspect", json!({}))["blocks"].clone();
     let index_of = |text: &str| blocks.as_array().unwrap().iter().find(|b| b["text"] == text).map(|b| b["index"].as_u64().unwrap()).unwrap();
     for text in ["Zero", "One", "Last"] {
         let i = index_of(text);
@@ -2871,7 +2871,7 @@ fn goto_paragraph_takes_the_inspect_index() {
     assert!(a.run("edit.goto", &json!({"paragraph": 99})).is_err(), "an index past the body is an error");
 }
 
-/// `insert.coverPage` puts one page of its own paragraphs before the
+/// `page.insertCover` puts one page of its own paragraphs before the
 /// document, whatever the caret's paragraph is (here an empty Heading 1, which the cover took on
 /// and spilled onto a second page); it writes no date unless given one, so it does not change
 /// from day to day; and the caret stays where it was, as Word leaves it.
@@ -2880,12 +2880,12 @@ fn cover_page_is_one_page_of_its_own_before_the_document() {
     for page in [None, Some(json!({"width": 420, "height": 595}))] {
         let mut a = s();
         if let Some(size) = page {
-            run(&mut a, "layout.size", size);
+            run(&mut a, "page.size", size);
         }
-        run(&mut a, "para.style", json!({"style": "Heading 1"}));
-        run(&mut a, "insert.coverPage", json!({"title": "Annual Review", "subtitle": "Our year in numbers", "author": "Ada Byron"}));
+        run(&mut a, "paragraph.style", json!({"style": "Heading 1"}));
+        run(&mut a, "page.insertCover", json!({"title": "Annual Review", "subtitle": "Our year in numbers", "author": "Ada Byron"}));
         run(&mut a, "text.insert", json!({"text": "Introduction"}));
-        let inspect = run(&mut a, "document.inspect", json!({}));
+        let inspect = run(&mut a, "file.inspect", json!({}));
         let blocks = inspect["blocks"].as_array().unwrap();
         let last = blocks.last().unwrap();
         assert_eq!((last["text"].as_str(), last["style"].as_str()), (Some("Introduction"), Some("Heading1")), "typing continues where it was");
@@ -2906,17 +2906,17 @@ fn cover_page_is_one_page_of_its_own_before_the_document() {
         assert!(on_page_2, "the document's first paragraph starts page 2");
     }
     let mut a = s();
-    run(&mut a, "insert.coverPage", json!({"title": "Plan", "date": "1 March 2026"}));
+    run(&mut a, "page.insertCover", json!({"title": "Plan", "date": "1 March 2026"}));
     assert!(a.doc.plain_text(StoryRef::Body).contains("1 March 2026"));
 }
 
-/// `insert.pageNumber {position: current}` honours `format` ("x of y")
+/// `pageNumber.insert {position: current}` honours `format` ("x of y")
 /// and `align` as the header and footer positions do.
 #[test]
 fn page_number_at_the_caret_takes_format_and_align() {
     let mut a = s();
-    run(&mut a, "insert.footer", json!({"text": ""}));
-    run(&mut a, "insert.pageNumber", json!({"position": "current", "format": "x of y", "align": "right"}));
+    run(&mut a, "footer.insert", json!({"text": ""}));
+    run(&mut a, "pageNumber.insert", json!({"position": "current", "format": "x of y", "align": "right"}));
     let story = a.sel.focus.story;
     let p = a.doc.para_at(&a.sel.focus).unwrap().clone();
     assert_eq!(p.props.align, Some(kition_doc_doc::props::Align::Right));
@@ -2939,9 +2939,9 @@ fn page_number_at_the_caret_takes_format_and_align() {
 #[test]
 fn toc_entries_show_heading_numbers() {
     let mut a = s();
-    run(&mut a, "references.toc", json!({"levels": 2}));
+    run(&mut a, "toc.insert", json!({"levels": 2}));
     run(&mut a, "caret.docEnd", json!({}));
-    run(&mut a, "para.heading1", json!({}));
+    run(&mut a, "paragraph.heading1", json!({}));
     run(
         &mut a,
         "list.define",
@@ -2949,12 +2949,17 @@ fn toc_entries_show_heading_numbers() {
             {"format": "decimal", "text": "%1", "style": "Heading 1", "alignedAt": 0, "indentAt": 28},
             {"format": "decimal", "text": "%1.%2", "style": "Heading 2", "alignedAt": 0, "indentAt": 36}]}),
     );
-    for (style, text) in [("para.heading1", "Introduction"), ("para.heading2", "Background"), ("para.heading2", "Scope"), ("para.heading1", "Plan")] {
+    for (style, text) in [
+        ("paragraph.heading1", "Introduction"),
+        ("paragraph.heading2", "Background"),
+        ("paragraph.heading2", "Scope"),
+        ("paragraph.heading1", "Plan"),
+    ] {
         run(&mut a, style, json!({}));
         run(&mut a, "text.insert", json!({"text": text}));
         run(&mut a, "text.newParagraph", json!({}));
     }
-    run(&mut a, "references.updateToc", json!({}));
+    run(&mut a, "toc.update", json!({}));
     let entries: Vec<String> = a
         .doc
         .body
@@ -2974,7 +2979,7 @@ fn toc_entries_show_heading_numbers() {
 #[test]
 fn table_formulas_take_references_arithmetic_and_pictures() {
     let mut a = s();
-    run(&mut a, "insert.table", json!({"rows": 5, "cols": 2}));
+    run(&mut a, "table.insert", json!({"rows": 5, "cols": 2}));
     for text in ["Item", "Amount", "Repairs", "£360.50", "Delivery", "£1,200", "Subtotal"] {
         run(&mut a, "text.insert", json!({"text": text}));
         run(&mut a, "text.tab", json!({}));
@@ -3007,7 +3012,7 @@ fn table_formulas_take_references_arithmetic_and_pictures() {
     // F9 computes formulas again from the cells as they are now.
     run(&mut a, "select.text", json!({"text": "£360.50"}));
     run(&mut a, "text.insert", json!({"text": "£400"}));
-    run(&mut a, "references.updateFields", json!({}));
+    run(&mut a, "field.updateAll", json!({}));
     let text = a.doc.plain_text(StoryRef::Body);
     assert!(text.contains("£1,600.00") && text.contains("320.00"), "{text}");
 }
@@ -3019,14 +3024,14 @@ fn table_formulas_take_references_arithmetic_and_pictures() {
 #[test]
 fn commands_that_change_the_document_are_not_pure() {
     let reg = cmd::registry();
-    for id in ["insert.editHeader", "insert.editFooter", "file.versions", "file.newFromTemplate"] {
+    for id in ["header.edit", "footer.edit", "file.versions", "file.newFromTemplate"] {
         assert!(reg.get(id).is_some_and(|spec| spec.mutates), "{id} is marked pure");
     }
     // Edit Header on a document without one makes it, and undo takes it away again.
     let mut s = s();
-    run(&mut s, "document.setText", json!({"text": "body"}));
+    run(&mut s, "file.setText", json!({"text": "body"}));
     let parts = s.doc.parts.len();
-    run(&mut s, "insert.editHeader", json!({}));
+    run(&mut s, "header.edit", json!({}));
     assert_eq!(s.doc.parts.len(), parts + 1);
     run(&mut s, "edit.undo", json!({}));
     assert_eq!(s.doc.parts.len(), parts);
@@ -3040,7 +3045,7 @@ fn commands_that_change_the_document_are_not_pure() {
 #[test]
 fn a_paragraph_keeps_its_id_through_formatting_commands() {
     let mut s = s();
-    run(&mut s, "document.setText", json!({"text": "first\nsecond\nthird"}));
+    run(&mut s, "file.setText", json!({"text": "first\nsecond\nthird"}));
     for block in 0..3u32 {
         let path = kition_doc_doc::Path::top(block as usize);
         s.doc.para_mut(StoryRef::Body, &path).unwrap().props.para_id = Some(0x1000 + block);
@@ -3050,11 +3055,9 @@ fn a_paragraph_keeps_its_id_through_formatting_commands() {
     assert!(ids.iter().all(Option::is_some), "{ids:?}");
     let select =
         |s: &mut Session, block: usize| run(s, "select.range", json!({"anchor": {"block": block, "off": 0}, "focus": {"block": block, "off": 3}}));
-    for (block, command, params) in [
-        (0, "format.clear", json!({})),
-        (1, "styles.inspectorClear", json!({"level": "paragraphFormatting"})),
-        (2, "styles.updateToMatch", json!({})),
-    ] {
+    for (block, command, params) in
+        [(0, "format.clear", json!({})), (1, "style.inspectorClear", json!({"level": "paragraphFormatting"})), (2, "style.updateToMatch", json!({}))]
+    {
         select(&mut s, block);
         run(&mut s, command, params);
         assert_eq!(id(&s, block), ids[block], "{command}");
@@ -3072,9 +3075,9 @@ fn a_paragraph_keeps_its_id_through_formatting_commands() {
 #[test]
 fn a_pattern_does_not_match_object_anchors_it_does_not_name() {
     let mut s = s();
-    run(&mut s, "document.setText", json!({"text": "before after"}));
+    run(&mut s, "file.setText", json!({"text": "before after"}));
     run(&mut s, "select.range", json!({"anchor": {"block": 0, "off": 7}, "focus": {"block": 0, "off": 7}}));
-    run(&mut s, "insert.equation", json!({"linear": "x^2", "edit": false}));
+    run(&mut s, "equation.insert", json!({"linear": "x^2", "edit": false}));
     let objects = |s: &Session| s.doc.para_at(&Pos::new(StoryRef::Body, kition_doc_doc::Path::top(0), 0)).map_or(0, |p| p.object_offsets().len());
     assert_eq!(objects(&s), 1);
     run(&mut s, "edit.replaceAll", json!({"text": ".+", "with": "X", "regex": true}));
@@ -3091,20 +3094,20 @@ fn a_pattern_does_not_match_object_anchors_it_does_not_name() {
 #[test]
 fn a_section_command_in_a_header_acts_on_the_section_the_caret_came_from() {
     let mut s = s();
-    run(&mut s, "document.setText", json!({"text": "one\ntwo\nthree\nfour"}));
+    run(&mut s, "file.setText", json!({"text": "one\ntwo\nthree\nfour"}));
     run(&mut s, "select.range", json!({"anchor": {"block": 1, "off": 3}, "focus": {"block": 1, "off": 3}}));
-    run(&mut s, "layout.break", json!({"kind": "nextPage"}));
+    run(&mut s, "page.break", json!({"kind": "nextPage"}));
     let landscape = |s: &Session| -> Vec<bool> { s.doc.sections().iter().map(|(_, x)| x.page_w > x.page_h).collect() };
     assert_eq!(landscape(&s), [false, false]);
     let last = s.doc.body.len() - 1;
     run(&mut s, "select.range", json!({"anchor": {"block": last, "off": 0}, "focus": {"block": last, "off": 0}}));
-    run(&mut s, "insert.editHeader", json!({}));
+    run(&mut s, "header.edit", json!({}));
     assert_ne!(s.sel.focus.story, StoryRef::Body);
-    run(&mut s, "layout.orientation", json!({"value": "landscape"}));
+    run(&mut s, "page.orientation", json!({"value": "landscape"}));
     assert_eq!(landscape(&s), [false, true]);
     // A caret put in a part with no body place to go by.
     s.body_return = None;
-    assert!(s.run("layout.orientation", &json!({"value": "portrait"})).is_err());
+    assert!(s.run("page.orientation", &json!({"value": "portrait"})).is_err());
     assert_eq!(landscape(&s), [false, true]);
 }
 
@@ -3114,11 +3117,11 @@ fn a_section_command_in_a_header_acts_on_the_section_the_caret_came_from() {
 #[test]
 fn a_cell_command_across_two_tables_acts_on_the_focus_cell() {
     let mut s = s();
-    run(&mut s, "document.setText", json!({"text": "a\nb\nc"}));
+    run(&mut s, "file.setText", json!({"text": "a\nb\nc"}));
     run(&mut s, "select.range", json!({"anchor": {"block": 2, "off": 0}, "focus": {"block": 2, "off": 0}}));
-    run(&mut s, "insert.table", json!({"rows": 2, "cols": 2}));
+    run(&mut s, "table.insert", json!({"rows": 2, "cols": 2}));
     run(&mut s, "select.range", json!({"anchor": {"block": 0, "off": 0}, "focus": {"block": 0, "off": 0}}));
-    run(&mut s, "insert.table", json!({"rows": 2, "cols": 2}));
+    run(&mut s, "table.insert", json!({"rows": 2, "cols": 2}));
     let tables: Vec<usize> =
         s.doc.body.iter().enumerate().filter(|(_, b)| matches!(&***b, kition_doc_doc::Block::Table(_))).map(|(i, _)| i).collect();
     assert_eq!(tables.len(), 2);

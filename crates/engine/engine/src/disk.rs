@@ -232,7 +232,7 @@ mod tests {
         }
         assert!(read("Cargo.toml").is_err() && open("Cargo.toml").is_err() && write("x", b"x").is_err());
         assert!(rename("Cargo.toml", "x").is_err() && metadata(".").is_err() && canonicalize(".").is_err());
-        assert!(need("review.readAloud").is_err());
+        assert!(need("readAloud.open").is_err());
     }
 
     #[test]
@@ -243,7 +243,7 @@ mod tests {
             assert!(hosted(), "a command run inside a hosted one reaches no more");
         }
         assert!(!hosted());
-        assert!(need("review.readAloud").is_ok());
+        assert!(need("readAloud.open").is_ok());
         assert!(metadata(".").is_ok());
     }
 }

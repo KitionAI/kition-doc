@@ -9,7 +9,7 @@ use serde_json::{Map, Value, json};
 use super::sel_result;
 use crate::{CmdError, CmdResult, CommandSpec, Session, p};
 
-/// The levels `styles.inspectorClear` can reset.
+/// The levels `style.inspectorClear` can reset.
 pub const LEVELS: [&str; 4] = ["paragraphStyle", "paragraphFormatting", "characterStyle", "characterFormatting"];
 
 /// Direct character properties that aren't formatting (links, revisions, proofing, direction).
@@ -19,7 +19,7 @@ const PARA_SKIP: [&str; 4] = ["style", "numbering", "numChange", "fmtChange"];
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("styles.inspector", "Style Inspector", "Home › Styles", |s, v| {
+        CommandSpec::new("style.inspector", "Style Inspector", "Home › Styles", |s, v| {
             s.view.style_inspector = p::bool(v, "value").unwrap_or(!s.view.style_inspector);
             let mut out = inspect(s);
             if let Value::Object(m) = &mut out {
@@ -29,8 +29,8 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"value"?: bool (show/hide the pane)}"#)
         .pure(),
-        CommandSpec::new("styles.inspect", "Inspect Styles at Selection", "Home › Styles › Style Inspector", |s, _| Ok(inspect(s))).pure(),
-        CommandSpec::new("styles.inspectorClear", "Clear Formatting Level", "Home › Styles › Style Inspector", clear)
+        CommandSpec::new("style.inspect", "Inspect Styles at Selection", "Home › Styles › Style Inspector", |s, _| Ok(inspect(s))).pure(),
+        CommandSpec::new("style.inspectorClear", "Clear Formatting Level", "Home › Styles › Style Inspector", clear)
             .params(r#"{"level": "paragraphStyle|paragraphFormatting|characterStyle|characterFormatting"}"#),
     ]
 }

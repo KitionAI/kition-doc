@@ -80,16 +80,16 @@ fn writes() -> Vec<(&'static str, Value)> {
         ("type", json!([caret(0, 0), { "command": "text.insert", "params": { "text": "Typed " } }])),
         ("split a paragraph", json!([caret(0, 2), { "command": "text.newParagraph", "params": {} }])),
         ("join two paragraphs", json!([caret(1, 0), { "command": "text.backspace", "params": {} }])),
-        ("insert a table", json!([caret(0, 0), { "command": "insert.table", "params": { "rows": 2, "cols": 2 } }])),
+        ("insert a table", json!([caret(0, 0), { "command": "table.insert", "params": { "rows": 2, "cols": 2 } }])),
         (
             "insert a shape",
             json!([caret(0, 0), { "command": "drawing.insert", "params": { "geometry": { "preset": "rect" }, "frame": { "w": 50, "h": 20 } } }]),
         ),
-        ("centre a paragraph", json!([caret(0, 0), { "command": "para.alignCenter", "params": {} }])),
-        ("apply a heading style", json!([caret(0, 0), { "command": "para.style", "params": { "style": "Heading2" } }])),
+        ("centre a paragraph", json!([caret(0, 0), { "command": "format.alignCenter", "params": {} }])),
+        ("apply a heading style", json!([caret(0, 0), { "command": "paragraph.style", "params": { "style": "Heading2" } }])),
         ("add a comment", json!([by_index(0, 0, 2), { "command": "comment.add", "params": { "text": "Note" } }])),
-        ("insert a paragraph by index", json!([{ "command": "para.insert", "params": { "after": 0, "text": "New one" } }])),
-        ("replace a paragraph's text", json!([{ "command": "para.text", "params": { "index": 0, "text": "Replaced" } }])),
+        ("insert a paragraph by index", json!([{ "command": "paragraph.insert", "params": { "after": 0, "text": "New one" } }])),
+        ("replace a paragraph's text", json!([{ "command": "paragraph.text", "params": { "index": 0, "text": "Replaced" } }])),
         (
             "delete a selection across paragraphs",
             json!([{ "command": "select.range", "params": { "anchor": { "block": 0, "off": 1 }, "focus": { "block": 1, "off": 1 } } }, { "command": "text.delete", "params": {} }]),
@@ -165,7 +165,7 @@ async fn receipt_sizes() {
     for rows in [5usize, 200] {
         let mut doc = document();
         doc.execute("select.range", json!({ "anchor": { "block": 4, "off": 0 }, "focus": { "block": 4, "off": 0 } })).unwrap();
-        doc.execute("insert.table", json!({ "rows": rows, "cols": 1 })).unwrap();
+        doc.execute("table.insert", json!({ "rows": rows, "cols": 1 })).unwrap();
         let f = Fixture::with(Guard::Premise, &doc.save(None).unwrap());
         let mv = f.call("batch", json!({ "ops": [{ "op": "list.move", "target": "document", "field": "body", "from": 4, "to": 0 }] })).await;
         println!(
@@ -184,7 +184,7 @@ async fn receipt_sizes() {
     }
     let f = Fixture::with(Guard::Premise, &doc.save(None).unwrap());
     let all = f
-        .run(None, json!([{ "command": "select.range", "params": { "anchor": { "block": 0, "off": 0 }, "focus": { "block": 199, "off": 0 } } }, { "command": "para.alignCenter", "params": {} }]))
+        .run(None, json!([{ "command": "select.range", "params": { "anchor": { "block": 0, "off": 0 }, "focus": { "block": 199, "off": 0 } } }, { "command": "format.alignCenter", "params": {} }]))
         .await
         .unwrap();
     println!("200 paragraphs centred: {} bytes (footprint {})", size(&all), all["changes"]["footprint"]);

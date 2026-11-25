@@ -30,6 +30,6 @@ expected:
       content.paragraphs: { any: { text: Text under a heading with no title., style: Normal } }
 solution:
   - tool: doc_run
-    args: { path: notes.docx, steps: [{ command: para.text, params: { index: 0, text: Overview } }] }
+    args: { path: notes.docx, steps: [{ command: paragraph.text, params: { index: 0, text: Overview } }] }
 since: "2026-11-17"
 timeout_s: 600

@@ -58,7 +58,7 @@ async fn enter_at_the_end_and_in_the_middle_keep_the_id_on_the_first_part() {
 async fn para_insert_before_gives_the_new_paragraph_a_new_id() {
     let f = Fixture::new(Guard::Premise);
     let before = f.blocks().await;
-    f.run(None, json!([{ "command": "para.insert", "params": { "before": 1, "text": "Above" } }])).await.unwrap();
+    f.run(None, json!([{ "command": "paragraph.insert", "params": { "before": 1, "text": "Above" } }])).await.unwrap();
     let after = f.blocks().await;
     assert_eq!(f.texts()[1], "Above");
     assert_eq!(after[2], before[1]);

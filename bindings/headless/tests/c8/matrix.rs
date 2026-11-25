@@ -140,14 +140,14 @@ fn base(tracked: bool) -> Base {
     if tracked {
         // A tracked insertion `Z` inside `five` (block 2, offset 7); tracking off again.
         doc.execute("select.range", json!({ "anchor": { "block": 2, "off": 7 }, "focus": { "block": 2, "off": 7 } })).unwrap();
-        doc.execute("review.trackChanges", json!({ "value": true })).unwrap();
+        doc.execute("change.track", json!({ "value": true })).unwrap();
         doc.execute("text.insert", json!({ "text": "Z" })).unwrap();
-        doc.execute("review.trackChanges", json!({ "value": false })).unwrap();
+        doc.execute("change.track", json!({ "value": false })).unwrap();
     }
     let caret = |b: usize, off: usize| json!({ "anchor": { "block": b, "off": off }, "focus": { "block": b, "off": off } });
     doc.execute("select.range", caret(4, TEXTS[4].len())).unwrap();
     doc.execute("text.newParagraph", json!({})).unwrap();
-    doc.execute("insert.table", json!({ "rows": 2, "cols": 2 })).unwrap();
+    doc.execute("table.insert", json!({ "rows": 2, "cols": 2 })).unwrap();
     for (r, c) in [(0, 0), (0, 1), (1, 0), (1, 1)] {
         let at = json!({ "story": "body", "path": [5, r, c, 0], "off": 0 });
         doc.execute("select.range", json!({ "anchor": at, "focus": at })).unwrap();
@@ -181,14 +181,14 @@ fn change(kind: usize) -> Vec<(&'static str, Value)> {
         8 => vec![sel((2, 0), (3, 0)), ("edit.cut", json!({})), caret(0, 0), ("edit.paste", json!({}))],
         9 => vec![caret(2, 0), ("text.backspace", json!({}))],
         10 => vec![sel((2, 6), (2, 10)), ("format.bold", json!({}))],
-        11 => vec![caret(2, 0), ("para.style", json!({ "style": "Heading2" }))],
+        11 => vec![caret(2, 0), ("paragraph.style", json!({ "style": "Heading2" }))],
         12 => {
             let at = json!({ "story": "body", "path": [5, 0, 0, 0], "off": 0 });
             vec![("select.range", json!({ "anchor": at, "focus": at })), ("table.insertRowAbove", json!({}))]
         }
         13 => vec![caret(4, TEXTS[4].len() + 3), ("text.newParagraph", json!({}))],
-        14 => vec![("review.acceptAll", json!({}))],
-        _ => vec![("review.rejectAll", json!({}))],
+        14 => vec![("change.acceptAll", json!({}))],
+        _ => vec![("change.rejectAll", json!({}))],
     }
 }
 
@@ -196,7 +196,7 @@ fn write(form: usize, ids: &[(Value, Value)], base: &Base) -> Value {
     let id = &ids[2].0;
     match form {
         0 => json!([{ "command": "format.italic", "params": {}, "on": [id] }]),
-        1 => json!([by_index(2, 0, 0), { "command": "para.alignCenter", "params": {} }]),
+        1 => json!([by_index(2, 0, 0), { "command": "format.alignCenter", "params": {} }]),
         2 => json!([by_id(id, 6, 10), bold()]),
         3 => json!([{ "command": "select.range", "params": { "anchor": { "block": 1, "off": 5 }, "focus": { "block": 2, "off": 10 } } }, bold()]),
         4 => {
@@ -204,7 +204,7 @@ fn write(form: usize, ids: &[(Value, Value)], base: &Base) -> Value {
             json!([{ "command": "select.range", "params": { "anchor": at(0), "focus": at(4) } }, bold()])
         }
         5 => json!([{ "command": "text.insert", "params": { "text": "X" } }]),
-        6 => json!([by_index(2, 0, 0), { "command": "para.style", "params": { "style": "Heading1" } }]),
+        6 => json!([by_index(2, 0, 0), { "command": "paragraph.style", "params": { "style": "Heading1" } }]),
         7 => json!([{ "command": "drawing.format", "params": { "ids": [base.uid], "fill": "#FF0000" } }]),
         _ => json!([{ "command": "comment.reply", "params": { "thread": base.thread, "text": "Reply" } }]),
     }
@@ -304,7 +304,7 @@ async fn character_formats_survive_rejected_insertion() {
             let result = f.run(Some(basis), write(0, &ids, &base)).await;
             if kind == 15 {
                 result.unwrap_or_else(|error| panic!("rejected insertion, outside {outside}: {error}"));
-                let p = f.disk().execute("document.paragraph", json!({ "path": [2] })).unwrap();
+                let p = f.disk().execute("file.paragraph", json!({ "path": [2] })).unwrap();
                 assert_eq!(p["paragraph"]["text"], TEXTS[2]);
                 assert!(p["paragraph"]["runs"].as_array().unwrap().iter().all(|run| run["props"]["italic"] == true), "{p}");
             } else {
@@ -331,7 +331,7 @@ async fn missing_id_ranges_report_deletion() {
             let result = f.run(Some(basis), write(2, &ids, &base)).await;
             if kind == 2 {
                 result.unwrap();
-                let p = f.disk().execute("document.paragraph", json!({ "path": [2] })).unwrap();
+                let p = f.disk().execute("file.paragraph", json!({ "path": [2] })).unwrap();
                 assert_eq!(p["paragraph"]["text"], format!("{}Z", TEXTS[2]));
                 assert_eq!(bold_spans(&p), [(6, 10)], "{p}");
             } else {
@@ -366,7 +366,7 @@ async fn cell_paths_report_join_relocation() {
             let result = f.run(Some(basis), write(4, &ids, &base)).await;
             if kind == 2 || kind == 8 {
                 result.unwrap();
-                let p = f.disk().execute("document.paragraph", json!({ "path": [5, 0, 1, 0] })).unwrap();
+                let p = f.disk().execute("file.paragraph", json!({ "path": [5, 0, 1, 0] })).unwrap();
                 assert_eq!(bold_spans(&p), [(0, 4)], "{p}");
                 if kind == 2 {
                     assert_eq!(f.texts()[2], format!("{}Z", TEXTS[2]));

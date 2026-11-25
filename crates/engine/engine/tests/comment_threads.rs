@@ -132,8 +132,8 @@ fn a_commenter_comments_but_cannot_edit_and_writes_only_comments() {
         ("text.insert", json!({ "text": "x" })),
         ("format.bold", json!({})),
         ("text.newParagraph", json!({})),
-        ("insert.table", json!({ "rows": 1, "cols": 1 })),
-        ("review.trackChanges", json!({})),
+        ("table.insert", json!({ "rows": 1, "cols": 1 })),
+        ("change.track", json!({})),
     ] {
         let error = b.run(id, &params).err().unwrap_or_else(|| panic!("{id} ran"));
         assert!(error.to_string().contains("commenting only"), "{id}: {error}");

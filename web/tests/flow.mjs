@@ -34,7 +34,7 @@ try {
   const kit = page.frameLocator('#kit')
   await page.waitForTimeout(1000)
   const bodyText = () => page.evaluate(async () => {
-    const result = await window.devHost.connection().ai.run([{ command: 'document.inspect', params: {} }], false)
+    const result = await window.devHost.connection().ai.run([{ command: 'file.inspect', params: {} }], false)
     return result.completed[0].result.blocks.map((block) => block.text).join('\n')
   })
   step('Chinese tab names from the upstream catalog', (await kit.getByTestId('ribbon-tab-home').textContent()) === '开始')

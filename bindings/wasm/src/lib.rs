@@ -353,8 +353,8 @@ impl DocDocument {
 const CHANGES_DOCUMENT: &[&str] = &[
     "edit.undo",
     "edit.redo",
-    "insert.editHeader",
-    "insert.editFooter",
+    "header.edit",
+    "footer.edit",
     "file.new",
     "file.newFromTemplate",
     "file.open",

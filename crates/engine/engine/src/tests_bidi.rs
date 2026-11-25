@@ -14,10 +14,10 @@ fn run(s: &mut Session, id: &str, v: serde_json::Value) -> serde_json::Value {
 /// A session with `text` (paragraphs split on `\n`), every paragraph right to left when `rtl`.
 fn session(text: &str, rtl: bool) -> Session {
     let mut s = Session::new(kition_doc_doc::Document::new());
-    run(&mut s, "document.setText", json!({"text": text}));
+    run(&mut s, "file.setText", json!({"text": text}));
     if rtl {
-        run(&mut s, "select.all", json!({}));
-        run(&mut s, "para.rtl", json!({}));
+        run(&mut s, "edit.selectAll", json!({}));
+        run(&mut s, "paragraph.rtl", json!({}));
         run(&mut s, "caret.docStart", json!({}));
     }
     s
@@ -35,14 +35,14 @@ fn caret_x(s: &mut Session) -> f32 {
 #[test]
 fn direction_commands_change_only_the_reading_order() {
     let mut s = session("سلام دنیا\nHello", false);
-    run(&mut s, "para.alignCenter", json!({}));
-    run(&mut s, "para.rtl", json!({}));
+    run(&mut s, "format.alignCenter", json!({}));
+    run(&mut s, "paragraph.rtl", json!({}));
     assert_eq!(props(&s, 0).bidi, Some(true));
     assert_eq!(props(&s, 0).align, Some(Align::Center), "direction doesn't touch alignment");
     // Left-to-right again, and `value: false` means the other direction.
-    run(&mut s, "para.ltr", json!({}));
+    run(&mut s, "paragraph.ltr", json!({}));
     assert_eq!(props(&s, 0).bidi, Some(false));
-    run(&mut s, "para.ltr", json!({"value": false}));
+    run(&mut s, "paragraph.ltr", json!({"value": false}));
     assert_eq!(props(&s, 0).bidi, Some(true));
     // A new right-to-left paragraph starts at the right margin (start-aligned).
     let mut s = session("متن", true);
@@ -53,29 +53,29 @@ fn direction_commands_change_only_the_reading_order() {
 fn alignment_buttons_mean_what_they_show_in_rtl_paragraphs() {
     let mut s = session("متن فارسی", true);
     // Align Left in a right-to-left paragraph moves text to the left: its end edge.
-    run(&mut s, "para.alignLeft", json!({}));
+    run(&mut s, "format.alignLeft", json!({}));
     assert_eq!(props(&s, 0).align, Some(Align::Right));
     let x_end = s.layout().caret(&Pos::body(0, "متن فارسی".len())).unwrap().x;
     assert!((x_end - 72.0).abs() < 0.5, "text ends at the left margin: {x_end}");
     // Align Right is the start edge; pressing it again keeps it there.
-    run(&mut s, "para.alignRight", json!({}));
+    run(&mut s, "format.alignRight", json!({}));
     assert_eq!(props(&s, 0).align, Some(Align::Left));
-    run(&mut s, "para.alignRight", json!({}));
+    run(&mut s, "format.alignRight", json!({}));
     assert_eq!(props(&s, 0).align, Some(Align::Left));
     // Logical values for scripts.
-    run(&mut s, "para.align", json!({"value": "end"}));
+    run(&mut s, "paragraph.align", json!({"value": "end"}));
     assert_eq!(props(&s, 0).align, Some(Align::Right));
-    run(&mut s, "para.align", json!({"value": "right"}));
+    run(&mut s, "paragraph.align", json!({"value": "right"}));
     assert_eq!(props(&s, 0).align, Some(Align::Left));
 }
 
 #[test]
 fn font_commands_reach_persian_text() {
     let mut s = session("کتاب خوب", true);
-    run(&mut s, "select.all", json!({}));
+    run(&mut s, "edit.selectAll", json!({}));
     run(&mut s, "format.bold", json!({}));
-    run(&mut s, "format.size", json!({"size": 18}));
-    run(&mut s, "format.font", json!({"name": "Vazirmatn"}));
+    run(&mut s, "format.fontSize", json!({"size": 18}));
+    run(&mut s, "format.fontName", json!({"name": "Vazirmatn"}));
     let p = s.doc.para(StoryRef::Body, &kition_doc_doc::Path::top(0)).unwrap();
     let c = p.props_of_char(0).clone();
     let rc = s.doc.styles.resolve_char(None, &c).complex();
@@ -172,7 +172,7 @@ fn explicit_alignment_sets_without_toggling() {
     for rtl in [false, true] {
         let mut s = session("متن", rtl);
         for v in ["center", "center", "right", "right", "left", "left"] {
-            run(&mut s, "para.align", json!({"value": v}));
+            run(&mut s, "paragraph.align", json!({"value": v}));
             let shown = props(&s, 0).align.unwrap_or_default().visual(rtl);
             let want = match v {
                 "center" => Align::Center,

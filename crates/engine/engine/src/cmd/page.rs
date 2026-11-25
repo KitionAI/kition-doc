@@ -9,10 +9,10 @@ use crate::{CmdError, CmdResult, CommandSpec, Selection, Session, p};
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("layout.margins", "Margins", "Layout › Page Setup", margins).params(
+        CommandSpec::new("page.margins", "Margins", "Layout › Page Setup", margins).params(
             r#"{"preset"?: "normal|narrow|moderate|wide|mirrored|office2003", "top"?: pt, "bottom"?: pt, "left"?: pt, "right"?: pt, "gutter"?: pt}"#,
         ),
-        CommandSpec::new("layout.orientation", "Orientation", "Layout › Page Setup", |s, v| {
+        CommandSpec::new("page.orientation", "Orientation", "Layout › Page Setup", |s, v| {
             let land = match p::str(v, "value") {
                 Some("landscape") => true,
                 Some("portrait") => false,
@@ -21,16 +21,16 @@ pub fn specs() -> Vec<CommandSpec> {
             with_sect(s, |x| x.set_landscape(land))
         })
         .params(r#"{"value": "portrait|landscape"}"#),
-        CommandSpec::new("layout.size", "Size", "Layout › Page Setup", size).params(
+        CommandSpec::new("page.size", "Size", "Layout › Page Setup", size).params(
             r#"{"name"?: "Letter|Legal|A4|…" (keeps the orientation), "width"?: pt, "height"?: pt (as given: wider than tall is landscape)}"#,
         ),
-        CommandSpec::new("layout.columns", "Columns", "Layout › Page Setup", columns)
+        CommandSpec::new("page.columns", "Columns", "Layout › Page Setup", columns)
             .params(
                 r#"{"count": 1-12, "space"?: pt, "separator"?: bool, "preset"?: "left|right", "widths"?: [[width pt, space after pt], …] (unequal columns; sets the count), "apply"?: "section|document|forward"}"#,
             ),
-        CommandSpec::new("layout.break", "Breaks", "Layout › Page Setup", breaks)
+        CommandSpec::new("page.break", "Breaks", "Layout › Page Setup", breaks)
             .params(r#"{"kind": "page|column|textWrapping|nextPage|continuous|evenPage|oddPage"}"#),
-        CommandSpec::new("layout.lineNumbers", "Line Numbers", "Layout › Page Setup", |s, v| {
+        CommandSpec::new("page.lineNumbers", "Line Numbers", "Layout › Page Setup", |s, v| {
             let mode = p::str(v, "value").unwrap_or("continuous");
             with_sect(s, |x| {
                 x.line_numbers = match mode {
@@ -42,12 +42,12 @@ pub fn specs() -> Vec<CommandSpec> {
             })
         })
         .params(r#"{"value": "none|continuous|restartPage|restartSection"}"#),
-        CommandSpec::new("layout.hyphenation", "Hyphenation", "Layout › Page Setup", |s, v| {
+        CommandSpec::new("page.hyphenation", "Hyphenation", "Layout › Page Setup", |s, v| {
             let on = p::bool(v, "value").unwrap_or(!s.doc.settings.auto_hyphenation);
             s.doc.settings.auto_hyphenation = on;
             Ok(json!({"value": on}))
         }),
-        CommandSpec::new("layout.pageSetup", "Page Setup", "Layout › Page Setup", |s, v| {
+        CommandSpec::new("page.pageSetup", "Page Setup", "Layout › Page Setup", |s, v| {
             if let Some(props) = v.get("section") {
                 // Only the fields given change; the others keep the section's values.
                 with_section_fields(&sect(s), props)?;
@@ -60,8 +60,8 @@ pub fn specs() -> Vec<CommandSpec> {
             s.ui_requests.push(json!({"open": "pageSetup"}));
             Ok(serde_json::to_value(sect(s)).unwrap_or(Value::Null))
         })
-        .params(r#"{"section"?: SectionProps (the fields to change, as layout.section answers them; the others are kept)}"#),
-        CommandSpec::new("layout.verticalAlign", "Vertical Alignment", "Layout › Page Setup › Layout", |s, v| {
+        .params(r#"{"section"?: SectionProps (the fields to change, as page.section answers them; the others are kept)}"#),
+        CommandSpec::new("page.verticalAlign", "Vertical Alignment", "Layout › Page Setup › Layout", |s, v| {
             let va = match p::str(v, "value") {
                 Some("top") => kition_doc_doc::props::VAlign::Top,
                 Some("center") => kition_doc_doc::props::VAlign::Center,
@@ -71,15 +71,15 @@ pub fn specs() -> Vec<CommandSpec> {
             with_sect(s, |x| x.valign = va)
         })
         .params(r#"{"value": "top|center|bottom"}"#),
-        CommandSpec::new("layout.differentFirstPage", "Different First Page", "Header & Footer › Options", |s, v| {
+        CommandSpec::new("page.differentFirstPage", "Different First Page", "Header & Footer › Options", |s, v| {
             let on = p::bool(v, "value").unwrap_or(!sect(s).title_page);
             with_sect(s, |x| x.title_page = on)
         }),
-        CommandSpec::new("layout.differentOddEven", "Different Odd & Even Pages", "Header & Footer › Options", |s, v| {
+        CommandSpec::new("page.differentOddEven", "Different Odd & Even Pages", "Header & Footer › Options", |s, v| {
             s.doc.settings.even_odd_headers = p::bool(v, "value").unwrap_or(!s.doc.settings.even_odd_headers);
             sel_result(s)
         }),
-        CommandSpec::new("layout.pageNumberFormat", "Format Page Numbers", "Insert › Header & Footer › Page Number", |s, v| {
+        CommandSpec::new("page.pageNumberFormat", "Format Page Numbers", "Insert › Header & Footer › Page Number", |s, v| {
             let fmt = p::str(v, "format").map(kition_doc_doc::section::NumFormat::from_ooxml);
             let start = p::u64(v, "start").map(|x| x.min(100_000) as u32);
             with_sect(s, |x| {
@@ -90,7 +90,7 @@ pub fn specs() -> Vec<CommandSpec> {
             })
         })
         .params(r#"{"format"?: "decimal|lowerRoman|upperRoman|lowerLetter|upperLetter", "start"?: n}"#),
-        CommandSpec::new("layout.section", "Section Properties", "Layout › Page Setup", |s, _| {
+        CommandSpec::new("page.section", "Section Properties", "Layout › Page Setup", |s, _| {
             Ok(serde_json::to_value(sect(s)).unwrap_or(Value::Null))
         })
         .pure(),
@@ -341,7 +341,7 @@ mod tests {
     fn unequal_columns_with_a_line_between() {
         let mut s = doc();
         let tw = sect(&s).text_width();
-        s.run("layout.columns", &json!({"widths": [[150.0, 24.0], [tw - 174.0, 0.0]], "separator": true})).unwrap();
+        s.run("page.columns", &json!({"widths": [[150.0, 24.0], [tw - 174.0, 0.0]], "separator": true})).unwrap();
         let c = sect(&s).columns;
         assert_eq!((c.count, c.separator, c.widths.len()), (2, true, 2));
         assert_eq!(c.widths.first(), Some(&(150.0, 24.0)));
@@ -349,7 +349,7 @@ mod tests {
         assert_eq!(sect(&s).columns, Columns::default());
         // Too wide, too narrow, too many, or nonsense: refused.
         for bad in [json!([[tw, 36.0], [100.0, 0.0]]), json!([[5.0, 0.0], [100.0, 0.0]]), json!(vec![[40.0, 0.0]; 13]), json!("x")] {
-            assert!(s.run("layout.columns", &json!({"widths": bad})).is_err(), "{bad}");
+            assert!(s.run("page.columns", &json!({"widths": bad})).is_err(), "{bad}");
         }
     }
 
@@ -357,15 +357,15 @@ mod tests {
     #[test]
     fn columns_apply_to_the_document_or_from_the_caret_on() {
         let mut s = doc();
-        s.run("layout.break", &json!({"kind": "nextPage"})).unwrap();
-        s.run("layout.columns", &json!({"count": 3, "apply": "document"})).unwrap();
+        s.run("page.break", &json!({"kind": "nextPage"})).unwrap();
+        s.run("page.columns", &json!({"count": 3, "apply": "document"})).unwrap();
         assert!(s.doc.sections().iter().all(|(_, x)| x.columns.count == 3));
         let mut s = doc();
         s.run("caret.docEnd", &json!({})).unwrap();
-        s.run("layout.columns", &json!({"count": 2, "apply": "forward"})).unwrap();
+        s.run("page.columns", &json!({"count": 2, "apply": "forward"})).unwrap();
         let counts: Vec<u32> = s.doc.sections().iter().map(|(_, x)| x.columns.count).collect();
         assert_eq!(counts, vec![1, 2]);
         assert_eq!(s.doc.last_section.start, SectionStart::Continuous);
-        assert!(s.run("layout.columns", &json!({"count": 2, "apply": "elsewhere"})).is_err());
+        assert!(s.run("page.columns", &json!({"count": 2, "apply": "elsewhere"})).is_err());
     }
 }

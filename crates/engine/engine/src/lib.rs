@@ -1,7 +1,7 @@
 //! Kition Doc engine: the editing session and its commands.
 //!
 //! **Everything is a command.** Each user-visible action is a [`CommandSpec`] with a stable id
-//! (`format.bold`, `insert.table`), a label, the ribbon/menu location, a default shortcut, a
+//! (`format.bold`, `table.insert`), a label, the ribbon/menu location, a default shortcut, a
 //! params description and a `run` function. Menus, ribbon, shortcuts, the command palette, the
 //! CLI, the JSON control channel and the MCP server all call [`Session::run`].
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]

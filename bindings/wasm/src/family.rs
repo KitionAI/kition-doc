@@ -11,7 +11,7 @@
 //!   text has with its paragraph style resolved: the selected paragraphs' styles, the styles they
 //!   are based on, the document defaults, and each paragraph's style (a paragraph command its
 //!   whole properties).
-//! - **Lists and numbering** (`para.*Numbering`, `para.bullets`, `para.numbering`, `list.*`):
+//! - **Lists and numbering** (`para.*Numbering`, `paragraph.bullets`, `paragraph.numbering`, `list.*`):
 //!   the list definitions (`numbering`, `lists`) and the paragraphs around (where a list
 //!   continues or restarts): the definitions and the body's order.
 //! - **Tables** (`table.*`): the table the selection is in, whole (its grid and properties), and
@@ -28,7 +28,7 @@
 //! - **Pictures** (`picture.*`): the selected picture by its number; bitmap adjustments also
 //!   read its media (`Media` has no tool id, so a bitmap change is the root's `media`).
 //! - **Equations** (`equation.*`): the equation at the caret or being edited, by its number.
-//! - **Headers and footers** (`hf.*`, `insert.header`, `insert.footer`): the parts; the header or
+//! - **Headers and footers** (`hf.*`, `header.insert`, `footer.insert`): the parts; the header or
 //!   footer a command replaces by its tool id (`part:header-1-default`), and every part's
 //!   paragraph list where a command reads every story.
 use kition_doc_engine::doc::{Block, Document, StoryRef};
@@ -55,30 +55,25 @@ fn reads_document(command: &str) -> bool {
     // or copy/insert a named fragment. None scans the document.
     if matches!(
         command,
-        "references.addText"
-            | "references.footnote"
-            | "references.endnote"
-            | "references.markEntry"
-            | "references.markCitation"
-            | "insert.quickParts"
+        "toc.addText" | "footnote.insert" | "endnote.insert" | "index.markEntry" | "tableOfAuthorities.markCitation" | "quickPart.insert"
     ) {
         return false;
     }
-    (command != "references.noteOptions" && matches!(command.split_once('.').map(|(family, _)| family), Some("references" | "mailings")))
+    (command != "footnote.options" && matches!(command.split_once('.').map(|(family, _)| family), Some("references" | "mailings")))
         || matches!(
             command,
-            "insert.crossReference"
+            "crossReference.insert"
                 | "insert.caption"
                 | "insert.toc"
                 | "insert.index"
                 | "insert.tableOfFigures"
-                | "insert.quickParts"
-                | "insert.field"
+                | "quickPart.insert"
+                | "field.insert"
                 | "edit.replaceAll"
                 | "edit.replace"
                 | "equation.convert"
-                | "review.acceptAll"
-                | "review.rejectAll"
+                | "change.acceptAll"
+                | "change.rejectAll"
                 | "text.updateFields"
         )
 }
@@ -87,17 +82,17 @@ fn reads_document(command: &str) -> bool {
 /// `with_sect`: the section ending at the first section break at or after the selection's block),
 /// from the reading (C8-doc-3).
 const SECTION_READERS: &[&str] = &[
-    "design.pageBorders",
+    "page.borders",
     "arrange.align",
     "arrange.position",
     "table.autofit",
     "table.fromText",
     "table.quick",
     "table.draw",
-    "insert.removeHeader",
-    "insert.header",
-    "insert.footer",
-    "hf.position",
+    "header.remove",
+    "header.insert",
+    "footer.insert",
+    "headerFooter.position",
 ];
 
 /// Commands on the selected drawing objects (`objects::selected_all`) and the fields of each they
@@ -110,7 +105,7 @@ fn on_selected_objects(command: &str) -> Option<&'static [&'static str]> {
         Some("shape") => Some(if command == "shape.effects" { &["look", "frame"] } else { &[] }),
         // A picture's own fields are its `value` (and its `frame`); a shape's look.
         Some("picture") => Some(match command {
-            "picture.size" => &["frame", "value"],
+            "image.size" => &["frame", "value"],
             _ => &["value", "look", "frame"],
         }),
         _ => None,
@@ -122,10 +117,10 @@ fn on_selected_objects(command: &str) -> Option<&'static [&'static str]> {
 /// styles' defaults; the themes, style sets and effects re-resolve the whole document.
 fn design_reads(command: &str) -> Option<&'static [&'static str]> {
     match command {
-        "design.effects" | "design.pageColor" | "design.watermark" => Some(&["settings"]),
-        "design.paragraphSpacing" => Some(&["styles"]),
-        "design.pageBorders" => Some(&["lastSection"]),
-        "design.styleSet" | "design.theme" | "design.themeColors" | "design.themeFonts" => Some(&["settings", "styles", "lastSection"]),
+        "theme.effects" | "page.color" | "page.watermark" => Some(&["settings"]),
+        "theme.paragraphSpacing" => Some(&["styles"]),
+        "page.borders" => Some(&["lastSection"]),
+        "theme.styleSet" | "theme.set" | "theme.colors" | "theme.fonts" => Some(&["settings", "styles", "lastSection"]),
         _ => None,
     }
 }
@@ -135,8 +130,8 @@ fn design_reads(command: &str) -> Option<&'static [&'static str]> {
 fn direct_character_assignment(command: &str, params: &Value) -> bool {
     matches!(
         command,
-        "format.font"
-            | "format.size"
+        "format.fontName"
+            | "format.fontSize"
             | "format.highlight"
             | "format.spacing"
             | "format.scale"
@@ -177,31 +172,31 @@ fn direct_character_assignment(command: &str, params: &Value) -> bool {
 fn direct_paragraph_properties(command: &str) -> bool {
     matches!(
         command,
-        "para.set"
-            | "para.indents"
-            | "para.hangingIndent"
-            | "para.removeHanging"
-            | "para.rtl"
-            | "para.ltr"
-            | "para.lineSpacing"
-            | "para.single"
-            | "para.double"
-            | "para.oneAndHalf"
-            | "para.keepNext"
-            | "para.keepLines"
-            | "para.pageBreakBefore"
-            | "para.widowControl"
-            | "para.outlineLevel"
-            | "para.shading"
-            | "para.borders"
-            | "para.sort"
+        "paragraph.set"
+            | "paragraph.indents"
+            | "paragraph.hangingIndent"
+            | "paragraph.removeHanging"
+            | "paragraph.rtl"
+            | "paragraph.ltr"
+            | "paragraph.lineSpacing"
+            | "paragraph.single"
+            | "paragraph.double"
+            | "paragraph.oneAndHalf"
+            | "paragraph.keepNext"
+            | "paragraph.keepLines"
+            | "paragraph.pageBreakBefore"
+            | "paragraph.widowControl"
+            | "paragraph.outlineLevel"
+            | "paragraph.shading"
+            | "paragraph.borders"
+            | "paragraph.sort"
     )
 }
 
 /// Longer plain replacement text cannot trigger single-character AutoFormat
 /// or split a paragraph. It uses direct typing marks, held by place.
 fn plain_paragraph_replacement(command: &str, params: &Value) -> bool {
-    command == "para.text"
+    command == "paragraph.text"
         && params.get("text").and_then(Value::as_str).is_some_and(|text| text.chars().count() > 1 && !text.contains(['\r', '\n', '\u{2029}']))
 }
 
@@ -233,80 +228,74 @@ fn root_reads(command: &str) -> &'static [&'static str] {
     match command {
         // Note Options echoes both formats; Hyphenation assigns its setting even when
         // an absolute value was given. Neither command consumes a page section.
-        "references.noteOptions" => &["settings.footnoteFormat", "settings.endnoteFormat"],
-        "layout.hyphenation" => &["settings.autoHyphenation"],
-        "layout.differentOddEven" => &["settings.evenOddHeaders"],
-        "comment.add" | "comment.delete" | "comment.reply" | "review.deleteComment" | "review.newComment" | "review.reply" => &["parts"],
+        "footnote.options" => &["settings.footnoteFormat", "settings.endnoteFormat"],
+        "page.hyphenation" => &["settings.autoHyphenation"],
+        "page.differentOddEven" => &["settings.evenOddHeaders"],
+        "comment.add" | "comment.delete" | "comment.reply" | "comment.deleteCurrent" | "comment.new" | "comment.replyCurrent" => &["parts"],
         "file.properties" => &["customProps"],
         // C8-doc-6: a chart keeps its parts as read; Set Text replaces the body.
         "drawing.chart" => &["passthrough"],
-        "document.setText" => &["body"],
+        "file.setText" => &["body"],
         "table.deleteStyle" => &["body", "parts", "styles"],
         "edit.pasteAllClipboard" | "edit.pasteClipboardItem" | "edit.pasteMerge" => &["revisions"],
-        "design.pageBorders"
-        | "hf.position"
-        | "insert.coverPage"
-        | "insert.removeFooter"
-        | "insert.removeHeader"
-        | "layout.columns"
-        | "layout.differentFirstPage"
-        | "layout.lineNumbers"
-        | "layout.linkToPrevious"
-        | "layout.margins"
-        | "layout.orientation"
-        | "layout.pageNumberFormat"
-        | "layout.pageSetup"
-        | "layout.size"
-        | "layout.verticalAlign"
-        | "review.acceptAll"
-        | "review.rejectAll"
+        "page.borders"
+        | "headerFooter.position"
+        | "page.insertCover"
+        | "footer.remove"
+        | "header.remove"
+        | "page.columns"
+        | "page.differentFirstPage"
+        | "page.lineNumbers"
+        | "page.linkToPrevious"
+        | "page.margins"
+        | "page.orientation"
+        | "page.pageNumberFormat"
+        | "page.pageSetup"
+        | "page.size"
+        | "page.verticalAlign"
+        | "change.acceptAll"
+        | "change.rejectAll"
         | "table.draw"
         | "table.fromText"
         | "table.quick" => &["lastSection"],
-        "references.updateFields" => &["lastSection", "lists", "numbering", "sources", "styles"],
-        "references.toc" | "references.updateToc" => &["lastSection", "lists", "numbering", "styles"],
-        "insert.picture" => &["lastSection", "media"],
-        "insert.editFooter" | "insert.editHeader" | "insert.footer" | "insert.header" | "insert.pageNumber" => &["lastSection", "parts"],
-        "references.bibliography" | "references.citationStyle" | "references.updateFigures" | "references.updateIndex" => {
-            &["lastSection", "sources", "styles"]
-        }
-        "design.styleSet"
-        | "design.theme"
-        | "design.themeColors"
-        | "design.themeFonts"
-        | "insert.spreadsheet"
-        | "insert.table"
-        | "references.index"
-        | "references.tableOfAuthorities"
-        | "references.tableOfFigures"
+        "field.updateAll" => &["lastSection", "lists", "numbering", "sources", "styles"],
+        "toc.insert" | "toc.update" => &["lastSection", "lists", "numbering", "styles"],
+        "image.insert" => &["lastSection", "media"],
+        "footer.edit" | "header.edit" | "footer.insert" | "header.insert" | "pageNumber.insert" => &["lastSection", "parts"],
+        "bibliography.insert" | "citation.style" | "tableOfFigures.update" | "index.update" => &["lastSection", "sources", "styles"],
+        "theme.styleSet"
+        | "theme.set"
+        | "theme.colors"
+        | "theme.fonts"
+        | "spreadsheet.insert"
+        | "table.insert"
+        | "index.insert"
+        | "tableOfAuthorities.insert"
+        | "tableOfFigures.insert"
         | "table.autofit" => &["lastSection", "styles"],
-        "para.bullets"
-        | "para.defineBullet"
-        | "para.defineNumber"
-        | "para.multilevel"
-        | "para.numbering"
-        | "para.restartNumbering"
-        | "para.setNumberingValue" => &["lists", "numbering"],
-        "insert.field" => &["lists", "numbering", "sources", "styles"],
+        "paragraph.bullets"
+        | "paragraph.defineBullet"
+        | "paragraph.defineNumber"
+        | "paragraph.multilevel"
+        | "paragraph.numbering"
+        | "paragraph.restartNumbering"
+        | "paragraph.setNumberingValue" => &["lists", "numbering"],
+        "field.insert" => &["lists", "numbering", "sources", "styles"],
         "list.define" => &["lists", "numbering", "styles"],
-        "picture.border"
-        | "picture.change"
-        | "picture.color"
-        | "picture.compress"
-        | "picture.corrections"
-        | "picture.effects"
-        | "picture.removeBackground"
-        | "picture.style"
-        | "picture.transparency" => &["media"],
-        "drawing.delete"
-        | "drawing.text"
-        | "insert.textBox"
-        | "insert.textFromFile"
-        | "insert.artText"
-        | "references.endnote"
-        | "references.footnote" => &["parts"],
-        "references.citation" | "references.sources" => &["sources"],
-        "design.paragraphSpacing"
+        "image.border"
+        | "image.change"
+        | "image.color"
+        | "image.compress"
+        | "image.corrections"
+        | "image.effects"
+        | "image.removeBackground"
+        | "image.style"
+        | "image.transparency" => &["media"],
+        "drawing.delete" | "drawing.text" | "textBox.insert" | "text.insertFromFile" | "artText.insert" | "endnote.insert" | "footnote.insert" => {
+            &["parts"]
+        }
+        "citation.insert" | "citation.sources" => &["sources"],
+        "theme.paragraphSpacing"
         | "format.allCaps"
         | "format.bold"
         | "format.border"
@@ -314,47 +303,47 @@ fn root_reads(command: &str) -> &'static [&'static str] {
         | "format.doubleStrikethrough"
         | "format.emboss"
         | "format.engrave"
-        | "format.growFont"
-        | "format.growFont1"
+        | "format.increaseFontSize"
+        | "format.increaseFontSizeByOne"
         | "format.hidden"
         | "format.italic"
         | "format.outline"
         | "format.shadow"
-        | "format.shrinkFont"
-        | "format.shrinkFont1"
+        | "format.decreaseFontSize"
+        | "format.decreaseFontSizeByOne"
         | "format.smallCaps"
         | "format.strikethrough"
         | "format.subscript"
         | "format.superscript"
         | "format.underline"
-        | "insert.blankPage"
-        | "insert.crossReference"
-        | "para.addSpaceBefore"
-        | "para.align"
-        | "para.alignCenter"
-        | "para.alignLeft"
-        | "para.alignRight"
-        | "para.asianTypography"
-        | "para.distribute"
-        | "para.heading1"
-        | "para.heading2"
-        | "para.heading3"
-        | "para.indent"
-        | "para.insert"
-        | "para.justify"
-        | "para.normal"
-        | "para.outdent"
-        | "para.removeSpaceAfter"
-        | "para.spacing"
-        | "para.style"
-        | "para.tabs"
-        | "styles.addToGallery"
-        | "styles.create"
-        | "styles.delete"
-        | "styles.modify"
-        | "styles.setVisibility"
-        | "styles.updateToMatch"
-        | "table.modifyStyle"
+        | "page.insertBlank"
+        | "crossReference.insert"
+        | "paragraph.addSpaceBefore"
+        | "paragraph.align"
+        | "format.alignCenter"
+        | "format.alignLeft"
+        | "format.alignRight"
+        | "paragraph.asianTypography"
+        | "paragraph.distribute"
+        | "paragraph.heading1"
+        | "paragraph.heading2"
+        | "paragraph.heading3"
+        | "paragraph.indent"
+        | "paragraph.insert"
+        | "format.justify"
+        | "paragraph.normal"
+        | "paragraph.outdent"
+        | "paragraph.removeSpaceAfter"
+        | "paragraph.spacing"
+        | "paragraph.style"
+        | "paragraph.tabs"
+        | "style.addToGallery"
+        | "style.add"
+        | "style.delete"
+        | "style.set"
+        | "style.setVisibility"
+        | "style.updateToMatch"
+        | "table.setStyle"
         | "table.newStyle"
         | "table.style" => &["styles"],
         _ => &[],
@@ -364,7 +353,7 @@ fn root_reads(command: &str) -> &'static [&'static str] {
 /// The document properties (`core`) a command reads, per command from the reading (C8-doc-5):
 /// never all of `core`, whose save stamp (`modified`, `revision`, `lastModifiedBy`) any save of
 /// any program changes (`session::stamp_core`), but the members its code reads: a Title or Author
-/// field's text (`references.rs` `TITLE`/`AUTHOR`, `tools.rs` `insert.docProperty`), a cover
+/// field's text (`references.rs` `TITLE`/`AUTHOR`, `tools.rs` `field.insertDocProperty`), a cover
 /// page's title, subtitle and author (`insert.rs` `cover_page`), a header's title preset. A save
 /// stamps the revision it reads; File › Info reads who made and last saved the document.
 fn core_reads(command: &str, params: &Value) -> Vec<&'static str> {
@@ -380,11 +369,11 @@ fn core_reads(command: &str, params: &Value) -> Vec<&'static str> {
         })
     };
     match command {
-        "insert.docProperty" => member(params.get("name").and_then(Value::as_str).unwrap_or("Title")).into_iter().collect(),
-        "insert.coverPage" => vec!["core.title", "core.subject", "core.creator"],
-        "insert.header" => vec!["core.title"],
-        "insert.field" | "references.updateFields" | "text.updateFields" => vec!["core.title", "core.creator"],
-        "file.inspect" => vec!["core.creator", "core.lastModifiedBy"],
+        "field.insertDocProperty" => member(params.get("name").and_then(Value::as_str).unwrap_or("Title")).into_iter().collect(),
+        "page.insertCover" => vec!["core.title", "core.subject", "core.creator"],
+        "header.insert" => vec!["core.title"],
+        "field.insert" | "field.updateAll" | "text.updateFields" => vec!["core.title", "core.creator"],
+        "file.removeHiddenContent" => vec!["core.creator", "core.lastModifiedBy"],
         "file.save" | "file.saveAs" => vec!["core.revision"],
         "file.properties" => params.as_object().into_iter().flatten().filter_map(|(key, _)| member(key)).collect(),
         _ => Vec::new(),
@@ -441,7 +430,7 @@ pub(crate) fn table_property_fields(command: &str, params: &Value) -> Option<Vec
 /// Apply, does not consult the table at the caret. The styles remain held.
 pub(crate) fn table_definition_only(command: &str, params: &Value) -> bool {
     (command == "table.newStyle" && params.get("apply").and_then(Value::as_bool) == Some(false))
-        || (command == "table.modifyStyle"
+        || (command == "table.setStyle"
             && params.get("style").and_then(Value::as_str).is_some()
             && params.get("apply").and_then(Value::as_bool) != Some(true))
 }
@@ -450,7 +439,7 @@ pub(crate) fn table_definition_only(command: &str, params: &Value) -> bool {
 /// the reading): a cut copies a table it spans, Accept and Reject read a cell's, row's and table's
 /// tracked changes, Tab and Shift+Tab move between cells (and add a row at the last), Backspace
 /// at a paragraph after a table goes into its last cell.
-const TABLE_READERS: &[&str] = &["edit.cut", "review.accept", "review.reject", "text.tab", "text.backTab", "text.backspace"];
+const TABLE_READERS: &[&str] = &["edit.cut", "change.accept", "change.reject", "text.tab", "text.backTab", "text.backspace"];
 
 /// The top-level tables of the body from block `a` to block `b` (and the block before `a` for
 /// Backspace, which goes into a table before its paragraph).
@@ -474,15 +463,15 @@ fn touched_tables<'d>(
 }
 
 fn lists(command: &str) -> bool {
-    command != "para.outlineLevel"
+    command != "paragraph.outlineLevel"
         && (command.starts_with("list.")
-            || matches!(command, "para.defineBullet" | "para.defineNumber" | "para.multilevel")
+            || matches!(command, "paragraph.defineBullet" | "paragraph.defineNumber" | "paragraph.multilevel")
             || (command.starts_with("para.")
                 && ["umbering", "bullets", "Bullets", "List", "list", "Level"].iter().any(|word| command.contains(word))))
 }
 
 fn disabling_list(command: &str, params: &Value) -> bool {
-    matches!(command, "para.bullets" | "para.numbering") && params.get("off").and_then(Value::as_bool) == Some(true)
+    matches!(command, "paragraph.bullets" | "paragraph.numbering") && params.get("off").and_then(Value::as_bool) == Some(true)
 }
 
 /// New default levels have no style links. Without `apply`, this definition
@@ -516,7 +505,7 @@ fn every_paragraph(doc: &Document) -> Vec<String> {
 /// engine counts the selection's block in the body, or, in a header or note, the body place the
 /// caret came from (`body_return`, `page::body_block`); none with neither.
 /// Which sections a section command acts on (C8-doc-6): the selection's (by default), every one
-/// from the selection's to the end (`layout.columns` `apply: "forward"`), or every one
+/// from the selection's to the end (`page.columns` `apply: "forward"`), or every one
 /// (`apply`/`applyTo: "document"`, Remove Header, which scans every body paragraph).
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum SectionScope {
@@ -528,8 +517,8 @@ enum SectionScope {
 fn section_scope(command: &str, params: &Value) -> SectionScope {
     let apply = params.get("apply").or_else(|| params.get("applyTo")).and_then(Value::as_str);
     match (command, apply) {
-        ("insert.removeHeader", _) | (_, Some("document")) => SectionScope::Document,
-        ("layout.columns", Some("forward")) => SectionScope::Forward,
+        ("header.remove", _) | (_, Some("document")) => SectionScope::Document,
+        ("page.columns", Some("forward")) => SectionScope::Forward,
         _ => SectionScope::Selection,
     }
 }
@@ -602,8 +591,8 @@ fn named_comment(session: &kition_doc_engine::Session, command: &str, params: &V
             Some(_) => review::comment_param(session, params, "comment").ok(),
             None => review::comment_param(session, params, "thread").ok(),
         },
-        "review.reply" | "review.editComment" => review::comment_param(session, params, "id").ok(),
-        "review.deleteComment" | "review.resolveComment" if params.get("all").and_then(Value::as_bool) != Some(true) => {
+        "comment.replyCurrent" | "comment.edit" => review::comment_param(session, params, "id").ok(),
+        "comment.deleteCurrent" | "comment.resolveCurrent" if params.get("all").and_then(Value::as_bool) != Some(true) => {
             match params.get("id").filter(|id| !id.is_null()) {
                 Some(_) => review::comment_param(session, params, "id").ok(),
                 None => review::comment_at_caret(session),
@@ -634,8 +623,8 @@ fn anchored_in(doc: &Document, id: u32) -> Option<u32> {
 fn comment_premises(session: &kition_doc_engine::Session, command: &str, params: &Value, under: &mut Under) {
     use kition_doc_engine::cmd::review;
     // Document Inspector's Remove Comments deletes every thread and every comment's text.
-    if (command == "file.inspect" && params.get("remove").and_then(Value::as_array).is_some_and(|r| r.iter().any(|v| v == "comments")))
-        || (command == "review.deleteComment" && params.get("all") == Some(&Value::Bool(true)))
+    if (command == "file.removeHiddenContent" && params.get("remove").and_then(Value::as_array).is_some_and(|r| r.iter().any(|v| v == "comments")))
+        || (command == "comment.deleteCurrent" && params.get("all") == Some(&Value::Bool(true)))
     {
         under.premises.push(Premise::on(ROOT).fields(["~commentCount"]).positions(Vec::<String>::new()));
         for (id, c) in &session.doc.comments {
@@ -685,15 +674,15 @@ fn comment_premises(session: &kition_doc_engine::Session, command: &str, params:
     }
     match command {
         "comment.reply" => chain.iter().for_each(|c| comment(*c, &["props"], under)),
-        "review.reply" => comment(id, &[], under),
-        "review.editComment" => comment(id, &["body", "props.blocks"], under),
+        "comment.replyCurrent" => comment(id, &[], under),
+        "comment.edit" => comment(id, &["body", "props.blocks"], under),
         // The comments up to the first, whose flag (the thread's) it writes.
-        "comment.resolve" | "review.resolveComment" if id == root || command == "comment.resolve" => {
+        "comment.resolve" | "comment.resolveCurrent" if id == root || command == "comment.resolve" => {
             chain.iter().filter(|c| **c != root || id == root).for_each(|c| comment(*c, &["props"], under));
             thread(&["resolved"], under);
         }
         // A reply's own flag (Resolve by `id`; with the caret in a reply, its thread's).
-        "review.resolveComment" => {
+        "comment.resolveCurrent" => {
             comment(id, &["props"], under);
             if params.get("id").is_none_or(Value::is_null) {
                 thread(&["resolved"], under);
@@ -710,12 +699,12 @@ fn comment_premises(session: &kition_doc_engine::Session, command: &str, params:
         }
         // A reply, and the replies that answer it (they answer its parent from now on); Delete
         // reads its replies' parents, not its own.
-        "comment.delete" | "review.deleteComment" => {
+        "comment.delete" | "comment.deleteCurrent" => {
             if let Some(tool) = comments.get(&id).and_then(review::comment_tool_id) {
                 under.premises.push(Premise::on(tool.as_str()).positions(Vec::<String>::new()));
             }
             for (c, _) in comments.iter().filter(|(_, c)| c.parent == Some(id)) {
-                if command == "review.deleteComment" {
+                if command == "comment.deleteCurrent" {
                     if let Some(tool) = comments.get(c).and_then(review::comment_tool_id) {
                         under.premises.push(Premise::on(tool.as_str()).positions(Vec::<String>::new()));
                     }
@@ -761,7 +750,7 @@ fn story_paragraphs(doc: &Document, story: StoryRef) -> Vec<String> {
         .collect()
 }
 
-/// The header (or footer) `insert.header`, `insert.footer` and `insert.pageNumber` replace: the
+/// The header (or footer) `header.insert`, `footer.insert` and `pageNumber.insert` replace: the
 /// default one of the section the body block `block` is in, as `page::with_sect` finds it.
 fn section_part(doc: &Document, block: usize, footer: bool) -> Option<u32> {
     let section =
@@ -819,17 +808,17 @@ fn layout_read(command: &str, params: &Value) -> Option<LayoutRead> {
         .and_then(Value::as_u64)
         .and_then(|p| usize::try_from(p).ok());
     match command {
-        "references.toc"
-        | "references.updateToc"
-        | "references.index"
-        | "references.tableOfAuthorities"
-        | "references.tableOfFigures"
-        | "references.updateFigures"
-        | "references.updateIndex"
-        | "references.updateFields"
-        | "insert.field"
-        | "insert.crossReference" => Some(LayoutRead::Every),
-        "table.draw" | "table.eraser" | "draw.erase" | "draw.stroke" | "drawing.ink" | "drawing.erase" | "arrange.bounds" | "drawing.insert"
+        "toc.insert"
+        | "toc.update"
+        | "index.insert"
+        | "tableOfAuthorities.insert"
+        | "tableOfFigures.insert"
+        | "tableOfFigures.update"
+        | "index.update"
+        | "field.updateAll"
+        | "field.insert"
+        | "crossReference.insert" => Some(LayoutRead::Every),
+        "table.draw" | "table.eraser" | "ink.erase" | "ink.stroke" | "drawing.ink" | "drawing.erase" | "arrange.bounds" | "drawing.insert"
             if page.is_some() =>
         {
             page.map(LayoutRead::Page)
@@ -837,7 +826,7 @@ fn layout_read(command: &str, params: &Value) -> Option<LayoutRead> {
         "drawing.format" | "drawing.text" => Some(LayoutRead::FrameValidity),
         "drawing.transform" | "drawing.group" | "drawing.ungroup" | "drawing.connect" | "drawing.reconnect" | "drawing.chart" | "arrange.group"
         | "arrange.ungroup" | "arrange.nudge" | "arrange.bounds" => Some(LayoutRead::Objects),
-        "drawing.insert" | "insert.chart" | "table.autofit" | "drawing.ink" | "drawing.erase" => Some(LayoutRead::Caret),
+        "drawing.insert" | "chart.insert" | "table.autofit" | "drawing.ink" | "drawing.erase" => Some(LayoutRead::Caret),
         _ => None,
     }
 }
@@ -946,7 +935,7 @@ fn drawing_destinations(
         "drawing.insert" => params.get("frame").is_some_and(|frame| frame.get("x").is_some() || frame.get("y").is_some()),
         "drawing.transform" => ["dx", "dy", "x", "y"].iter().any(|key| params.get(*key).is_some()),
         "drawing.connect" => true,
-        "draw.stroke" | "drawing.ink" => true,
+        "ink.stroke" | "drawing.ink" => true,
         _ => false,
     };
     if !moves {
@@ -958,7 +947,7 @@ fn drawing_destinations(
     projected.pending = session.pending.clone();
     projected.page_hint = session.page_hint;
     let Ok(result) = projected.run(command, params) else { return Vec::new() };
-    if command == "draw.stroke" {
+    if command == "ink.stroke" {
         return result
             .get("pos")
             .cloned()
@@ -1050,12 +1039,12 @@ fn paragraph_reads(
     use kition_doc_engine::doc::Pos;
     let doc = &session.doc;
     let collapsed = a == b;
-    if matches!(command, "references.addText" | "format.clear") {
+    if matches!(command, "toc.addText" | "format.clear") {
         for path in doc.paths_between(a, b) {
             hold_paragraph(doc, &Pos::new(a.story, path, 0), &["para"], under);
         }
     }
-    if command == "para.sort" {
+    if command == "paragraph.sort" {
         for path in doc.paths_between(a, b) {
             hold_paragraph(doc, &Pos::new(a.story, path, 0), &["text"], under);
         }
@@ -1065,22 +1054,22 @@ fn paragraph_reads(
         "edit.paste"
             | "edit.pasteAllClipboard"
             | "edit.pasteClipboardItem"
-            | "insert.object"
-            | "insert.signatureLine"
-            | "insert.spreadsheet"
-            | "insert.textFromFile"
+            | "object.insert"
+            | "signatureLine.insert"
+            | "spreadsheet.insert"
+            | "text.insertFromFile"
     ) || (command == "edit.pasteSpecial" && matches!(params.get("as").and_then(Value::as_str), Some("formatted" | "html")))
-        || (matches!(command, "insert.autoText" | "insert.quickParts") && params.get("insert").is_some());
+        || (matches!(command, "autoText.insert" | "quickPart.insert") && params.get("insert").is_some());
     let copies = fragment
         || matches!(
             command,
-            "text.newParagraph" | "insert.blankPage" | "insert.dropCap" | "insert.horizontalLine" | "styles.create" | "styles.updateToMatch"
+            "text.newParagraph" | "page.insertBlank" | "dropCap.set" | "horizontalLine.insert" | "style.add" | "style.updateToMatch"
         )
         || pastes_lines(command, params)
         || (command == "edit.pasteFormat" && (collapsed || a.path != b.path || a.off == 0))
-        || (command == "styles.inspectorClear" && params.get("level").and_then(Value::as_str).is_some_and(|s| s.starts_with("paragraph")))
-        || (command == "insert.pageNumber" && params.get("position").and_then(Value::as_str) == Some("current"))
-        || (command == "insert.removeLink" && collapsed && doc.para_at(a).is_some_and(|p| p.is_empty()))
+        || (command == "style.inspectorClear" && params.get("level").and_then(Value::as_str).is_some_and(|s| s.starts_with("paragraph")))
+        || (command == "pageNumber.insert" && params.get("position").and_then(Value::as_str) == Some("current"))
+        || (command == "link.remove" && collapsed && doc.para_at(a).is_some_and(|p| p.is_empty()))
         || (command == "text.tab" && b.path.cell().is_none() && ((collapsed && b.off == 0) || a.path != b.path))
         || (command == "text.backTab" && b.path.cell().is_none());
     if copies {
@@ -1090,16 +1079,16 @@ fn paragraph_reads(
     }
     // Restart scans all following paragraphs until its handler's stopping condition, including
     // the paragraph that stops it (para.rs:477-491; tools.rs:310-319).
-    if matches!(command, "para.restartNumbering" | "para.setNumberingValue")
+    if matches!(command, "paragraph.restartNumbering" | "paragraph.setNumberingValue")
         && let Some(num) = doc.para_at(b).and_then(|p| p.props.numbering).filter(|n| n.num != 0)
     {
         for path in doc.para_paths(b.story).into_iter().filter(|p| *p >= b.path) {
             let at = Pos::new(b.story, path, 0);
             let Some(p) = doc.para_at(&at) else { continue };
-            let fields: &[&str] = if command == "para.restartNumbering" && p.props.numbering.is_none() { &["para", "text"] } else { &["para"] };
+            let fields: &[&str] = if command == "paragraph.restartNumbering" && p.props.numbering.is_none() { &["para", "text"] } else { &["para"] };
             hold_paragraph(doc, &at, fields, under);
             crate::place::hit_premises(doc, &at, under);
-            if command == "para.setNumberingValue" {
+            if command == "paragraph.setNumberingValue" {
                 if !p.props.numbering.is_some_and(|n| n.num == num.num) {
                     break;
                 }
@@ -1151,7 +1140,7 @@ impl DocDocument {
         // The layout a command reads (C8-doc-6), laid out before the session is borrowed.
         let mut reads_layout = layout_read(command, params);
         let layout = reads_layout.map(|_| self.session.borrow_mut().layout());
-        let ink = matches!(command, "drawing.ink" | "drawing.erase" | "draw.stroke" | "draw.erase");
+        let ink = matches!(command, "drawing.ink" | "drawing.erase" | "ink.stroke" | "ink.erase");
         let ink_hits = if command == "drawing.erase" {
             let mut session = self.session.borrow_mut();
             kition_doc_engine::cmd::ink::erase_hits(&mut session, params)
@@ -1159,7 +1148,7 @@ impl DocDocument {
                 .into_iter()
                 .filter_map(|uid| session.doc.find_shape(uid))
                 .collect::<Vec<_>>()
-        } else if command == "draw.erase" {
+        } else if command == "ink.erase" {
             let mut session = self.session.borrow_mut();
             params
                 .get("page")
@@ -1178,7 +1167,7 @@ impl DocDocument {
             return false;
         }
         let doc = &session.doc;
-        let consumes_ink = matches!(command, "drawing.ink" | "draw.stroke") || !session.view.hide_ink;
+        let consumes_ink = matches!(command, "drawing.ink" | "ink.stroke") || !session.view.hide_ink;
         if ink
             && reads_layout == Some(LayoutRead::Caret)
             && consumes_ink
@@ -1229,8 +1218,8 @@ impl DocDocument {
                 | "drawing.group"
                 | "drawing.ungroup"
                 | "drawing.connect"
-                | "insert.chart"
-                | "insert.artText"
+                | "chart.insert"
+                | "artText.insert"
                 | "drawing.ink"
         ) {
             under.premises.push(Premise::on(ROOT).fields(["~drawingIds"]).positions(Vec::<String>::new()));
@@ -1259,7 +1248,7 @@ impl DocDocument {
         let selected: Vec<&kition_doc_engine::doc::Paragraph> =
             doc.paths_between(&a, &b).into_iter().filter_map(|path| doc.para_at(&kition_doc_engine::doc::Pos::new(a.story, path, 0))).collect();
         paragraph_reads(&session, command, params, &a, &b, under);
-        if command == "para.text" && params.get("text").and_then(Value::as_str).is_some_and(|text| text.contains(['\r', '\u{2029}'])) {
+        if command == "paragraph.text" && params.get("text").and_then(Value::as_str).is_some_and(|text| text.contains(['\r', '\u{2029}'])) {
             // A split copies the named paragraph's properties and uses its
             // style's next style. The call's old caret may be elsewhere.
             if let Some(index) = params.get("index").and_then(Value::as_u64).and_then(|n| usize::try_from(n).ok()) {
@@ -1277,7 +1266,8 @@ impl DocDocument {
             // split_para resolves the current style's next style.
             under.premises.push(Premise::on(ROOT).fields(["styles"]).positions(Vec::<String>::new()));
         }
-        if a != b && matches!(command, "edit.replace" | "mailings.addressBlock" | "mailings.greetingLine" | "mailings.insertField" | "mailings.rules")
+        if a != b
+            && matches!(command, "edit.replace" | "mailMerge.addressBlock" | "mailMerge.greetingLine" | "mailMerge.insertField" | "mailMerge.rules")
         {
             // Replacing selected content resolves its revision marks even on
             // paths where the command is not creating a new tracked revision.
@@ -1300,7 +1290,7 @@ impl DocDocument {
                 }
             }
         }
-        if command == "insert.removeHeader" {
+        if command == "header.remove" {
             for path in doc.para_paths(StoryRef::Body) {
                 hold_paragraph(doc, &kition_doc_engine::doc::Pos::new(StoryRef::Body, path, 0), &["para.section"], under);
             }
@@ -1316,7 +1306,7 @@ impl DocDocument {
             hold_paragraph(doc, &at, &["text"], under);
             crate::place::hit_premises(doc, &at, under);
         }
-        if matches!(command, "review.compare" | "review.combine") && (params.get("text").is_some() || params.get("path").is_some()) {
+        if matches!(command, "file.compare" | "file.combine") && (params.get("text").is_some() || params.get("path").is_some()) {
             // Compare assigns the entire body, including the tables it discards.
             under.premises.push(Premise::on(ROOT).fields(["body"]).positions(Vec::<String>::new()));
             for path in doc.para_paths(StoryRef::Body) {
@@ -1367,7 +1357,7 @@ impl DocDocument {
                 hold_paragraph(doc, &previous, &["para"], under);
             }
         }
-        if matches!(command, "review.accept" | "review.reject") && kition_doc_engine::cmd::review::resolve_navigates(&session, &a, &b) {
+        if matches!(command, "change.accept" | "change.reject") && kition_doc_engine::cmd::review::resolve_navigates(&session, &a, &b) {
             under.premises.push(Premise::on(ROOT).fields(["body", "lastSection"]).positions(Vec::<String>::new()));
         }
         if command == "equation.enter"
@@ -1380,14 +1370,14 @@ impl DocDocument {
                 under.premises.push(crate::place::style_premise(&doc.styles, style));
             }
         }
-        if command == "insert.bookmark" {
+        if command == "bookmark.insert" {
             under.premises.push(Premise::on(ROOT).fields(["~bookmarks"]).positions(Vec::<String>::new()));
             let name = params.get("name").and_then(Value::as_str).unwrap_or_default().trim();
             for (_, pos) in doc.bookmarks().into_iter().filter(|(n, _)| n == name) {
                 hold_paragraph(doc, &pos, &["text"], under);
             }
         }
-        if command == "styles.delete"
+        if command == "style.delete"
             && let Some(style) = params
                 .get("style")
                 .and_then(Value::as_str)
@@ -1458,7 +1448,7 @@ impl DocDocument {
         let fields = if direct_character_assignment(command, params)
             || disabling_list(command, params)
             || plain_paragraph_replacement(command, params)
-            || matches!(command, "para.sort" | "styles.inspectorClear")
+            || matches!(command, "paragraph.sort" | "style.inspectorClear")
         {
             &[]
         } else if new_unlinked_list(command, params) {
@@ -1474,7 +1464,7 @@ impl DocDocument {
         if !others.is_empty() {
             under.premises.push(Premise::on(ROOT).fields(others).positions(Vec::<String>::new()));
         }
-        if command == "file.inspect" {
+        if command == "file.removeHiddenContent" {
             comment_premises(&session, command, params, under);
             under.premises.push(Premise::on(ROOT).fields(["~commentCount"]).positions(Vec::<String>::new()));
             // Every inspector path reports hidden text and tracked runs throughout the body.
@@ -1499,7 +1489,7 @@ impl DocDocument {
                 let field = if read == LayoutRead::FrameValidity { "~frameValidity" } else { "~layout" };
                 under.premises.push(Premise::on(format!("p{v:08X}").as_str()).fields([field]).positions(Vec::<String>::new()));
                 if ink && consumes_ink {
-                    let field = if matches!(command, "draw.stroke" | "drawing.ink") { "~inkCount" } else { "~inkGeometry" };
+                    let field = if matches!(command, "ink.stroke" | "drawing.ink") { "~inkCount" } else { "~inkGeometry" };
                     under.premises.push(Premise::on(format!("p{v:08X}").as_str()).fields([field]).positions(Vec::<String>::new()));
                 }
             }
@@ -1513,7 +1503,7 @@ impl DocDocument {
                     if let kition_doc_engine::layout::Placed::Object { story, path, off, .. } = item {
                         let at = kition_doc_engine::doc::Pos::new(*story, path.clone(), *off);
                         if doc.para_at(&at).and_then(|p| p.object_at(*off)).is_some_and(|object| object.ink().is_some()) {
-                            let field = if matches!(command, "draw.stroke" | "drawing.ink") { "~inkCount" } else { "~inkGeometry" };
+                            let field = if matches!(command, "ink.stroke" | "drawing.ink") { "~inkCount" } else { "~inkGeometry" };
                             hold_paragraph(doc, &at, &[field], under);
                         }
                     }
@@ -1573,7 +1563,7 @@ impl DocDocument {
         // A paste that replaces the selection with given text or a formatted fragment deletes
         // through the revisions (a tracked insertion of one's own is removed, not marked).
         let html = params.get("html").is_some_and(|h| !h.is_null());
-        if matches!(command, "edit.paste" | "edit.pasteAllClipboard" | "edit.pasteClipboardItem" | "insert.textFromFile")
+        if matches!(command, "edit.paste" | "edit.pasteAllClipboard" | "edit.pasteClipboardItem" | "text.insertFromFile")
             || (command == "edit.pasteSpecial" && !matches!(params.get("as").and_then(Value::as_str), None | Some("text" | "plain" | "unformatted")))
         {
             under.premises.push(Premise::on(ROOT).fields(["~paraIds"]).positions(Vec::<String>::new()));
@@ -1583,7 +1573,7 @@ impl DocDocument {
             "edit.pasteSpecial" if params.get("as").and_then(Value::as_str) == Some("formatted") => more.push("revisions"),
             "edit.paste" | "edit.pasteText" if text.is_some() => more.push("revisions"),
             "drawing.insert" if params.get("kind").and_then(Value::as_str) == Some("textBox") => more.push("parts"),
-            "file.inspect" => {
+            "file.removeHiddenContent" => {
                 let remove: Vec<&str> = params.get("remove").and_then(Value::as_array).into_iter().flatten().filter_map(Value::as_str).collect();
                 // The report counts both even when a removal was requested. Unanchored
                 // comments have no paragraph fingerprint that could hold their membership.
@@ -1670,7 +1660,7 @@ impl DocDocument {
                     under.premises.push(Premise::on(id.as_str()).fields(["text", "para"]).positions(Vec::<String>::new()));
                 }
             }
-            if matches!(command, "mailings.envelopes" | "mailings.labels" | "mailings.finish") {
+            if matches!(command, "mailMerge.envelopes" | "mailMerge.labels" | "mailMerge.finish") {
                 // Replacing the document or building a full merged document keeps
                 // all discarded/copied document fields protected.
                 under.premises.push(Premise::on(ROOT).fields(ROOT_CONTENT).positions(Vec::<String>::new()));
@@ -1681,7 +1671,7 @@ impl DocDocument {
                 under.premises.push(Premise::on(ROOT).fields(["body", "parts"]).positions(Vec::<String>::new()));
             }
             // Accepting or rejecting every change reads every table's, row's and cell's.
-            if matches!(command, "review.acceptAll" | "review.rejectAll") {
+            if matches!(command, "change.acceptAll" | "change.rejectAll") {
                 under.premises.push(Premise::on(ROOT).fields(["revisions"]).positions(Vec::<String>::new()));
                 for block in &doc.body {
                     if let Block::Table(t) = &**block {
@@ -1741,18 +1731,18 @@ impl DocDocument {
                             table_premises(t, under);
                         }
                     }
-                    if matches!(command, "table.newStyle" | "table.modifyStyle" | "table.style") && params.get("style").is_none() {
+                    if matches!(command, "table.newStyle" | "table.setStyle" | "table.style") && params.get("style").is_none() {
                         under.premises.push(Premise::on(ROOT).fields(["styles"]).positions(Vec::<String>::new()));
                     }
                 }
-                "layout" if !matches!(command, "layout.hyphenation" | "layout.differentOddEven") => {
+                "layout" if !matches!(command, "page.hyphenation" | "page.differentOddEven") => {
                     under.premises.push(Premise::on(ROOT).fields(["lastSection"]).positions(Vec::<String>::new()));
                     for p in &selected {
                         if let Some(v) = p.props.para_id {
                             under.premises.push(Premise::on(format!("p{v:08X}").as_str()).fields(["para"]).positions(["body"]));
                         }
                     }
-                    if command == "layout.linkToPrevious" {
+                    if command == "page.linkToPrevious" {
                         let at = kition_doc_engine::doc::Pos::body(focus.path.0.first().copied().unwrap_or(0) as usize, 0);
                         crate::place::hit_premises(doc, &at, under);
                         section_premises(doc, None, &at, &at, SectionScope::Selection, under);
@@ -1766,14 +1756,14 @@ impl DocDocument {
                     // accepted a tracked change). Track Changes and protection read the settings.
                     comment_premises(&session, command, params, under);
                     let fields: &[&str] = match command {
-                        "review.trackChanges" | "review.restrict" => &[],
+                        "change.track" | "file.restrictEditing" => &[],
                         // A command on one comment holds that comment by its tool id, not every
                         // comment (C8-doc-6).
-                        "comment.resolve" | "review.resolveComment" | "review.editComment" => &[],
+                        "comment.resolve" | "comment.resolveCurrent" | "comment.edit" => &[],
                         _ if family == "comment"
                             || matches!(
                                 command,
-                                "review.newComment" | "review.reply" | "review.editComment" | "review.deleteComment" | "review.resolveComment"
+                                "comment.new" | "comment.replyCurrent" | "comment.edit" | "comment.deleteCurrent" | "comment.resolveCurrent"
                             ) =>
                         {
                             &[]
@@ -1787,7 +1777,7 @@ impl DocDocument {
                 "design" => match design_reads(command) {
                     Some(fields) => {
                         under.premises.push(Premise::on(ROOT).fields(fields.iter().copied()).positions(Vec::<String>::new()));
-                        if matches!(command, "design.styleSet" | "design.theme" | "design.themeColors" | "design.themeFonts") {
+                        if matches!(command, "theme.styleSet" | "theme.set" | "theme.colors" | "theme.fonts") {
                             // Retheme visits formatting in every story; unrelated metadata,
                             // media and revisions are not inputs to that traversal.
                             part_premises(doc, None, under);
@@ -1801,15 +1791,15 @@ impl DocDocument {
                         part_premises(doc, None, under);
                     }
                 },
-                "styles" if command != "styles.inspectorClear" && params.get("style").is_none() => {
+                "styles" if command != "style.inspectorClear" && params.get("style").is_none() => {
                     under.premises.push(Premise::on(ROOT).fields(["styles"]).positions(Vec::<String>::new()));
                 }
-                "picture" if !matches!(command, "picture.size" | "picture.crop" | "picture.altText" | "picture.reset") => {
+                "picture" if !matches!(command, "image.size" | "image.crop" | "image.altText" | "image.reset") => {
                     // Bitmap adjustments decode media and scan the collection for deduplication.
                     under.premises.push(Premise::on(ROOT).fields(["media"]).positions(Vec::<String>::new()));
                 }
                 "hf" => under.premises.push(Premise::on(ROOT).fields(["parts"]).positions(Vec::<String>::new())),
-                _ if matches!(command, "insert.header" | "insert.footer") => {
+                _ if matches!(command, "header.insert" | "footer.insert") => {
                     under.premises.push(Premise::on(ROOT).fields(["parts"]).positions(Vec::<String>::new()));
                 }
                 _ => {}
@@ -1817,10 +1807,10 @@ impl DocDocument {
             // The header or footer a header, footer or page number replaces whole: that it is
             // there (its paragraphs are written blind), by its tool id (C8-doc-6).
             let replaced = match command {
-                "insert.header" | "insert.footer" if params.get("text").is_some() || params.get("preset").is_some() => {
-                    Some(command == "insert.footer")
+                "header.insert" | "footer.insert" if params.get("text").is_some() || params.get("preset").is_some() => {
+                    Some(command == "footer.insert")
                 }
-                "insert.pageNumber" => match params.get("position").and_then(Value::as_str) {
+                "pageNumber.insert" => match params.get("position").and_then(Value::as_str) {
                     Some("current") => None,
                     Some("top") => Some(false),
                     _ => Some(true),
@@ -1838,7 +1828,7 @@ impl DocDocument {
             let objects = selected_objects(doc, &a, &b);
             if family != "layout" && SECTION_READERS.contains(&command) && (family != "arrange" || !objects.is_empty()) {
                 under.premises.push(Premise::on(ROOT).fields(["lastSection"]).positions(Vec::<String>::new()));
-                if command == "hf.position" {
+                if command == "headerFooter.position" {
                     let at = kition_doc_engine::doc::Pos::body(focus.path.0.first().copied().unwrap_or(0) as usize, 0);
                     crate::place::hit_premises(doc, &at, under);
                     section_premises(doc, None, &at, &at, SectionScope::Selection, under);
@@ -1852,7 +1842,7 @@ impl DocDocument {
                 }
                 // The selected paragraphs' properties: their tracked changes (Accept); a cell's
                 // paragraph a cut, Tab or Backspace reads.
-                let always = matches!(command, "review.accept" | "review.reject");
+                let always = matches!(command, "change.accept" | "change.reject");
                 for p in &selected {
                     if let Some(v) = p.props.para_id.filter(|_| always || a.path.cell().is_some() || b.path.cell().is_some()) {
                         under.premises.push(Premise::on(format!("p{v:08X}").as_str()).fields(["para"]).positions(Vec::<String>::new()));

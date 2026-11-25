@@ -284,7 +284,7 @@ mod tests {
             }
             s.run("text.insert", &json!({"text": t})).unwrap();
         }
-        s.run("select.all", &json!({})).unwrap();
+        s.run("edit.selectAll", &json!({})).unwrap();
         let levels = json!([
             {"format": "decimal", "text": "%1.", "start": 1, "alignedAt": 0, "indentAt": 18, "follow": "tab", "tabAt": 24, "font": "Arial", "bold": true},
             {"format": "decimal", "text": "%1.%2.", "alignedAt": 18, "indentAt": 45, "follow": "space", "restartAfter": 1},

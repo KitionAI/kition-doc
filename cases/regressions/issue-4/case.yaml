@@ -1,7 +1,7 @@
 format: 1
 id: regressions/issue-4
 feature: doc.insert.objects
-intent: insert.coverPage adds one page of its own paragraphs before the document at any page size, never taking on the caret's paragraph style, writes no date unless given one and leaves the caret where it was; insert.pageNumber at the caret honours its format ("Page x of y") and align.
+intent: page.insertCover adds one page of its own paragraphs before the document at any page size, never taking on the caret's paragraph style, writes no date unless given one and leaves the caret where it was; pageNumber.insert at the caret honours its format ("Page x of y") and align.
 layer: gate
 source:
   kind: issue

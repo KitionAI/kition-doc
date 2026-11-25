@@ -32,7 +32,7 @@ fn a_footnote_leaves_the_caret_after_its_reference() {
     run(&mut s, "text.insert", json!({"text": "First paragraph."}));
     run(&mut s, "text.newParagraph", json!({}));
     run(&mut s, "text.insert", json!({"text": "Kelp grows fast"}));
-    run(&mut s, "references.footnote", json!({"text": "Up to half a metre a day."}));
+    run(&mut s, "footnote.insert", json!({"text": "Up to half a metre a day."}));
     assert_eq!(s.sel.focus.story, StoryRef::Body, "the caret stays in the body");
     run(&mut s, "text.insert", json!({"text": " in summer."}));
     let p = body(&s, 1);
@@ -46,10 +46,10 @@ fn a_footnote_leaves_the_caret_after_its_reference() {
 
     // Without text: into the note, then back to just after its reference.
     run(&mut s, "caret.set", json!({"pos": {"story": "body", "path": [0], "off": 5}}));
-    run(&mut s, "references.footnote", json!({}));
+    run(&mut s, "footnote.insert", json!({}));
     assert_ne!(s.sel.focus.story, StoryRef::Body);
     run(&mut s, "text.insert", json!({"text": "A note."}));
-    run(&mut s, "insert.closeHeader", json!({}));
+    run(&mut s, "header.close", json!({}));
     assert_eq!(s.sel.focus.story, StoryRef::Body);
     assert_eq!((s.sel.focus.path.clone(), s.sel.focus.off), (Path::top(0), 5 + 3), "just after the new reference mark");
 }
@@ -59,7 +59,7 @@ fn a_footnote_leaves_the_caret_after_its_reference() {
 #[test]
 fn table_borders_apply_to_the_selected_cells() {
     let mut s = session();
-    run(&mut s, "insert.table", json!({"rows": 3, "cols": 2}));
+    run(&mut s, "table.insert", json!({"rows": 3, "cols": 2}));
     run(&mut s, "table.borders", json!({"kind": "none"}));
     // A border on one cell (the caret's second-row cell, selected).
     run(&mut s, "text.tab", json!({}));
@@ -93,7 +93,7 @@ fn table_borders_apply_to_the_selected_cells() {
 #[test]
 fn row_height_sets_every_selected_row() {
     let mut s = session();
-    run(&mut s, "insert.table", json!({"rows": 3, "cols": 2}));
+    run(&mut s, "table.insert", json!({"rows": 3, "cols": 2}));
     run(&mut s, "table.selectTable", json!({}));
     run(&mut s, "table.rowHeight", json!({"height": 30, "rule": "exact"}));
     let heights: Vec<Option<f32>> = table(&s).rows.iter().map(|r| r.props.height).collect();
@@ -120,7 +120,7 @@ fn list_formats_are_checked() {
 fn chinese_characters_are_words() {
     let mut s = session();
     run(&mut s, "text.insert", json!({"text": "第一条 租赁物：出租方将位于星河路的房屋出租给承租方。Lease 2026"}));
-    let count = run(&mut s, "review.wordCount", json!({}));
+    let count = run(&mut s, "file.wordCount", json!({}));
     // 第一条 (3) + 租赁物 (3) + 出租方将位于星河路的房屋出租给承租方 (18) + Lease + 2026.
     assert_eq!(count["words"], 3 + 3 + 18 + 2, "{count}");
 }
@@ -130,7 +130,7 @@ fn chinese_characters_are_words() {
 #[test]
 fn an_underscore_leader_is_one_line() {
     let mut s = session();
-    run(&mut s, "para.tabs", json!({"tabs": [{"pos": 300, "align": "right", "leader": "underscore"}]}));
+    run(&mut s, "paragraph.tabs", json!({"tabs": [{"pos": 300, "align": "right", "leader": "underscore"}]}));
     run(&mut s, "text.insert", json!({"text": "Name"}));
     run(&mut s, "text.tab", json!({}));
     run(&mut s, "text.insert", json!({"text": "1"}));
@@ -147,7 +147,7 @@ fn an_underscore_leader_is_one_line() {
 #[test]
 fn vertical_cell_text_keeps_chinese_upright() {
     let mut s = session();
-    run(&mut s, "insert.table", json!({"rows": 1, "cols": 2}));
+    run(&mut s, "table.insert", json!({"rows": 1, "cols": 2}));
     run(&mut s, "text.insert", json!({"text": "竖排文字 AB"}));
     run(&mut s, "table.textDirection", json!({"value": "down"}));
     let layout = s.layout();

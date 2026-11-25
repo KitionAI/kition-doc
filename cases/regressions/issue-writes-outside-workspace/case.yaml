@@ -5,13 +5,13 @@ intent: >-
   The headless kit reads and writes only inside its workspace, through its host, starts no
   program and opens no connection (KHP A29, A37, A42, A45, section 10.6): whatever an agent runs,
   directly, inside model.batch (as a script, as the agent, as a person it claims to be) or inside
-  a tools.macros macro, and whatever a document in the workspace links to (external pictures, an
+  a macro.list macro, and whatever a document in the workspace links to (external pictures, an
   attached template, a mail merge data source, an altChunk, a subdocument, INCLUDETEXT,
   INCLUDEPICTURE, LINK and DDEAUTO fields, an external XML entity, a remote URL), nothing appears
   in the process's current, home or temporary folder, nothing outside the workspace is read into
   an answer, a picture or an export, changed or deleted, no speech, print or opener program
-  starts, the remote server is never contacted, and no home font folder is read. This covers model.batch command steps and tools.macros reaching
-  by-path commands, a draft opened from its replica saving, and review.readAloud.
+  starts, the remote server is never contacted, and no home font folder is read. This covers model.batch command steps and macro.list reaching
+  by-path commands, a draft opened from its replica saving, and readAloud.open.
 layer: gate
 tags: [headless, security]
 source:

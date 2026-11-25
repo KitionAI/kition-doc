@@ -14,12 +14,12 @@ fn joined() -> (DocDocument, Value, CoveredAsk, Value) {
         doc.execute("text.insert", json!({ "text": text })).unwrap();
     }
     doc.execute("text.newParagraph", json!({})).unwrap();
-    doc.execute("insert.table", json!({ "rows": 2, "cols": 2 })).unwrap();
+    doc.execute("table.insert", json!({ "rows": 2, "cols": 2 })).unwrap();
     let cell = json!({ "path": [5, 0, 1, 0], "story": "body", "off": 0 });
     doc.execute("select.range", json!({ "anchor": cell, "focus": cell })).unwrap();
     doc.execute("text.insert", json!({ "text": "Cell 01" })).unwrap();
     let id = |doc: &mut DocDocument, path: Value| {
-        let p = doc.execute("document.paragraph", json!({ "path": path })).unwrap();
+        let p = doc.execute("file.paragraph", json!({ "path": path })).unwrap();
         json!(format!("p{:08X}", p["paragraph"]["props"]["paraId"].as_u64().unwrap()))
     };
     let paragraph = id(&mut doc, json!([2]));

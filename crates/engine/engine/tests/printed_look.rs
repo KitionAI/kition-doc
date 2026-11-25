@@ -34,8 +34,8 @@ fn a_continuous_section_draws_the_line_between_its_columns() {
     let mut s = Session::new(Document::new());
     run(&mut s, "text.insert", json!({ "text": "Masthead" }));
     run(&mut s, "text.newParagraph", json!({}));
-    run(&mut s, "layout.break", json!({ "kind": "continuous" }));
-    run(&mut s, "layout.columns", json!({ "count": 2, "space": 24, "separator": true }));
+    run(&mut s, "page.break", json!({ "kind": "continuous" }));
+    run(&mut s, "page.columns", json!({ "count": 2, "space": 24, "separator": true }));
     run(&mut s, "text.insert", json!({ "text": words(200) }));
     let lines = separators(&mut s);
     assert_eq!(lines.len(), 1, "one line between the two columns: {lines:?}");
@@ -48,12 +48,12 @@ fn a_continuous_section_draws_the_line_between_its_columns() {
     let mut s = Session::new(Document::new());
     run(&mut s, "text.insert", json!({ "text": "Masthead" }));
     run(&mut s, "text.newParagraph", json!({}));
-    run(&mut s, "layout.break", json!({ "kind": "continuous" }));
-    run(&mut s, "layout.columns", json!({ "count": 2, "space": 24, "separator": true }));
+    run(&mut s, "page.break", json!({ "kind": "continuous" }));
+    run(&mut s, "page.columns", json!({ "count": 2, "space": 24, "separator": true }));
     run(&mut s, "text.insert", json!({ "text": words(60) }));
     run(&mut s, "text.newParagraph", json!({}));
-    run(&mut s, "layout.break", json!({ "kind": "continuous" }));
-    run(&mut s, "layout.columns", json!({ "count": 1 }));
+    run(&mut s, "page.break", json!({ "kind": "continuous" }));
+    run(&mut s, "page.columns", json!({ "count": 1 }));
     run(&mut s, "text.insert", json!({ "text": "Footer story" }));
     let lines = separators(&mut s);
     assert_eq!(lines.len(), 1, "{lines:?}");
@@ -88,11 +88,11 @@ fn a_continuous_section_draws_the_line_between_its_columns() {
 fn no_line_is_drawn_beside_an_empty_column() {
     // WPS for Mac draws a line between columns only beside a column that holds something.
     let mut s = Session::new(Document::new());
-    run(&mut s, "layout.columns", json!({ "count": 3, "space": 24, "separator": true }));
+    run(&mut s, "page.columns", json!({ "count": 3, "space": 24, "separator": true }));
     run(&mut s, "text.insert", json!({ "text": "Only the first column has text." }));
     assert_eq!(separators(&mut s), vec![]);
     run(&mut s, "text.newParagraph", json!({}));
-    run(&mut s, "layout.break", json!({ "kind": "column" }));
+    run(&mut s, "page.break", json!({ "kind": "column" }));
     run(&mut s, "text.insert", json!({ "text": "The second column." }));
     let lines = separators(&mut s);
     assert_eq!(lines.len(), 1, "a line before the second column only: {lines:?}");
@@ -114,7 +114,7 @@ fn glyph_color(s: &mut Session, text: &str) -> Rgb {
 #[test]
 fn automatic_text_is_white_on_dark_cell_and_paragraph_shading() {
     let mut s = Session::new(Document::new());
-    run(&mut s, "insert.table", json!({ "rows": 1, "cols": 2 }));
+    run(&mut s, "table.insert", json!({ "rows": 1, "cols": 2 }));
     run(&mut s, "table.shading", json!({ "color": "0D5C63" }));
     run(&mut s, "text.insert", json!({ "text": "Dark" }));
     run(&mut s, "text.tab", json!({}));
@@ -125,7 +125,7 @@ fn automatic_text_is_white_on_dark_cell_and_paragraph_shading() {
     // A colour of its own stays as it is.
     run(&mut s, "caret.docEnd", json!({}));
     run(&mut s, "text.newParagraph", json!({}));
-    run(&mut s, "para.shading", json!({ "color": "1F1F1F" }));
+    run(&mut s, "paragraph.shading", json!({ "color": "1F1F1F" }));
     run(&mut s, "text.insert", json!({ "text": "Shaded paragraph" }));
     assert_eq!(glyph_color(&mut s, "Shaded"), Rgb::WHITE, "automatic text on a dark paragraph shading");
 }

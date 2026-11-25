@@ -65,8 +65,8 @@ fn has_shape(s: &Session) -> Option<&'static str> {
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("picture.size", "Size", "Picture Format › Size", size).params(r#"{"width"?: pt, "height"?: pt, "lockAspect"?: bool, "scale"?: percent}"#).when(has_movable),
-        CommandSpec::new("picture.crop", "Crop", "Picture Format › Size", |s, v| {
+        CommandSpec::new("image.size", "Size", "Picture Format › Size", size).params(r#"{"width"?: pt, "height"?: pt, "lockAspect"?: bool, "scale"?: percent}"#).when(has_movable),
+        CommandSpec::new("image.crop", "Crop", "Picture Format › Size", |s, v| {
             let c = [p::f32(v, "left"), p::f32(v, "top"), p::f32(v, "right"), p::f32(v, "bottom")].map(|x| x.unwrap_or(0.0).clamp(0.0, 0.45));
             with_obj(s, |o| {
                 if let InlineObject::Image { crop, .. } = o {
@@ -76,7 +76,7 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"left"?, "top"?, "right"?, "bottom"? (fractions 0–0.45)}"#)
         .when(has_picture),
-        CommandSpec::new("picture.altText", "Alt Text", "Picture Format › Accessibility", |s, v| {
+        CommandSpec::new("image.altText", "Alt Text", "Picture Format › Accessibility", |s, v| {
             let t = p::req_str(v, "text")?.to_string();
             with_obj(s, |o| {
                 if let InlineObject::Image { alt, .. } | InlineObject::Graphic { alt, .. } = o {
@@ -86,7 +86,7 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"text": string} (the selected picture, chart or diagram)"#)
         .when(has_described),
-        CommandSpec::new("picture.corrections", "Corrections", "Picture Format › Adjust", |s, v| {
+        CommandSpec::new("image.corrections", "Corrections", "Picture Format › Adjust", |s, v| {
             let b = p::f32(v, "brightness").unwrap_or(0.0).clamp(-100.0, 100.0);
             let c = p::f32(v, "contrast").unwrap_or(0.0).clamp(-100.0, 100.0);
             let sharpen = p::f32(v, "sharpen").unwrap_or(0.0).clamp(-100.0, 100.0);
@@ -108,14 +108,14 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"brightness"?: -100..100, "contrast"?: -100..100, "sharpen"?: -100..100}"#)
         .when(has_picture),
-        CommandSpec::new("picture.color", "Color", "Picture Format › Adjust", |s, v| {
+        CommandSpec::new("image.color", "Color", "Picture Format › Adjust", |s, v| {
             let mode = p::str(v, "mode").unwrap_or("grayscale").to_string();
             let sat = p::f32(v, "saturation").unwrap_or(100.0);
             adjust(s, move |img| recolor(img, &mode, sat))
         })
         .params(r#"{"mode": "grayscale|sepia|washout|blackAndWhite|saturation|tint", "saturation"?: 0..400}"#)
         .when(has_picture),
-        CommandSpec::new("picture.effects", "Artistic Effects", "Picture Format › Adjust", |s, v| {
+        CommandSpec::new("image.effects", "Artistic Effects", "Picture Format › Adjust", |s, v| {
             let e = p::str(v, "effect").unwrap_or("blur").to_string();
             adjust(s, move |img| match e.as_str() {
                 "blur" => img.blur(3.0),
@@ -143,7 +143,7 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"effect": "blur|sharpen|invert|posterize|pixelate"}"#)
         .when(has_picture),
-        CommandSpec::new("picture.transparency", "Transparency", "Picture Format › Adjust", |s, v| {
+        CommandSpec::new("image.transparency", "Transparency", "Picture Format › Adjust", |s, v| {
             let t = p::f32(v, "percent").unwrap_or(50.0).clamp(0.0, 100.0);
             adjust(s, move |img| {
                 let mut rgba = img.to_rgba8();
@@ -155,20 +155,20 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"percent": 0..100}"#)
         .when(has_picture),
-        CommandSpec::new("picture.removeBackground", "Remove Background", "Picture Format › Adjust", |s, v| {
+        CommandSpec::new("image.removeBackground", "Remove Background", "Picture Format › Adjust", |s, v| {
             let tol = p::f32(v, "tolerance").unwrap_or(30.0).clamp(0.0, 255.0);
             adjust(s, move |img| remove_background(img, tol))
         })
         .params(r#"{"tolerance"?: 0..255}"#)
         .when(has_picture),
-        CommandSpec::new("picture.compress", "Compress Pictures", "Picture Format › Adjust", |s, v| {
+        CommandSpec::new("image.compress", "Compress Pictures", "Picture Format › Adjust", |s, v| {
             let max = p::u64(v, "maxPixels").unwrap_or(1600).clamp(32, 20000) as u32;
             adjust(s, move |img| if img.width().max(img.height()) > max { img.resize(max, max, image::imageops::FilterType::Lanczos3) } else { img })
         })
         .params(r#"{"maxPixels"?: n}"#)
         .when(has_picture),
-        CommandSpec::new("picture.reset", "Reset Picture", "Picture Format › Adjust", reset).when(has_picture),
-        CommandSpec::new("picture.change", "Change Picture", "Picture Format › Adjust", |s, v| {
+        CommandSpec::new("image.reset", "Reset Picture", "Picture Format › Adjust", reset).when(has_picture),
+        CommandSpec::new("image.change", "Change Picture", "Picture Format › Adjust", |s, v| {
             let bytes = if let Some(d) = p::str(v, "data") {
                 super::insert::base64_decode(d).ok_or_else(|| CmdError::Params("bad base64".into()))?
             } else if let Some(path) = p::str(v, "path") {
@@ -187,13 +187,13 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"path"?: string, "data"?: base64}"#)
         .when(has_picture),
-        CommandSpec::new("picture.style", "Picture Styles", "Picture Format › Picture Styles", |s, v| {
+        CommandSpec::new("image.style", "Picture Styles", "Picture Format › Picture Styles", |s, v| {
             let style = p::str(v, "style").unwrap_or("simpleFrame").to_string();
             adjust(s, move |img| picture_style(img, &style))
         })
         .params(r#"{"style": "simpleFrame|thickFrame|rounded|softEdge|shadow"}"#)
         .when(has_picture),
-        CommandSpec::new("picture.border", "Picture Border", "Picture Format › Picture Styles", |s, v| {
+        CommandSpec::new("image.border", "Picture Border", "Picture Format › Picture Styles", |s, v| {
             let c = p::str(v, "color").and_then(Rgb::parse).unwrap_or(Rgb::BLACK);
             let w = p::u64(v, "width").unwrap_or(4).clamp(1, 200) as u32;
             adjust(s, move |img| frame(img, w, [c.0, c.1, c.2, 255]))
@@ -1151,33 +1151,33 @@ mod tests {
     #[test]
     fn shapes_can_be_clicked_resized_and_dragged() {
         for kind in ["rectangle", "ellipse", "star", "arrow"] {
-            click_resize_and_drag("insert.shape", json!({"kind": kind}));
+            click_resize_and_drag("shape.insert", json!({"kind": kind}));
         }
     }
 
     #[test]
     fn pictures_can_be_clicked_resized_and_dragged() {
         let data = super::super::insert::base64_encode(&png(20, 10));
-        click_resize_and_drag("insert.picture", json!({"data": data, "width": 100}));
+        click_resize_and_drag("image.insert", json!({"data": data, "width": 100}));
     }
 
     #[test]
     fn picture_pipeline() {
         let mut s = Session::new(kition_doc_doc::Document::new());
         let data = super::super::insert::base64_encode(&png(20, 10));
-        s.run("insert.picture", &json!({"data": data})).unwrap();
+        s.run("image.insert", &json!({"data": data})).unwrap();
         assert!(selected(&s).is_some());
-        s.run("picture.size", &json!({"width": 100})).unwrap();
+        s.run("image.size", &json!({"width": 100})).unwrap();
         let (_, o) = selected(&s).unwrap();
         assert_eq!(obj_size(&o), (100.0, 50.0));
         let before = s.doc.media.len();
-        s.run("picture.color", &json!({"mode": "grayscale"})).unwrap();
-        s.run("picture.removeBackground", &json!({})).unwrap();
+        s.run("image.color", &json!({"mode": "grayscale"})).unwrap();
+        s.run("image.removeBackground", &json!({})).unwrap();
         assert!(s.doc.media.len() > before);
         s.run("arrange.rotate", &json!({"direction": "right"})).unwrap();
         // The frame keeps its size; it turns.
         assert_eq!(obj_size(&selected(&s).unwrap().1), (100.0, 50.0));
-        s.run("picture.reset", &json!({})).unwrap();
+        s.run("image.reset", &json!({})).unwrap();
         s.run("arrange.wrap", &json!({"wrap": "square"})).unwrap();
         s.run("arrange.position", &json!({"preset": "topRight"})).unwrap();
         let l = s.run("arrange.selectionPane", &json!({})).unwrap();
@@ -1185,7 +1185,7 @@ mod tests {
         let _ = s.layout();
         s.run("select.collapse", &json!({"end": true})).unwrap();
         s.run("text.insert", &json!({"text": "x"})).unwrap();
-        assert!(s.run("picture.crop", &json!({"left": 0.1})).is_err());
+        assert!(s.run("image.crop", &json!({"left": 0.1})).is_err());
     }
 
     /// Rotate and Flip turn the frame (an angle and mirroring), never the pixels; an exact
@@ -1194,7 +1194,7 @@ mod tests {
     fn rotate_and_flip_turn_the_frame_not_the_pixels() {
         let mut s = Session::new(kition_doc_doc::Document::new());
         let data = super::super::insert::base64_encode(&png(20, 10));
-        s.run("insert.picture", &json!({"data": data, "width": 200})).unwrap();
+        s.run("image.insert", &json!({"data": data, "width": 200})).unwrap();
         let (pos, before) = selected(&s).unwrap();
         let InlineObject::Image { media, .. } = &before else { panic!("a picture") };
         let (media, media_count) = (media.clone(), s.doc.media.len());
@@ -1222,7 +1222,7 @@ mod tests {
         assert_eq!(spin(&s), kition_doc_geom::Spin::new(90.0, true, false));
         // Shapes and text boxes turn too.
         s.run("select.collapse", &json!({"end": true})).unwrap();
-        s.run("insert.shape", &json!({"kind": "textBox"})).unwrap();
+        s.run("shape.insert", &json!({"kind": "textBox"})).unwrap();
         s.run("arrange.rotation", &json!({"degrees": 45})).unwrap();
         assert_eq!(spin(&s).deg, 45.0);
     }
@@ -1243,12 +1243,12 @@ mod tests {
     #[test]
     fn group_moves_as_one_and_ungroups() {
         let mut s = Session::new(kition_doc_doc::Document::new());
-        s.run("document.setText", &json!({"text": "one\ntwo\nthree\nfour"})).unwrap();
+        s.run("file.setText", &json!({"text": "one\ntwo\nthree\nfour"})).unwrap();
         s.sel = Selection::caret(s.doc.start_of(StoryRef::Body));
-        s.run("insert.shape", &json!({"kind": "rectangle", "width": 100, "height": 50})).unwrap();
+        s.run("shape.insert", &json!({"kind": "rectangle", "width": 100, "height": 50})).unwrap();
         s.run("arrange.bounds", &json!({"page": 0, "x": 100, "y": 150})).unwrap();
         s.run("select.collapse", &json!({"end": true})).unwrap();
-        s.run("insert.shape", &json!({"kind": "ellipse", "width": 60, "height": 40})).unwrap();
+        s.run("shape.insert", &json!({"kind": "ellipse", "width": 60, "height": 40})).unwrap();
         s.run("arrange.bounds", &json!({"page": 0, "x": 300, "y": 200})).unwrap();
         // One shape selected: nothing to group yet.
         assert!(s.run("arrange.group", &json!({})).is_err());
@@ -1291,9 +1291,9 @@ mod tests {
     fn picture_alt_and_crop_round_trip() {
         let mut s = Session::new(kition_doc_doc::Document::new());
         let data = super::super::insert::base64_encode(&png(20, 10));
-        s.run("insert.picture", &json!({"data": data})).unwrap();
-        s.run("picture.altText", &json!({"text": "A red box"})).unwrap();
-        s.run("picture.crop", &json!({"left": 0.1, "top": 0.2, "right": 0.05, "bottom": 0.0})).unwrap();
+        s.run("image.insert", &json!({"data": data})).unwrap();
+        s.run("image.altText", &json!({"text": "A red box"})).unwrap();
+        s.run("image.crop", &json!({"left": 0.1, "top": 0.2, "right": 0.05, "bottom": 0.0})).unwrap();
         let (_, o) = selected(&s).unwrap();
         let InlineObject::Image { alt, crop, .. } = o else { panic!("expected image") };
         assert_eq!(alt, "A red box");

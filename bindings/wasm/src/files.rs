@@ -6,7 +6,7 @@
 //! through the host (`kition_doc_engine::Session::for_host`), and starts no program. The kit's own
 //! check ([`refuse_for_agent`]) keeps the commands that name files or start programs from anyone
 //! but a person however the call arrives: directly, as a step of the object model's
-//! `model.batch`, as a step of a macro (`tools.macros`) or as a repeat (`edit.repeat`): the engine
+//! `model.batch`, as a step of a macro (`macro.list`) or as a repeat (`edit.repeat`): the engine
 //! asks it before every command it runs.
 
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -18,28 +18,28 @@ use kition_kit::files::FileParam;
 
 /// Every file or folder parameter of the kit's commands.
 pub const FILES: &[FileParam] = &[
-    FileParam::read("mailings.editRecipients", "path", &["csv"]),
-    FileParam::read("insert.picture", "path", &[]),
+    FileParam::read("mailMerge.editRecipients", "path", &["csv"]),
+    FileParam::read("image.insert", "path", &[]),
     FileParam::write("file.save", "path", &[]),
-    FileParam::read("mailings.recipients", "path", &[]),
-    FileParam::create("mailings.finish", "path", &[]),
-    FileParam::read("picture.change", "path", &[]),
-    FileParam::read("review.compare", "path", &[]),
-    FileParam::read("review.combine", "path", &[]),
-    FileParam::read("insert.textFromFile", "path", &[]),
+    FileParam::read("mailMerge.recipients", "path", &[]),
+    FileParam::create("mailMerge.finish", "path", &[]),
+    FileParam::read("image.change", "path", &[]),
+    FileParam::read("file.compare", "path", &[]),
+    FileParam::read("file.combine", "path", &[]),
+    FileParam::read("text.insertFromFile", "path", &[]),
     FileParam::read("file.open", "path", &[]),
     FileParam::create("file.saveAs", "path", &[]),
     FileParam::create("file.exportPdf", "path", &[]),
     FileParam::create("file.exportPng", "path", &[]),
     FileParam::read("file.newFromTemplate", "path", &[]),
     FileParam::create("file.saveTemplate", "path", &[]),
-    FileParam::read("insert.object", "path", &[]),
+    FileParam::read("object.insert", "path", &[]),
 ];
 
 /// Commands that name no file but start a program (Read Aloud's speech program): a hosted kit
 /// refuses them, a served one does not list them, and the manifest's `agent.exclude` lists them
 /// too, for the hosts that read it (KHP A45).
-pub const AGENT_EXCLUDED: &[&str] = &["review.readAloud", "readAloud.playPause"];
+pub const AGENT_EXCLUDED: &[&str] = &["readAloud.open", "readAloud.playPause"];
 
 /// Refuses `command` for anyone but a person (KHP A29, A45, A48): it names files or folders by
 /// path or starts a program, and this kit works only on its workspace's files, through its host.
@@ -49,7 +49,7 @@ pub fn refuse_for_agent(command: &str) -> Result<(), String> {
         return Err(format!(
             "`{command}` reaches files by path or starts a program, and this kit works only on files of its workspace, through its \
              host: it is not available to the agent. The host opens, saves and exports the document (`file.export` answers PDF or \
-             PNG as data); give pictures and mail merge lists as data (`insert.picture {{\"data\"}}`, `mailings.recipients {{\"rows\"}}`)"
+             PNG as data); give pictures and mail merge lists as data (`image.insert {{\"data\"}}`, `mailMerge.recipients {{\"rows\"}}`)"
         ));
     }
     Ok(())
@@ -129,10 +129,10 @@ mod tests {
         let manifest: serde_json::Value = serde_json::from_str(include_str!("../../../kit.json")).unwrap_or_default();
         let excluded: Vec<&str> = manifest["agent"]["exclude"].as_array().into_iter().flatten().filter_map(serde_json::Value::as_str).collect();
         assert_eq!(excluded, AGENT_EXCLUDED);
-        for command in AGENT_EXCLUDED.iter().chain(&["file.save", "file.exportPng", "insert.picture", "mailings.recipients", "file.open"]) {
+        for command in AGENT_EXCLUDED.iter().chain(&["file.save", "file.exportPng", "image.insert", "mailMerge.recipients", "file.open"]) {
             assert!(refuse_for_agent(command).is_err(), "{command}");
         }
-        for command in ["text.insert", "tools.macros", "edit.repeat", "file.export", "readAloud.stop"] {
+        for command in ["text.insert", "macro.list", "edit.repeat", "file.export", "readAloud.stop"] {
             assert!(refuse_for_agent(command).is_ok(), "{command}");
         }
         let refused = refuse_for_agent("file.save").err().unwrap_or_default();
@@ -151,17 +151,17 @@ mod tests {
         let step = serde_json::json!({ "command": "file.exportPng", "params": { "path": target } });
         assert!(doc.execute_as("file.exportPng", serde_json::json!({ "path": target }), &agent).is_err());
         let wrapped = serde_json::json!({ "define": { "name": "m", "steps": [step] }, "run": "m" });
-        assert!(doc.execute_as("tools.macros", wrapped.clone(), &agent).is_err(), "a macro's step is gated");
+        assert!(doc.execute_as("macro.list", wrapped.clone(), &agent).is_err(), "a macro's step is gated");
         // A person's macro may export (here, with no host, on the file system); an agent may not
         // run it again.
-        doc.execute("tools.macros", wrapped).unwrap_or_else(|error| panic!("{error}"));
+        doc.execute("macro.list", wrapped).unwrap_or_else(|error| panic!("{error}"));
         assert!(std::path::Path::new(&target).is_file());
         std::fs::remove_file(&target).unwrap_or_else(|error| panic!("{error}"));
-        assert!(doc.execute_as("tools.macros", serde_json::json!({ "run": "m" }), &agent).is_err());
+        assert!(doc.execute_as("macro.list", serde_json::json!({ "run": "m" }), &agent).is_err());
         assert!(!std::path::Path::new(&target).exists(), "the agent's run of a person's macro wrote nothing");
         for kind in [OriginKind::Agent, OriginKind::Extension, OriginKind::System] {
             let origin = kition_doc_engine::Origin::new(kind, "test");
-            assert!(doc.execute_as("review.readAloud", serde_json::json!({}), &origin).is_err(), "{kind:?}");
+            assert!(doc.execute_as("readAloud.open", serde_json::json!({}), &origin).is_err(), "{kind:?}");
         }
         let _ = std::fs::remove_dir_all(&dir);
     }
@@ -169,7 +169,7 @@ mod tests {
     /// Parameters whose names read like files but are not: ids, property paths, directions,
     /// folders of the kit's own panels, in-memory data.
     const NOT_FILES: &[(&str, &str)] =
-        &[("equation.move", "dir"), ("document.paragraph", "path"), ("para.dialog", "path"), ("drawing.erase", "path")];
+        &[("equation.move", "dir"), ("file.paragraph", "path"), ("paragraph.dialog", "path"), ("drawing.erase", "path")];
 
     #[test]
     fn every_file_parameter_is_declared() {

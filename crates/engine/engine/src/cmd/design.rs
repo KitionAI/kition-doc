@@ -49,40 +49,40 @@ pub const THEMES: &[(&str, &str, &str, [Rgb; 6])] = &[
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("design.theme", "Themes", "Design › Document Formatting", theme).params(r#"{"name": string}"#),
-        CommandSpec::new("design.themeFonts", "Fonts", "Design › Document Formatting", |s, v| {
+        CommandSpec::new("theme.set", "Themes", "Design › Document Formatting", theme).params(r#"{"name": string}"#),
+        CommandSpec::new("theme.fonts", "Fonts", "Design › Document Formatting", |s, v| {
             let heading = p::req_str(v, "heading")?.to_string();
             let body = p::str(v, "body").unwrap_or(&heading).to_string();
             set_fonts(s, &heading, &body);
             sel_result(s)
         })
         .params(r#"{"heading": string, "body"?: string}"#),
-        CommandSpec::new("design.themeColors", "Colors", "Design › Document Formatting", |s, v| {
+        CommandSpec::new("theme.colors", "Colors", "Design › Document Formatting", |s, v| {
             let name = p::req_str(v, "name")?;
             let t = THEMES.iter().find(|t| t.0.eq_ignore_ascii_case(name)).ok_or_else(|| CmdError::Params(format!("unknown colours `{name}`")))?;
             set_accent(s, t.3[0]);
             sel_result(s)
         }),
-        CommandSpec::new("design.styleSet", "Style Set", "Design › Document Formatting", style_set)
+        CommandSpec::new("theme.styleSet", "Style Set", "Design › Document Formatting", style_set)
             .params(r#"{"name": "default|basic|lines|shaded|casual|centered|minimalist|title"}"#),
-        CommandSpec::new("design.paragraphSpacing", "Paragraph Spacing", "Design › Document Formatting", para_spacing)
+        CommandSpec::new("theme.paragraphSpacing", "Paragraph Spacing", "Design › Document Formatting", para_spacing)
             .params(r#"{"value": "default|none|compact|tight|open|relaxed|double"}"#),
-        CommandSpec::new("design.watermark", "Watermark", "Design › Page Background", watermark)
+        CommandSpec::new("page.watermark", "Watermark", "Design › Page Background", watermark)
             .params(r#"{"text"?: string, "remove"?: bool, "diagonal"?: bool, "color"?: "RRGGBB"}"#),
-        CommandSpec::new("design.pageColor", "Page Color", "Design › Page Background", |s, v| {
+        CommandSpec::new("page.color", "Page Color", "Design › Page Background", |s, v| {
             s.doc.settings.page_color = p::str(v, "color").and_then(Rgb::parse);
             sel_result(s)
         })
         .params(r#"{"color": "RRGGBB" | null}"#),
-        CommandSpec::new("design.pageBorders", "Page Borders", "Design › Page Background", page_borders).params(
+        CommandSpec::new("page.borders", "Page Borders", "Design › Page Background", page_borders).params(
             r#"{"kind"?: "box|none", "width"?: pt, "color"?: "RRGGBB", "style"?: "single|double|dotted|dashed|thick|triple|dotDash|wave", "sides"?: {"top"|"left"|"bottom"|"right": {"style"?, "width"?: pt, "color"?: "RRGGBB"} | null} (exactly these sides, instead of `kind`), "applyTo"?: "section|document"}"#,
         ),
-        CommandSpec::new("design.setDefault", "Set as Default", "Design › Document Formatting", |s, _| {
+        CommandSpec::new("theme.setDefault", "Set as Default", "Design › Document Formatting", |s, _| {
             s.status = "These settings will be used for new documents.".into();
             sel_result(s)
         })
         .pure(),
-        CommandSpec::new("design.themes", "Theme List", "Design › Document Formatting", |_, _| {
+        CommandSpec::new("theme.list", "Theme List", "Design › Document Formatting", |_, _| {
             Ok(json!(THEMES.iter().map(|t| t.0).collect::<Vec<_>>()))
         })
         .pure(),

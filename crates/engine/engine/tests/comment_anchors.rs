@@ -167,7 +167,7 @@ fn the_anchor_moves_to_the_next_page_with_its_text() {
     let anchor = anchor_on(&mut s, "Gamma paragraph three.");
     assert_eq!(locate(&mut s, &anchor)["page"], 1);
     caret_at(&mut s, 0, 0);
-    run(&mut s, "insert.pageBreak", json!({}));
+    run(&mut s, "page.insertBreak", json!({}));
     let found = locate(&mut s, &anchor);
     assert_eq!(found["exact"], true, "{found}");
     assert_eq!(found["page"], 2, "{found}");
@@ -201,7 +201,7 @@ fn native_word_comments_leave_the_anchor_alone() {
     let anchor = anchor_on(&mut s, "quoted passage");
     // A Word comment on a word inside the quote: its anchors are not text.
     run(&mut s, "select.text", json!({ "text": "passage" }));
-    run(&mut s, "review.newComment", json!({ "text": "A native comment" }));
+    run(&mut s, "comment.new", json!({ "text": "A native comment" }));
     let found = locate(&mut s, &anchor);
     assert_eq!((found["found"].clone(), found["text"].clone()), (json!(true), json!("quoted passage")), "{found}");
     // And a hosted anchor made over a Word comment quotes only the text.

@@ -109,7 +109,7 @@ fn add(s: &mut Session, v: &Value) -> CmdResult {
     }
     let before = ink_ids(s);
     for call in calls {
-        s.run("draw.stroke", &call)?;
+        s.run("ink.stroke", &call)?;
     }
     s.doc.assign_object_ids();
     let ids: Vec<String> = ink_ids(s).into_iter().filter(|id| !before.contains(id)).map(|id| id.to_string()).collect();
@@ -180,7 +180,7 @@ mod tests {
 
     fn session() -> Session {
         let mut s = Session::new(kition_doc_doc::Document::new());
-        s.run("document.setText", &json!({ "text": "First paragraph of text.\nSecond paragraph of text." })).unwrap();
+        s.run("file.setText", &json!({ "text": "First paragraph of text.\nSecond paragraph of text." })).unwrap();
         s
     }
 

@@ -163,11 +163,11 @@ Ran 2 commands on `report.docx` (saved): 692 × 1688 Changes: objects 2 changed.
 
 > doc_check {"path":"report.docx"}
 Checked `report.docx`: no errors, no warnings, 3 notes.
-{"diagnostics":[{"code":"doc.missing-alt-text","fix":{"command":"picture.altText"},
+{"diagnostics":[{"code":"doc.missing-alt-text","fix":{"command":"image.altText"},
   "message":"A picture or chart has no alternative text: screen readers cannot describe it.",
   "severity":"info","target":{"page":1,"path":"body:6"}}, …]}
 
-> doc_run {"path":"report.docx","steps":[{"command":"picture.altText","on":[1],
+> doc_run {"path":"report.docx","steps":[{"command":"image.altText","on":[1],
     "params":{"text":"Column chart of monthly revenue in 2025 and 2026, January to September; 2026 is higher every month."}}]}
 Ran 1 commands on `report.docx` (saved): 692 × 1688 Changes: objects 2 changed; 0 new diagnostic(s), 1 resolved.
 ```

@@ -5,9 +5,9 @@
 //! opened, and the workspace holds only what the test put there.
 //!
 //! It covers the ways an agent could otherwise reach files and programs: `model.batch` command
-//! steps and the kit's own macros (`tools.macros` with `file.save`, `file.exportPng`, `file.open`,
-//! `insert.textFromFile`, `insert.picture`, `mailings.recipients`, …), `file.save {}` of a
-//! document opened from its replica (the process's current folder), and `review.readAloud`
+//! steps and the kit's own macros (`macro.list` with `file.save`, `file.exportPng`, `file.open`,
+//! `text.insertFromFile`, `image.insert`, `mailMerge.recipients`, …), `file.save {}` of a
+//! document opened from its replica (the process's current folder), and `readAloud.open`
 //! called directly (`say`, `espeak` or `powershell`).
 //!
 //! The test runs itself again as a child process whose current folder, `HOME` and `TMPDIR` are
@@ -15,7 +15,7 @@
 //! only record that they ran, so every by-path write lands where it can be seen and no real
 //! program is ever started. A folder beside them (`outside/`) holds this test's own sentinel
 //! files, which the agent names by path (directly, inside `model.batch` as a script, as the agent
-//! and as a person it claims to be, and inside a `tools.macros` macro) and which a document in the
+//! and as a person it claims to be, and inside a `macro.list` macro) and which a document in the
 //! workspace links to (external pictures, an attached template, a mail merge data source, an
 //! `altChunk`, a subdocument, `INCLUDETEXT`, `INCLUDEPICTURE`, `LINK` and `DDEAUTO` fields, an
 //! external XML entity, and a remote URL served by a listener the test opens and checks was never
@@ -334,13 +334,12 @@ impl Agent {
         self.keep(format!("model.batch {command} as {origin}"), answer)
     }
 
-    /// `command` as the one step of a macro of the kit's own (`tools.macros`), defined and run in
+    /// `command` as the one step of a macro of the kit's own (`macro.list`), defined and run in
     /// one call.
     fn macro_step(&mut self, id: &str, command: &str, value: &Value) -> Result<Value, String> {
-        let answer =
-            self.run(id, "tools.macros", json!({ "define": { "name": "m", "steps": [{ "command": command, "params": value }] }, "run": "m" }));
+        let answer = self.run(id, "macro.list", json!({ "define": { "name": "m", "steps": [{ "command": command, "params": value }] }, "run": "m" }));
         if let Some(last) = self.answers.last_mut() {
-            last.0 = format!("tools.macros {command}");
+            last.0 = format!("macro.list {command}");
         }
         answer
     }
@@ -399,10 +398,10 @@ fn target(command: &str, node: &Value, outside: &Path) -> String {
     let name = match command {
         "file.open" => "page.html",
         "file.newFromTemplate" => "evil.dotm",
-        "review.compare" | "review.combine" => "planted.docx",
-        "mailings.recipients" | "mailings.editRecipients" => "source.csv",
-        "insert.picture" | "picture.change" => "secret.png",
-        "insert.textFromFile" | "insert.object" => "secret",
+        "file.compare" | "file.combine" => "planted.docx",
+        "mailMerge.recipients" | "mailMerge.editRecipients" => "source.csv",
+        "image.insert" | "image.change" => "secret.png",
+        "text.insertFromFile" | "object.insert" => "secret",
         _ => "secret.txt",
     };
     at(outside, name)
@@ -435,22 +434,22 @@ fn act(root: &Path, port: u16) -> Vec<String> {
         format!("http://127.0.0.1:{port}/secret.png"),
     ];
     for path in &hostile_paths {
-        agent.every_way(&id, "insert.picture", &json!({ "path": path, "width": 60 }));
-        agent.every_way(&id, "insert.textFromFile", &json!({ "path": path }));
+        agent.every_way(&id, "image.insert", &json!({ "path": path, "width": 60 }));
+        agent.every_way(&id, "text.insertFromFile", &json!({ "path": path }));
     }
     if shows(&agent.page(&id, 1), OUTSIDE_RGB) {
-        wrong.push("a picture outside the workspace was inserted (insert.picture by path)".to_owned());
+        wrong.push("a picture outside the workspace was inserted (image.insert by path)".to_owned());
     }
 
     // Read Aloud starts no speech program, however it is asked for.
-    for command in ["review.readAloud", "readAloud.playPause", "readAloud.next"] {
+    for command in ["readAloud.open", "readAloud.playPause", "readAloud.next"] {
         agent.every_way(&id, command, &json!({}));
     }
 
     // Mail merge: a list given as data, merged into a file outside the workspace (never written),
     // and a data source by path (never read).
-    let _ = agent.batch(&id, "mailings.recipients", json!({ "csv": "name\nAda\n" }), &json!({ "kind": "person", "principal": "person:local" }));
-    agent.every_way(&id, "mailings.finish", &json!({ "path": at(&outside, "merged.docx") }));
+    let _ = agent.batch(&id, "mailMerge.recipients", json!({ "csv": "name\nAda\n" }), &json!({ "kind": "person", "principal": "person:local" }));
+    agent.every_way(&id, "mailMerge.finish", &json!({ "path": at(&outside, "merged.docx") }));
 
     // Every command that names a file, with that parameter outside the workspace, every way the
     // agent reaches it, and climbing out of the workspace from its folder.
@@ -490,20 +489,20 @@ fn act(root: &Path, port: u16) -> Vec<String> {
     // A document whose content names files outside the workspace and a remote server: nothing it
     // names is read, fetched or updated, and its own text is there.
     let hostile = agent.open("hostile.docx");
-    let text = agent.run(&hostile, "document.text", json!({})).unwrap_or_default();
+    let text = agent.run(&hostile, "file.text", json!({})).unwrap_or_default();
     if !text.to_string().contains("Entity here") {
         wrong.push(format!("hostile.docx: its own text is not there: {text}"));
     }
     for (command, value) in [
-        ("document.inspect", json!({ "text": true })),
-        ("references.updateFields", json!({})),
-        ("select.all", json!({})),
-        ("references.updateFields", json!({})),
-        ("mailings.preview", json!({})),
-        ("mailings.finish", json!({})),
+        ("file.inspect", json!({ "text": true })),
+        ("field.updateAll", json!({})),
+        ("edit.selectAll", json!({})),
+        ("field.updateAll", json!({})),
+        ("mailMerge.preview", json!({})),
+        ("mailMerge.finish", json!({})),
         ("file.info", json!({})),
         ("file.compatibility", json!({})),
-        ("file.inspect", json!({})),
+        ("file.removeHiddenContent", json!({})),
         ("file.export", json!({ "format": "pdf" })),
     ] {
         let _ = agent.run(&hostile, command, value);
@@ -535,7 +534,7 @@ fn act(root: &Path, port: u16) -> Vec<String> {
             }
             let _ = agent.run(doc, &command, json!({}));
         }
-        let _ = agent.run(doc, "document.text", json!({}));
+        let _ = agent.run(doc, "file.text", json!({}));
         let _ = agent.run(doc, "file.export", json!({ "format": "pdf" }));
         let _ = agent.model("model.export", json!({ "documentId": doc }));
     }

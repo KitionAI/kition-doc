@@ -2,8 +2,8 @@ format: 1
 id: regressions/issue-8
 feature: doc.layout.page-setup
 intent: >-
-  A partial layout.pageSetup changes only the section fields it names (A4 stays A4) and refuses
-  fields a section doesn't have; layout.size with a width and height keeps them as given (wider
+  A partial page.pageSetup changes only the section fields it names (A4 stays A4) and refuses
+  fields a section doesn't have; page.size with a width and height keeps them as given (wider
   than tall is landscape); vertical alignment is drawn on its page even when another section
   follows; keep with next holds a heading with the two first lines a widow-controlled paragraph
   needs, at the foot of a page and of a column; a continuous section's columns draw the lines

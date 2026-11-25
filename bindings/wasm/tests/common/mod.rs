@@ -91,7 +91,7 @@ pub fn encode_blobs(blobs: &Blobs) -> Vec<u8> {
     out
 }
 
-/// A small 24-bit BMP of one colour from `seed`, base64-encoded for `insert.picture`.
+/// A small 24-bit BMP of one colour from `seed`, base64-encoded for `image.insert`.
 fn picture(seed: u32) -> String {
     let (w, h) = (4u32, 4u32);
     let row = (w * 3).div_ceil(4) * 4;
@@ -201,30 +201,31 @@ impl DocKit {
             65..72 => {
                 self.caret(doc, pos)?;
                 let value = *rng.pick(&["left", "center", "right", "justify"]).unwrap_or(&"left");
-                ("align", self.run(doc, "para.align", json!({ "value": value })))
+                ("align", self.run(doc, "paragraph.align", json!({ "value": value })))
             }
             72..77 => {
                 self.caret(doc, pos)?;
-                let command = *rng.pick(&["para.heading1", "para.normal", "para.bullets", "para.numbering"]).unwrap_or(&"para.normal");
+                let command =
+                    *rng.pick(&["paragraph.heading1", "paragraph.normal", "paragraph.bullets", "paragraph.numbering"]).unwrap_or(&"paragraph.normal");
                 ("paragraph style", self.run(doc, command, json!({})))
             }
             77..81 => {
                 self.caret(doc, pos)?;
-                ("picture", self.run(doc, "insert.picture", json!({ "data": picture(rng.below(1 << 24) as u32), "width": 40 })))
+                ("picture", self.run(doc, "image.insert", json!({ "data": picture(rng.below(1 << 24) as u32), "width": 40 })))
             }
             81..85 => {
                 self.caret(doc, pos)?;
-                ("table", self.run(doc, "insert.table", json!({ "rows": 2, "cols": 2 })))
+                ("table", self.run(doc, "table.insert", json!({ "rows": 2, "cols": 2 })))
             }
             85..90 => {
                 let focus = span(rng);
                 self.select(doc, pos, focus)?;
-                ("comment", self.run(doc, "review.newComment", json!({ "text": format!("note {}", rng.below(100)) })))
+                ("comment", self.run(doc, "comment.new", json!({ "text": format!("note {}", rng.below(100)) })))
             }
             90..95 => ("title", self.run(doc, "file.properties", json!({ "title": format!("Title {}", rng.below(1000)) }))),
             _ => {
                 let color = format!("{:06X}", rng.below(1 << 24));
-                ("page color", self.run(doc, "design.pageColor", json!({ "color": color })))
+                ("page color", self.run(doc, "page.color", json!({ "color": color })))
             }
         };
         // A command the engine refuses for this state (a table where none fits) is no edit.
@@ -325,7 +326,7 @@ impl KitAdapter for DocKit {
                 self.run(doc, "file.properties", json!({ "title": format!("Title {value}") }))?;
             }
             Script::SetField { value, .. } => {
-                self.run(doc, "design.pageColor", json!({ "color": format!("{:06X}", value.wrapping_mul(2_654_435_761) & 0xFF_FFFF) }))?;
+                self.run(doc, "page.color", json!({ "color": format!("{:06X}", value.wrapping_mul(2_654_435_761) & 0xFF_FFFF) }))?;
             }
             Script::Create => {
                 self.run(doc, "caret.docEnd", json!({}))?;
@@ -353,7 +354,7 @@ impl KitAdapter for DocKit {
                 for descending in [true, false] {
                     let before = self.text(replica)?;
                     self.select(&mut replica.doc, json!({ "block": start, "off": 0 }), json!({ "block": end, "off": 0 }))?;
-                    self.run(&mut replica.doc, "para.sort", json!({ "descending": descending }))?;
+                    self.run(&mut replica.doc, "paragraph.sort", json!({ "descending": descending }))?;
                     if self.text(replica)? != before {
                         break;
                     }
@@ -388,7 +389,7 @@ impl KitAdapter for DocKit {
             Script::InsertBlob { seed } => {
                 let end = paragraphs(&document).first().map_or(0, |(_, text)| text.len());
                 self.caret(doc, json!({ "block": first, "off": end }))?;
-                self.run(doc, "insert.picture", json!({ "data": picture(*seed), "width": 40 }))?;
+                self.run(doc, "image.insert", json!({ "data": picture(*seed), "width": 40 }))?;
             }
             _ => return Ok(false),
         }

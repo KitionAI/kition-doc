@@ -520,7 +520,7 @@ mod tests {
     #[test]
     fn a_drawn_rectangle_inserts_a_table() {
         let mut s = Session::new(kition_doc_doc::Document::new());
-        s.run("document.setText", &json!({"text": "Above the table"})).unwrap();
+        s.run("file.setText", &json!({"text": "Above the table"})).unwrap();
         let before = s.doc.clone();
         let l = s.layout();
         let body = l.pages[0].body;
@@ -547,7 +547,7 @@ mod tests {
     #[test]
     fn lines_split_cells_and_the_eraser_merges_them() {
         let mut s = Session::new(kition_doc_doc::Document::new());
-        s.run("insert.table", &json!({"rows": 2, "cols": 2})).unwrap();
+        s.run("table.insert", &json!({"rows": 2, "cols": 2})).unwrap();
         s.run("text.insert", &json!({"text": "A"})).unwrap();
         let start = first_table(&s);
         let r = cell_rect(&mut s, 0, 0);

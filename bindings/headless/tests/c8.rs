@@ -133,7 +133,7 @@ impl Fixture {
 
 /// The body paragraphs' texts of `doc`.
 pub fn body_texts(doc: &mut DocDocument) -> Vec<String> {
-    let text = doc.execute("document.text", json!({})).unwrap();
+    let text = doc.execute("file.text", json!({})).unwrap();
     text["text"].as_str().unwrap().split('\n').map(str::to_owned).collect()
 }
 

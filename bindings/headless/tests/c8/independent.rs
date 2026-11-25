@@ -11,7 +11,7 @@ fn with_shape() -> (Vec<u8>, u64, usize) {
     doc.execute("select.range", json!({ "anchor": { "block": 4, "off": 0 }, "focus": { "block": 4, "off": 0 } })).unwrap();
     let shape = doc.execute("drawing.insert", json!({ "geometry": { "preset": "rect" }, "frame": { "w": 50, "h": 20 } })).unwrap();
     let uid = shape["id"].as_str().and_then(|id| id.parse().ok()).or_else(|| shape["id"].as_u64()).unwrap();
-    let selection = doc.execute("document.selection", json!({})).unwrap();
+    let selection = doc.execute("file.selection", json!({})).unwrap();
     let block = selection["anchor"]["path"][0].as_u64().unwrap() as usize;
     (doc.save(None).unwrap(), uid, block)
 }
@@ -35,7 +35,7 @@ async fn resizing_an_object_rests_on_its_size_without_the_page_layout() {
     for outside in [false, true] {
         let f = Fixture::with(Guard::Premise, &bytes);
         let basis = f.basis().await;
-        let steps = [("layout.pageSetup", json!({ "section": { "marginTop": 90 } }))];
+        let steps = [("page.pageSetup", json!({ "section": { "marginTop": 90 } }))];
         if outside {
             f.colleague(&steps);
         } else {
@@ -68,7 +68,7 @@ async fn a_section_command_rests_on_the_section_breaks_after_the_selection() {
     let mut doc = document();
     let end = TEXTS[3].len();
     doc.execute("select.range", json!({ "anchor": { "block": 3, "off": end }, "focus": { "block": 3, "off": end } })).unwrap();
-    doc.execute("layout.break", json!({ "kind": "continuous" })).unwrap();
+    doc.execute("page.break", json!({ "kind": "continuous" })).unwrap();
     let bytes = doc.save(None).unwrap();
     let f = Fixture::with(Guard::Premise, &bytes);
     let basis = f.basis().await;
@@ -78,12 +78,12 @@ async fn a_section_command_rests_on_the_section_breaks_after_the_selection() {
     let end = TEXTS[2].len();
     f.colleague(&[
         ("select.range", json!({ "anchor": { "block": 2, "off": end }, "focus": { "block": 2, "off": end } })),
-        ("layout.break", json!({ "kind": "continuous" })),
+        ("page.break", json!({ "kind": "continuous" })),
     ]);
     let after_colleague = std::fs::read(f.root.join(FILE)).unwrap();
     assert_ne!(before, after_colleague);
     let error =
-        f.run(Some(basis), json!([by_index(1, 0, 0), { "command": "layout.orientation", "params": { "value": "landscape" } }])).await.unwrap_err();
+        f.run(Some(basis), json!([by_index(1, 0, 0), { "command": "page.orientation", "params": { "value": "landscape" } }])).await.unwrap_err();
     conflict(&error, "changed");
     assert_eq!(std::fs::read(f.root.join(FILE)).unwrap(), after_colleague, "a refused write leaves the file as it was");
     f.close().await;
@@ -91,7 +91,7 @@ async fn a_section_command_rests_on_the_section_breaks_after_the_selection() {
     let f = Fixture::with(Guard::Premise, &bytes);
     let basis = f.basis().await;
     f.colleague(&type_at(4, 0, "New "));
-    f.run(Some(basis), json!([by_index(1, 0, 0), { "command": "layout.orientation", "params": { "value": "landscape" } }])).await.unwrap();
+    f.run(Some(basis), json!([by_index(1, 0, 0), { "command": "page.orientation", "params": { "value": "landscape" } }])).await.unwrap();
     assert!(f.texts().iter().any(|t| t == "New "), "{:?}", f.texts());
     f.close().await;
 }
@@ -135,14 +135,14 @@ async fn the_page_colour_rests_on_the_settings_only() {
         ("text.newParagraph", json!({})),
         ("text.insert", json!({ "text": "Added" })),
     ]);
-    f.run(Some(basis), json!([{ "command": "design.pageColor", "params": { "color": "FFEECC" } }])).await.unwrap();
+    f.run(Some(basis), json!([{ "command": "page.color", "params": { "color": "FFEECC" } }])).await.unwrap();
     assert_eq!(f.texts()[4], "Added");
     f.close().await;
 
     let f = Fixture::new(Guard::Premise);
     let basis = f.basis().await;
-    f.colleague(&[("design.pageColor", json!({ "color": "CCEEFF" }))]);
-    let error = f.run(Some(basis), json!([{ "command": "design.pageColor", "params": { "color": "FFEECC" } }])).await.unwrap_err();
+    f.colleague(&[("page.color", json!({ "color": "CCEEFF" }))]);
+    let error = f.run(Some(basis), json!([{ "command": "page.color", "params": { "color": "FFEECC" } }])).await.unwrap_err();
     conflict(&error, "changed");
     f.close().await;
 }
@@ -161,12 +161,12 @@ async fn design_commands_hold_their_design_inputs() {
     let mut failures = Vec::new();
     for outside in [false, true] {
         for (command, agent, peer, metadata) in [
-            ("design.effects", json!({}), json!({ "name": "Bold" }), true),
-            ("design.paragraphSpacing", json!({ "value": "double" }), json!({ "value": "compact" }), true),
-            ("design.theme", json!({ "name": "Studio" }), json!({ "name": "Gallery" }), false),
-            ("design.themeFonts", json!({ "heading": "Georgia", "body": "Liberation Serif" }), json!({ "heading": "Liberation Mono" }), false),
-            ("design.themeColors", json!({ "name": "Gallery" }), json!({ "name": "Studio" }), false),
-            ("design.styleSet", json!({ "name": "lines" }), json!({ "name": "basic" }), false),
+            ("theme.effects", json!({}), json!({ "name": "Bold" }), true),
+            ("theme.paragraphSpacing", json!({ "value": "double" }), json!({ "value": "compact" }), true),
+            ("theme.set", json!({ "name": "Studio" }), json!({ "name": "Gallery" }), false),
+            ("theme.fonts", json!({ "heading": "Georgia", "body": "Liberation Serif" }), json!({ "heading": "Liberation Mono" }), false),
+            ("theme.colors", json!({ "name": "Gallery" }), json!({ "name": "Studio" }), false),
+            ("theme.styleSet", json!({ "name": "lines" }), json!({ "name": "basic" }), false),
         ] {
             for necessary in [false, true] {
                 let f = Fixture::new(Guard::Premise);
@@ -174,7 +174,7 @@ async fn design_commands_hold_their_design_inputs() {
                 let steps = if necessary {
                     vec![(command, peer.clone())]
                 } else if metadata {
-                    vec![("para.insert", json!({ "before": 0, "text": "Peer paragraph" }))]
+                    vec![("paragraph.insert", json!({ "before": 0, "text": "Peer paragraph" }))]
                 } else {
                     vec![("file.properties", json!({ "title": "Peer title", "custom": { "Peer": "kept" } }))]
                 };
@@ -206,11 +206,11 @@ async fn design_commands_hold_their_design_inputs() {
                         assert!(data["customProps"].as_array().unwrap().iter().any(|p| p["name"] == "Peer" && p["value"] == "kept"));
                     }
                     match command {
-                        "design.effects" => assert_eq!(data["settings"]["themeName"], "Classic (Subtle)"),
-                        "design.paragraphSpacing" => assert_eq!(data["styles"]["defaultPara"]["spaceAfter"], 8.0),
-                        "design.theme" => assert_eq!(data["settings"]["themeName"], "Studio"),
-                        "design.themeFonts" => assert_eq!(data["settings"]["majorFont"], "Georgia"),
-                        "design.themeColors" => assert_eq!(data["settings"]["themeColors"][4], json!([34, 34, 34])),
+                        "theme.effects" => assert_eq!(data["settings"]["themeName"], "Classic (Subtle)"),
+                        "theme.paragraphSpacing" => assert_eq!(data["styles"]["defaultPara"]["spaceAfter"], 8.0),
+                        "theme.set" => assert_eq!(data["settings"]["themeName"], "Studio"),
+                        "theme.fonts" => assert_eq!(data["settings"]["majorFont"], "Georgia"),
+                        "theme.colors" => assert_eq!(data["settings"]["themeColors"][4], json!([34, 34, 34])),
                         _ => {
                             let heading = data["styles"]["styles"].as_array().unwrap().iter().find(|s| s["id"] == "Heading1").unwrap();
                             assert!(heading["para"]["borders"]["bottom"].is_object(), "{heading}");
@@ -231,47 +231,61 @@ async fn paragraph_property_commands_hold_paragraph_inputs() {
     let mut failures = Vec::new();
     for outside in [false, true] {
         for (command, params, peer, path, value, direct) in [
-            ("para.set", json!({ "props": { "align": "center" } }), json!({ "align": "right" }), "/props/align", json!("center"), true),
-            ("para.indents", json!({ "left": 36 }), json!({ "indentLeft": 72 }), "/props/indentLeft", json!(36.0), true),
-            ("para.hangingIndent", json!({}), json!({ "indentLeft": 72 }), "/props/indentFirst", json!(-36.0), true),
-            ("para.removeHanging", json!({}), json!({ "indentFirst": -72 }), "/props/indentFirst", json!(0.0), true),
-            ("para.rtl", json!({}), json!({ "bidi": false }), "/props/bidi", json!(true), true),
-            ("para.ltr", json!({}), json!({ "bidi": true }), "/props/bidi", json!(false), true),
+            ("paragraph.set", json!({ "props": { "align": "center" } }), json!({ "align": "right" }), "/props/align", json!("center"), true),
+            ("paragraph.indents", json!({ "left": 36 }), json!({ "indentLeft": 72 }), "/props/indentLeft", json!(36.0), true),
+            ("paragraph.hangingIndent", json!({}), json!({ "indentLeft": 72 }), "/props/indentFirst", json!(-36.0), true),
+            ("paragraph.removeHanging", json!({}), json!({ "indentFirst": -72 }), "/props/indentFirst", json!(0.0), true),
+            ("paragraph.rtl", json!({}), json!({ "bidi": false }), "/props/bidi", json!(true), true),
+            ("paragraph.ltr", json!({}), json!({ "bidi": true }), "/props/bidi", json!(false), true),
             (
-                "para.lineSpacing",
+                "paragraph.lineSpacing",
                 json!({ "value": 1.25 }),
                 json!({ "lineSpacing": { "rule": "multiple", "value": 3 } }),
                 "/props/lineSpacing/value",
                 json!(1.25),
                 true,
             ),
-            ("para.single", json!({}), json!({ "lineSpacing": { "rule": "multiple", "value": 3 } }), "/props/lineSpacing/value", json!(1.0), true),
-            ("para.double", json!({}), json!({ "lineSpacing": { "rule": "multiple", "value": 3 } }), "/props/lineSpacing/value", json!(2.0), true),
             (
-                "para.oneAndHalf",
+                "paragraph.single",
+                json!({}),
+                json!({ "lineSpacing": { "rule": "multiple", "value": 3 } }),
+                "/props/lineSpacing/value",
+                json!(1.0),
+                true,
+            ),
+            (
+                "paragraph.double",
+                json!({}),
+                json!({ "lineSpacing": { "rule": "multiple", "value": 3 } }),
+                "/props/lineSpacing/value",
+                json!(2.0),
+                true,
+            ),
+            (
+                "paragraph.oneAndHalf",
                 json!({}),
                 json!({ "lineSpacing": { "rule": "multiple", "value": 3 } }),
                 "/props/lineSpacing/value",
                 json!(1.5),
                 true,
             ),
-            ("para.keepNext", json!({ "value": true }), json!({ "keepNext": false }), "/props/keepNext", json!(true), true),
-            ("para.keepLines", json!({ "value": true }), json!({ "keepLines": false }), "/props/keepLines", json!(true), true),
-            ("para.pageBreakBefore", json!({ "value": true }), json!({ "pageBreakBefore": false }), "/props/pageBreakBefore", json!(true), true),
-            ("para.widowControl", json!({ "value": false }), json!({ "widowControl": true }), "/props/widowControl", json!(false), true),
-            ("para.outlineLevel", json!({ "level": 1 }), json!({ "outlineLevel": 2 }), "/props/outlineLevel", json!(1), true),
-            ("para.shading", json!({ "color": null }), json!({ "shading": [12, 34, 56] }), "/props/shading", Value::Null, true),
+            ("paragraph.keepNext", json!({ "value": true }), json!({ "keepNext": false }), "/props/keepNext", json!(true), true),
+            ("paragraph.keepLines", json!({ "value": true }), json!({ "keepLines": false }), "/props/keepLines", json!(true), true),
+            ("paragraph.pageBreakBefore", json!({ "value": true }), json!({ "pageBreakBefore": false }), "/props/pageBreakBefore", json!(true), true),
+            ("paragraph.widowControl", json!({ "value": false }), json!({ "widowControl": true }), "/props/widowControl", json!(false), true),
+            ("paragraph.outlineLevel", json!({ "level": 1 }), json!({ "outlineLevel": 2 }), "/props/outlineLevel", json!(1), true),
+            ("paragraph.shading", json!({ "color": null }), json!({ "shading": [12, 34, 56] }), "/props/shading", Value::Null, true),
             (
-                "para.borders",
+                "paragraph.borders",
                 json!({ "kind": "outside" }),
                 json!({ "borders": { "top": { "style": "dashed", "width": 2 } } }),
                 "/props/borders/top/style",
                 json!("single"),
                 true,
             ),
-            ("para.indent", json!({}), json!({ "indentLeft": 72 }), "/props/indentLeft", json!(36.0), false),
-            ("para.outdent", json!({}), json!({ "indentLeft": 72 }), "/props/indentLeft", json!(0.0), false),
-            ("para.tabs", json!({ "set": [{ "pos": 72 }] }), json!({ "tabs": [{ "pos": 36 }] }), "/props/tabs/0/pos", json!(72.0), false),
+            ("paragraph.indent", json!({}), json!({ "indentLeft": 72 }), "/props/indentLeft", json!(36.0), false),
+            ("paragraph.outdent", json!({}), json!({ "indentLeft": 72 }), "/props/indentLeft", json!(0.0), false),
+            ("paragraph.tabs", json!({ "set": [{ "pos": 72 }] }), json!({ "tabs": [{ "pos": 36 }] }), "/props/tabs/0/pos", json!(72.0), false),
         ] {
             for change in 0..3 {
                 if change == 1 && !direct {
@@ -281,12 +295,12 @@ async fn paragraph_property_commands_hold_paragraph_inputs() {
                 let basis = f.basis().await;
                 let steps = match change {
                     0 => vec![
-                        ("para.text", json!({ "index": 0, "text": "Alpine one two" })),
+                        ("paragraph.text", json!({ "index": 0, "text": "Alpine one two" })),
                         ("select.range", by_index(0, 0, 5)["params"].clone()),
                         ("format.bold", json!({ "value": true })),
                     ],
-                    1 => vec![("styles.modify", json!({ "style": "Normal", "chr": { "italic": true } }))],
-                    _ => vec![("para.set", json!({ "props": peer }))],
+                    1 => vec![("style.set", json!({ "style": "Normal", "chr": { "italic": true } }))],
+                    _ => vec![("paragraph.set", json!({ "props": peer }))],
                 };
                 if outside {
                     f.colleague(&steps);
@@ -307,7 +321,7 @@ async fn paragraph_property_commands_hold_paragraph_inputs() {
                     failures.push(format!("{command}, change {change}, outside {outside}: {}", error["conflicts"]));
                 } else {
                     let mut saved = f.disk();
-                    let paragraph = saved.execute("document.paragraph", json!({ "path": [0] })).unwrap()["paragraph"].clone();
+                    let paragraph = saved.execute("file.paragraph", json!({ "path": [0] })).unwrap()["paragraph"].clone();
                     assert_eq!(paragraph.pointer(path).unwrap_or(&Value::Null), &value, "{command}: {paragraph}");
                     if change == 0 {
                         let mut texts: Vec<String> = TEXTS.iter().map(|t| t.to_string()).collect();
@@ -335,15 +349,18 @@ async fn metadata_writes_do_not_hold_the_unused_selection() {
     let mut failures = Vec::new();
     for outside in [false, true] {
         for (command, agent, peer) in [
-            ("styles.modify", json!({ "style": "Heading1", "name": "Agent heading" }), json!({ "style": "Heading1", "name": "Peer heading" })),
-            ("styles.addToGallery", json!({ "style": "Heading1", "value": true }), json!({ "style": "Heading1", "value": false })),
-            ("design.pageColor", json!({ "color": "FFEECC" }), json!({ "color": "CCEEFF" })),
+            ("style.set", json!({ "style": "Heading1", "name": "Agent heading" }), json!({ "style": "Heading1", "name": "Peer heading" })),
+            ("style.addToGallery", json!({ "style": "Heading1", "value": true }), json!({ "style": "Heading1", "value": false })),
+            ("page.color", json!({ "color": "FFEECC" }), json!({ "color": "CCEEFF" })),
         ] {
             for necessary in [false, true] {
                 let f = Fixture::new(Guard::Premise);
                 let basis = f.basis().await;
-                let steps =
-                    if necessary { vec![(command, peer.clone())] } else { vec![("para.insert", json!({ "before": 0, "text": "Merged paragraph" }))] };
+                let steps = if necessary {
+                    vec![(command, peer.clone())]
+                } else {
+                    vec![("paragraph.insert", json!({ "before": 0, "text": "Merged paragraph" }))]
+                };
                 if outside {
                     f.colleague(&steps);
                 } else {
@@ -360,10 +377,10 @@ async fn metadata_writes_do_not_hold_the_unused_selection() {
                     assert_eq!(f.texts(), [vec!["Merged paragraph".to_owned()], TEXTS.iter().map(|t| t.to_string()).collect()].concat());
                     let mut saved = f.disk();
                     match command {
-                        "styles.modify" | "styles.addToGallery" => {
-                            let styles = saved.execute("styles.list", json!({})).unwrap();
+                        "style.set" | "style.addToGallery" => {
+                            let styles = saved.execute("style.list", json!({})).unwrap();
                             let style = styles.as_array().unwrap().iter().find(|style| style["id"] == "Heading1").unwrap();
-                            if command == "styles.modify" {
+                            if command == "style.set" {
                                 assert_eq!(style["name"], "Agent heading");
                             } else {
                                 assert_eq!(style["quick"], true);
@@ -392,13 +409,13 @@ async fn reference_metadata_does_not_hold_the_document_body() {
     let mut failures = Vec::new();
     for outside in [false, true] {
         for (command, agent, peer) in [
-            ("references.noteOptions", json!({ "footnoteFormat": "lowerRoman" }), json!({ "footnoteFormat": "upperRoman" })),
-            ("layout.hyphenation", json!({ "value": false }), json!({ "value": true })),
+            ("footnote.options", json!({ "footnoteFormat": "lowerRoman" }), json!({ "footnoteFormat": "upperRoman" })),
+            ("page.hyphenation", json!({ "value": false }), json!({ "value": true })),
         ] {
             for necessary in [false, true] {
                 let f = Fixture::new(Guard::Premise);
                 let basis = f.basis().await;
-                let steps = if necessary { vec![(command, peer.clone())] } else { vec![("layout.orientation", json!({ "value": "landscape" }))] };
+                let steps = if necessary { vec![(command, peer.clone())] } else { vec![("page.orientation", json!({ "value": "landscape" }))] };
                 if outside {
                     f.colleague(&steps);
                 } else {
@@ -418,8 +435,8 @@ async fn reference_metadata_does_not_hold_the_document_body() {
                 } else {
                     assert_eq!(f.texts(), TEXTS);
                     let mut saved = f.disk();
-                    assert_eq!(saved.execute("layout.section", json!({})).unwrap()["landscape"], true);
-                    if command == "references.noteOptions" {
+                    assert_eq!(saved.execute("page.section", json!({})).unwrap()["landscape"], true);
+                    if command == "footnote.options" {
                         assert_eq!(saved.execute(command, json!({})).unwrap()["footnoteFormat"], "lowerRoman");
                     } else {
                         let data: Value = serde_json::from_slice(&saved.save(Some("check.json")).unwrap()).unwrap();
@@ -440,28 +457,28 @@ async fn paragraph_formatting_does_not_hold_character_formatting() {
     let mut failures = Vec::new();
     for outside in [false, true] {
         for (command, params, field, value, peer) in [
-            ("para.align", json!({ "value": "right" }), "align", json!("right"), json!({ "align": "center" })),
-            ("para.alignCenter", json!({}), "align", json!("center"), json!({ "align": "right" })),
-            ("para.alignLeft", json!({}), "align", json!("left"), json!({ "align": "right" })),
-            ("para.alignRight", json!({}), "align", json!("right"), json!({ "align": "center" })),
-            ("para.justify", json!({}), "align", json!("justify"), json!({ "align": "center" })),
-            ("para.distribute", json!({}), "align", json!("distribute"), json!({ "align": "center" })),
-            ("para.spacing", json!({ "before": 6, "after": 0 }), "spaceBefore", json!(6.0), json!({ "spaceBefore": 24 })),
-            ("para.addSpaceBefore", json!({}), "spaceBefore", json!(12.0), json!({ "spaceBefore": 24 })),
-            ("para.removeSpaceAfter", json!({}), "spaceAfter", json!(0.0), json!({ "spaceAfter": 24 })),
-            ("para.asianTypography", json!({ "kinsoku": true }), "kinsoku", json!(true), json!({ "kinsoku": false })),
+            ("paragraph.align", json!({ "value": "right" }), "align", json!("right"), json!({ "align": "center" })),
+            ("format.alignCenter", json!({}), "align", json!("center"), json!({ "align": "right" })),
+            ("format.alignLeft", json!({}), "align", json!("left"), json!({ "align": "right" })),
+            ("format.alignRight", json!({}), "align", json!("right"), json!({ "align": "center" })),
+            ("format.justify", json!({}), "align", json!("justify"), json!({ "align": "center" })),
+            ("paragraph.distribute", json!({}), "align", json!("distribute"), json!({ "align": "center" })),
+            ("paragraph.spacing", json!({ "before": 6, "after": 0 }), "spaceBefore", json!(6.0), json!({ "spaceBefore": 24 })),
+            ("paragraph.addSpaceBefore", json!({}), "spaceBefore", json!(12.0), json!({ "spaceBefore": 24 })),
+            ("paragraph.removeSpaceAfter", json!({}), "spaceAfter", json!(0.0), json!({ "spaceAfter": 24 })),
+            ("paragraph.asianTypography", json!({ "kinsoku": true }), "kinsoku", json!(true), json!({ "kinsoku": false })),
         ] {
             for change in 0..3 {
                 let f = Fixture::new(Guard::Premise);
                 let basis = f.basis().await;
                 let steps = match change {
                     0 => vec![
-                        ("para.text", json!({ "index": 0, "text": "Alpine one two" })),
+                        ("paragraph.text", json!({ "index": 0, "text": "Alpine one two" })),
                         ("select.range", json!({ "anchor": { "block": 0, "off": 0 }, "focus": { "block": 0, "off": 5 } })),
                         ("format.bold", json!({ "value": true })),
                     ],
-                    1 => vec![("para.set", json!({ "props": peer }))],
-                    _ => vec![("para.insert", json!({ "before": 0, "text": "Above" }))],
+                    1 => vec![("paragraph.set", json!({ "props": peer }))],
+                    _ => vec![("paragraph.insert", json!({ "before": 0, "text": "Above" }))],
                 };
                 if outside {
                     f.colleague(&steps);
@@ -479,7 +496,7 @@ async fn paragraph_formatting_does_not_hold_character_formatting() {
                     let mut texts: Vec<String> = TEXTS.iter().map(|text| text.to_string()).collect();
                     texts[0] = "Alpine one two".to_owned();
                     assert_eq!(f.texts(), texts);
-                    let paragraph = f.disk().execute("document.paragraph", json!({ "path": [0] })).unwrap()["paragraph"].clone();
+                    let paragraph = f.disk().execute("file.paragraph", json!({ "path": [0] })).unwrap()["paragraph"].clone();
                     assert_eq!(paragraph["runs"][0]["props"]["bold"], true, "{command}: {paragraph}");
                     assert_eq!(paragraph["props"][field], value, "{command}: {paragraph}");
                 }
@@ -497,8 +514,8 @@ async fn direct_character_assignments_do_not_hold_the_paragraph_style() {
     let mut failures = Vec::new();
     for outside in [false, true] {
         for (command, params, peer, field, value) in [
-            ("format.font", json!({ "name": "Liberation Serif" }), json!({ "name": "Liberation Mono" }), "font", json!("Liberation Serif")),
-            ("format.size", json!({ "size": 18 }), json!({ "size": 24 }), "size", json!(18.0)),
+            ("format.fontName", json!({ "name": "Liberation Serif" }), json!({ "name": "Liberation Mono" }), "font", json!("Liberation Serif")),
+            ("format.fontSize", json!({ "size": 18 }), json!({ "size": 24 }), "size", json!(18.0)),
             ("format.highlight", json!({ "color": "yellow" }), json!({ "color": "blue" }), "highlight", json!("yellow")),
             ("format.spacing", json!({ "points": 1 }), json!({ "points": 2 }), "spacing", json!(1.0)),
             ("format.scale", json!({ "percent": 150 }), json!({ "percent": 125 }), "scale", json!(150.0)),
@@ -511,7 +528,7 @@ async fn direct_character_assignments_do_not_hold_the_paragraph_style() {
                 let steps = if necessary {
                     vec![("select.range", by_index(1, 0, 4)["params"].clone()), (command, peer.clone())]
                 } else {
-                    vec![("caret.set", json!({ "pos": { "block": 1, "off": 0 } })), ("para.set", json!({ "props": { "style": "Heading1" } }))]
+                    vec![("caret.set", json!({ "pos": { "block": 1, "off": 0 } })), ("paragraph.set", json!({ "props": { "style": "Heading1" } }))]
                 };
                 if outside {
                     f.colleague(&steps);
@@ -527,7 +544,7 @@ async fn direct_character_assignments_do_not_hold_the_paragraph_style() {
                     failures.push(format!("{command}, outside {outside}: {}", error["conflicts"]));
                 } else {
                     assert_eq!(f.texts(), TEXTS);
-                    let paragraph = f.disk().execute("document.paragraph", json!({ "path": [1] })).unwrap()["paragraph"].clone();
+                    let paragraph = f.disk().execute("file.paragraph", json!({ "path": [1] })).unwrap()["paragraph"].clone();
                     assert_eq!(paragraph["props"]["style"], "Heading1", "{command}: {paragraph}");
                     assert_eq!(paragraph["runs"][0]["props"][field], value, "{command}: {paragraph}");
                 }
@@ -546,7 +563,7 @@ async fn a_plain_clipboard_paste_rests_on_the_properties_its_lines_copy() {
             let basis = f.basis().await;
             let steps = [
                 ("select.range", json!({ "anchor": { "block": block, "off": 0 }, "focus": { "block": block, "off": 0 } })),
-                ("para.alignCenter", json!({})),
+                ("format.alignCenter", json!({})),
             ];
             if outside {
                 f.colleague(&steps);
@@ -584,7 +601,7 @@ async fn replacing_comment_text_rests_on_the_formatting_it_discards() {
     let part = (0..32u64)
         .find(|part| {
             reread
-                .execute("document.paragraph", json!({ "story": { "part": part }, "path": [0] }))
+                .execute("file.paragraph", json!({ "story": { "part": part }, "path": [0] }))
                 .is_ok_and(|answer| answer["paragraph"]["text"] == "Look")
         })
         .unwrap();
@@ -600,7 +617,7 @@ async fn replacing_comment_text_rests_on_the_formatting_it_discards() {
                 same_server(&f, &steps).await;
             }
             let before = std::fs::read(f.root.join(FILE)).unwrap();
-            let result = f.run(Some(basis), json!([{ "command": "review.editComment", "params": { "id": comment, "text": "Replaced" } }])).await;
+            let result = f.run(Some(basis), json!([{ "command": "comment.edit", "params": { "id": comment, "text": "Replaced" } }])).await;
             if relevant {
                 conflict(&result.unwrap_err(), "changed");
                 assert_eq!(std::fs::read(f.root.join(FILE)).unwrap(), before);
@@ -617,7 +634,7 @@ async fn replacing_comment_text_rests_on_the_formatting_it_discards() {
 async fn removing_headers_rests_on_nested_body_section_properties() {
     let (bytes, _) = with_header();
     let seed = Fixture::with(Guard::Premise, &bytes);
-    seed.call("run", json!({ "steps": [by_index(4, 0, 0), { "command": "insert.table", "params": { "rows": 1, "cols": 1 } }] })).await.unwrap();
+    seed.call("run", json!({ "steps": [by_index(4, 0, 0), { "command": "table.insert", "params": { "rows": 1, "cols": 1 } }] })).await.unwrap();
     let bytes = std::fs::read(seed.root.join(FILE)).unwrap();
     seed.close().await;
     for outside in [false, true] {
@@ -625,7 +642,7 @@ async fn removing_headers_rests_on_nested_body_section_properties() {
             let imported = section_in_paragraph(&bytes, false, !outside);
             let f = Fixture::with(Guard::Premise, &imported);
             let path = if outside { json!([0]) } else { json!([4, 0, 0, 0]) };
-            let p = f.disk().execute("document.paragraph", json!({ "path": path })).unwrap();
+            let p = f.disk().execute("file.paragraph", json!({ "path": path })).unwrap();
             let id = format!("p{:08X}", p["paragraph"]["props"]["paraId"].as_u64().unwrap());
             if !outside {
                 // Served open normalizes cell sections away. Seed the supported live-model
@@ -653,7 +670,7 @@ async fn removing_headers_rests_on_nested_body_section_properties() {
             } else {
                 same_server(&f, &type_at(5, 0, "Other ")).await;
             }
-            let result = f.run(Some(basis), json!([{ "command": "insert.removeHeader", "params": {} }])).await;
+            let result = f.run(Some(basis), json!([{ "command": "header.remove", "params": {} }])).await;
             if relevant {
                 conflict(&result.unwrap_err(), "changed");
             } else {
@@ -710,7 +727,7 @@ async fn formatting_and_replacing_drawing_text_rest_on_the_frame_they_validate()
         let params =
             if command == "drawing.format" { json!({ "ids": [uid], "fill": { "color": "#FF0000" } }) } else { json!({ "id": uid, "text": "Hi" }) };
         let mut probe = DocDocument::open(FILE, &bytes).unwrap();
-        probe.execute("layout.pageSetup", json!({ "section": { "marginLeft": 200000 } })).unwrap();
+        probe.execute("page.pageSetup", json!({ "section": { "marginLeft": 200000 } })).unwrap();
         assert!(probe.execute(command, params.clone()).is_err(), "hostile section must make the observed frame invalid");
         for outside in [false, true] {
             for change in ["validity", "title", "paragraph order"] {
@@ -726,7 +743,7 @@ async fn formatting_and_replacing_drawing_text_rest_on_the_frame_they_validate()
                 }
                 let basis = f.basis().await;
                 let steps = match change {
-                    "validity" => vec![("layout.pageSetup", json!({ "section": { "marginLeft": 90 } }))],
+                    "validity" => vec![("page.pageSetup", json!({ "section": { "marginLeft": 90 } }))],
                     "title" => vec![("file.properties", json!({ "title": "Unrelated" }))],
                     _ => vec![
                         ("select.range", json!({ "anchor": { "block": 2, "off": 0 }, "focus": { "block": 3, "off": 0 } })),
@@ -814,7 +831,7 @@ async fn converting_all_equations_rests_on_value_only_edits() {
 async fn comparing_rests_on_the_table_contents_it_discards() {
     let bytes = super::holds::table_document();
     for outside in [false, true] {
-        for command in ["review.compare", "review.combine"] {
+        for command in ["file.compare", "file.combine"] {
             for relevant in [true, false] {
                 let f = Fixture::with(Guard::Premise, &bytes);
                 let basis = f.basis().await;
@@ -854,7 +871,7 @@ async fn a_connector_rests_on_its_positioned_destination() {
     let bytes = doc.save(None).unwrap();
     let mut projected = DocDocument::open(FILE, &bytes).unwrap();
     projected.execute("drawing.connect", json!({ "from": ids[0], "to": ids[1] })).unwrap();
-    let destination = projected.execute("document.selection", json!({})).unwrap()["anchor"]["path"][0].as_u64().unwrap() as usize;
+    let destination = projected.execute("file.selection", json!({})).unwrap()["anchor"]["path"][0].as_u64().unwrap() as usize;
     assert!(![0, 1, 2].contains(&destination), "destination {destination}");
     for outside in [false, true] {
         for relevant in [true, false] {
@@ -884,10 +901,10 @@ async fn a_connector_rests_on_its_positioned_destination() {
 #[tokio::test]
 async fn rejection_navigation_rests_on_table_format_changes() {
     let mut doc = DocDocument::open(FILE, &super::holds::table_document()).unwrap();
-    doc.execute("review.trackChanges", json!({ "value": true })).unwrap();
+    doc.execute("change.track", json!({ "value": true })).unwrap();
     doc.execute("caret.set", json!({ "pos": { "story": "body", "path": [4, 0, 0, 0], "off": 0 } })).unwrap();
     doc.execute("table.properties", json!({ "align": "center" })).unwrap();
-    doc.execute("review.trackChanges", json!({ "value": false })).unwrap();
+    doc.execute("change.track", json!({ "value": false })).unwrap();
     let bytes = doc.save(None).unwrap();
     for outside in [false, true] {
         for relevant in [true, false] {
@@ -906,7 +923,7 @@ async fn rejection_navigation_rests_on_table_format_changes() {
             } else {
                 same_server(&f, &steps).await;
             }
-            let result = f.run(Some(basis), json!([by_index(6, 0, 0), { "command": "review.reject", "params": {} }])).await;
+            let result = f.run(Some(basis), json!([by_index(6, 0, 0), { "command": "change.reject", "params": {} }])).await;
             if relevant {
                 conflict(&result.unwrap_err(), "changed");
             } else {
@@ -925,7 +942,7 @@ async fn moving_a_drawing_rests_on_the_layout_at_its_destination() {
             let f = Fixture::with(Guard::Premise, &bytes);
             let basis = f.basis().await;
             let steps = if relevant {
-                vec![("caret.set", json!({ "pos": { "block": 5, "off": 0 } })), ("para.set", json!({ "props": { "spaceBefore": 80 } }))]
+                vec![("caret.set", json!({ "pos": { "block": 5, "off": 0 } })), ("paragraph.set", json!({ "props": { "spaceBefore": 80 } }))]
             } else {
                 vec![("file.properties", json!({ "title": "Unrelated" }))]
             };
@@ -1024,17 +1041,17 @@ async fn text_to_table_rests_on_the_existing_table_properties_it_discards() {
 async fn inspector_removals_rest_on_unanchored_comments_they_count() {
     let (bytes, _) = with_comment();
     let mut doc = DocDocument::open(FILE, &bytes).unwrap();
-    doc.execute("para.text", json!({ "index": 2, "text": "" })).unwrap();
+    doc.execute("paragraph.text", json!({ "index": 2, "text": "" })).unwrap();
     let bytes = doc.save(None).unwrap();
     let threads = DocDocument::open(FILE, &bytes).unwrap().execute("comment.threads", json!({})).unwrap();
     assert_eq!(threads.as_array().unwrap().len(), 1, "{threads}");
-    for command in ["file.inspect", "review.deleteComment"] {
+    for command in ["file.removeHiddenContent", "comment.deleteCurrent"] {
         for outside in [false, true] {
             for relevant in [true, false] {
                 let f = Fixture::with(Guard::Premise, &bytes);
                 let basis = f.basis().await;
                 let steps = if relevant {
-                    vec![("review.reply", json!({ "id": 0, "text": "Unanchored reply" }))]
+                    vec![("comment.replyCurrent", json!({ "id": 0, "text": "Unanchored reply" }))]
                 } else {
                     vec![("file.properties", json!({ "title": "Unrelated" }))]
                 };
@@ -1043,7 +1060,7 @@ async fn inspector_removals_rest_on_unanchored_comments_they_count() {
                 } else {
                     same_server(&f, &steps).await;
                 }
-                let params = if command == "file.inspect" { json!({ "remove": ["hidden"] }) } else { json!({ "all": true }) };
+                let params = if command == "file.removeHiddenContent" { json!({ "remove": ["hidden"] }) } else { json!({ "all": true }) };
                 let result = f.run(Some(basis), json!([{ "command": command, "params": params }])).await;
                 if relevant {
                     conflict(&result.unwrap_err(), "changed");
@@ -1064,7 +1081,7 @@ async fn inspector_removals_rest_on_the_comment_count_they_report() {
             let f = Fixture::with(Guard::Premise, &bytes);
             let basis = f.basis().await;
             let steps = if relevant {
-                vec![("review.reply", json!({ "id": 0, "text": "Another reply" }))]
+                vec![("comment.replyCurrent", json!({ "id": 0, "text": "Another reply" }))]
             } else {
                 vec![("file.properties", json!({ "title": "Unrelated" }))]
             };
@@ -1073,7 +1090,7 @@ async fn inspector_removals_rest_on_the_comment_count_they_report() {
             } else {
                 same_server(&f, &steps).await;
             }
-            let result = f.run(Some(basis), json!([{ "command": "file.inspect", "params": { "remove": ["hidden"] } }])).await;
+            let result = f.run(Some(basis), json!([{ "command": "file.removeHiddenContent", "params": { "remove": ["hidden"] } }])).await;
             if relevant {
                 conflict(&result.unwrap_err(), "changed");
             } else {
@@ -1088,7 +1105,7 @@ async fn inspector_removals_rest_on_the_comment_count_they_report() {
 async fn deleting_a_reply_rests_on_its_discarded_initials() {
     let (bytes, _) = with_comment();
     let mut doc = DocDocument::open(FILE, &bytes).unwrap();
-    doc.execute("review.reply", json!({ "id": 0, "text": "Reply" })).unwrap();
+    doc.execute("comment.replyCurrent", json!({ "id": 0, "text": "Reply" })).unwrap();
     let bytes = doc.save(None).unwrap();
     let threads = DocDocument::open(FILE, &bytes).unwrap().execute("comment.threads", json!({})).unwrap();
     let reply = threads[0]["comments"][1]["toolId"].clone();
@@ -1113,7 +1130,7 @@ async fn deleting_a_reply_rests_on_its_discarded_initials() {
             } else {
                 same_server(&f, &[("file.properties", json!({ "title": "Unrelated" }))]).await;
             }
-            let result = f.run(Some(basis), json!([{ "command": "review.deleteComment", "params": { "id": 1 } }])).await;
+            let result = f.run(Some(basis), json!([{ "command": "comment.deleteCurrent", "params": { "id": 1 } }])).await;
             if relevant {
                 conflict(&result.unwrap_err(), "changed");
             } else {
@@ -1128,15 +1145,15 @@ async fn deleting_a_reply_rests_on_its_discarded_initials() {
 async fn deleting_comments_rests_on_the_formatting_they_discard() {
     let (bytes, _) = with_comment();
     let mut doc = DocDocument::open(FILE, &bytes).unwrap();
-    doc.execute("review.reply", json!({ "id": 0, "text": "Reply" })).unwrap();
+    doc.execute("comment.replyCurrent", json!({ "id": 0, "text": "Reply" })).unwrap();
     let bytes = doc.save(None).unwrap();
     let mut doc = DocDocument::open(FILE, &bytes).unwrap();
     let part = (0..32u64)
         .find(|part| {
-            doc.execute("document.paragraph", json!({ "story": { "part": part }, "path": [0] })).is_ok_and(|v| v["paragraph"]["text"] == "Reply")
+            doc.execute("file.paragraph", json!({ "story": { "part": part }, "path": [0] })).is_ok_and(|v| v["paragraph"]["text"] == "Reply")
         })
         .unwrap();
-    for command in ["review.deleteComment", "file.inspect"] {
+    for command in ["comment.deleteCurrent", "file.removeHiddenContent"] {
         for outside in [false, true] {
             for relevant in [true, false] {
                 let f = Fixture::with(Guard::Premise, &bytes);
@@ -1155,7 +1172,7 @@ async fn deleting_comments_rests_on_the_formatting_they_discard() {
                 } else {
                     same_server(&f, &steps).await;
                 }
-                let params = if command == "file.inspect" { json!({ "remove": ["comments"] }) } else { json!({ "id": 1 }) };
+                let params = if command == "file.removeHiddenContent" { json!({ "remove": ["comments"] }) } else { json!({ "id": 1 }) };
                 let result = f.run(Some(basis), json!([{ "command": command, "params": params }])).await;
                 if relevant {
                     conflict(&result.unwrap_err(), "changed");
@@ -1177,7 +1194,7 @@ async fn paragraph_splitting_rests_on_the_properties_it_copies() {
             let basis = f.basis().await;
             let steps = [
                 ("select.range", json!({ "anchor": { "block": block, "off": 0 }, "focus": { "block": block, "off": 0 } })),
-                ("para.alignCenter", json!({})),
+                ("format.alignCenter", json!({})),
             ];
             if outside {
                 f.colleague(&steps);
@@ -1229,7 +1246,7 @@ async fn pasted_paragraph_delimiters_rest_on_the_properties_they_copy() {
             let basis = f.basis().await;
             let steps = [
                 ("select.range", json!({ "anchor": { "block": block, "off": 0 }, "focus": { "block": block, "off": 0 } })),
-                ("para.alignCenter", json!({})),
+                ("format.alignCenter", json!({})),
             ];
             if outside {
                 f.colleague(&steps);
@@ -1252,7 +1269,7 @@ async fn pasted_paragraph_delimiters_rest_on_the_properties_they_copy() {
 async fn paragraph_sorting_rests_on_the_whole_last_paragraph() {
     let write = json!([
         { "command": "select.range", "params": { "anchor": { "block": 1, "off": 0 }, "focus": { "block": 3, "off": 0 } } },
-        { "command": "para.sort", "params": {} }
+        { "command": "paragraph.sort", "params": {} }
     ]);
     for outside in [false, true] {
         for (block, refuse) in [(3, true), (4, false)] {
@@ -1280,14 +1297,14 @@ async fn paragraph_sorting_rests_on_the_whole_last_paragraph() {
 async fn paragraph_splitting_rests_on_the_next_style_it_resolves() {
     let mut doc = document();
     doc.execute("select.range", json!({ "anchor": { "block": 1, "off": 0 }, "focus": { "block": 1, "off": 0 } })).unwrap();
-    doc.execute("para.style", json!({ "style": "Heading1" })).unwrap();
+    doc.execute("paragraph.style", json!({ "style": "Heading1" })).unwrap();
     let bytes = doc.save(None).unwrap();
     let write = json!([by_index(1, TEXTS[1].len(), TEXTS[1].len()), { "command": "text.newParagraph", "params": {} }]);
     for outside in [false, true] {
         for (style, refuse) in [("Heading1", true), ("Heading2", false)] {
             let f = Fixture::with(Guard::Premise, &bytes);
             let basis = f.basis().await;
-            let steps = [("styles.modify", json!({ "style": style, "next": "Title" }))];
+            let steps = [("style.set", json!({ "style": style, "next": "Title" }))];
             if outside {
                 f.colleague(&steps);
             } else {
@@ -1307,13 +1324,13 @@ async fn paragraph_splitting_rests_on_the_next_style_it_resolves() {
 #[tokio::test]
 async fn a_table_stroke_rests_on_the_cells_at_its_point() {
     let mut doc = DocDocument::create(FILE, 612, 792).unwrap();
-    doc.execute("insert.table", json!({ "rows": 2, "cols": 2 })).unwrap();
+    doc.execute("table.insert", json!({ "rows": 2, "cols": 2 })).unwrap();
     let mut carets = Vec::new();
     for col in [0, 1] {
         let pos = json!({ "story": "body", "path": [0, 0, col, 0], "off": 0 });
         doc.execute("select.range", json!({ "anchor": pos, "focus": pos })).unwrap();
         doc.execute("text.insert", json!({ "text": "Cell" })).unwrap();
-        carets.push(doc.execute("document.layout", json!({})).unwrap()["caret"].clone());
+        carets.push(doc.execute("file.layout", json!({})).unwrap()["caret"].clone());
     }
     let x = (carets[0]["x"].as_f64().unwrap() + carets[1]["x"].as_f64().unwrap()) / 2.0;
     let y = carets[0]["y"].as_f64().unwrap();
@@ -1350,25 +1367,25 @@ async fn a_table_stroke_rests_on_the_cells_at_its_point() {
 async fn whole_story_commands_rest_on_the_paragraphs_they_scan() {
     let mut doc = document();
     doc.execute("select.range", json!({ "anchor": { "block": 1, "off": 0 }, "focus": { "block": 1, "off": 0 } })).unwrap();
-    doc.execute("styles.create", json!({ "name": "Mine", "fromSelection": false })).unwrap();
+    doc.execute("style.add", json!({ "name": "Mine", "fromSelection": false })).unwrap();
     let bytes = doc.save(None).unwrap();
     let mut failures = Vec::new();
     for outside in [false, true] {
-        for command in ["styles.delete", "file.inspect", "insert.bookmark"] {
+        for command in ["style.delete", "file.removeHiddenContent", "bookmark.insert"] {
             let params = match command {
-                "styles.delete" => json!({ "style": "Mine" }),
-                "file.inspect" => json!({ "remove": ["hidden"] }),
+                "style.delete" => json!({ "style": "Mine" }),
+                "file.removeHiddenContent" => json!({ "remove": ["hidden"] }),
                 _ => json!({ "name": "Shared" }),
             };
             for relevant in [true, false] {
                 let f = Fixture::with(Guard::Premise, &bytes);
                 let basis = f.basis().await;
                 let edit = match (command, relevant) {
-                    ("insert.bookmark", false) => ("text.insert", json!({ "text": "Unrelated " })),
+                    ("bookmark.insert", false) => ("text.insert", json!({ "text": "Unrelated " })),
                     (_, false) => ("file.properties", json!({ "title": "Another title" })),
-                    ("styles.delete", true) => ("para.style", json!({ "style": "Mine" })),
-                    ("file.inspect", true) => ("format.hidden", json!({ "value": true })),
-                    _ => ("insert.bookmark", json!({ "name": "Shared" })),
+                    ("style.delete", true) => ("paragraph.style", json!({ "style": "Mine" })),
+                    ("file.removeHiddenContent", true) => ("format.hidden", json!({ "value": true })),
+                    _ => ("bookmark.insert", json!({ "name": "Shared" })),
                 };
                 let pos = json!({ "block": 3, "off": 0 });
                 let end = json!({ "block": 3, "off": 3 });
@@ -1401,9 +1418,9 @@ async fn whole_story_commands_rest_on_the_paragraphs_they_scan() {
 async fn rejection_rests_on_paragraph_changes_beyond_its_text_range() {
     let mut doc = document();
     doc.execute("select.range", json!({ "anchor": { "block": 3, "off": 0 }, "focus": { "block": 3, "off": 0 } })).unwrap();
-    doc.execute("review.trackChanges", json!({ "value": true })).unwrap();
+    doc.execute("change.track", json!({ "value": true })).unwrap();
     doc.execute("text.insert", json!({ "text": "Tracked " })).unwrap();
-    doc.execute("review.trackChanges", json!({ "value": false })).unwrap();
+    doc.execute("change.track", json!({ "value": false })).unwrap();
     let bytes = doc.save(None).unwrap();
     let mut failures = Vec::new();
     for outside in [false, true] {
@@ -1418,7 +1435,7 @@ async fn rejection_rests_on_paragraph_changes_beyond_its_text_range() {
                 } else if fallback {
                     steps.push(("file.properties", json!({ "title": "Unrelated" })));
                 } else {
-                    steps.push(("para.alignCenter", json!({})));
+                    steps.push(("format.alignCenter", json!({})));
                 }
                 if outside {
                     f.colleague(&steps);
@@ -1426,7 +1443,7 @@ async fn rejection_rests_on_paragraph_changes_beyond_its_text_range() {
                     same_server(&f, &steps).await;
                 }
                 // At a caret with no revision Reject navigates to the next body change.
-                let write = json!([by_index(1, 0, if fallback { 0 } else { 3 }), { "command": "review.reject", "params": {} }]);
+                let write = json!([by_index(1, 0, if fallback { 0 } else { 3 }), { "command": "change.reject", "params": {} }]);
                 let result = f.run(Some(basis), write).await;
                 if relevant {
                     match result {
@@ -1447,7 +1464,7 @@ async fn rejection_rests_on_paragraph_changes_beyond_its_text_range() {
 async fn equation_enter_rests_on_the_paragraph_it_splits() {
     let mut doc = document();
     doc.execute("select.range", json!({ "anchor": { "block": 1, "off": 0 }, "focus": { "block": 1, "off": 0 } })).unwrap();
-    doc.execute("insert.equation", json!({ "linear": "x", "edit": false })).unwrap();
+    doc.execute("equation.insert", json!({ "linear": "x", "edit": false })).unwrap();
     let bytes = doc.save(None).unwrap();
     let mut failures = Vec::new();
     for outside in [false, true] {
@@ -1457,7 +1474,7 @@ async fn equation_enter_rests_on_the_paragraph_it_splits() {
             let block = if relevant { 1 } else { 4 };
             let steps = [
                 ("select.range", json!({ "anchor": { "block": block, "off": 0 }, "focus": { "block": block, "off": 0 } })),
-                ("para.alignCenter", json!({})),
+                ("format.alignCenter", json!({})),
             ];
             if outside {
                 f.colleague(&steps);
@@ -1491,8 +1508,8 @@ async fn equation_enter_rests_on_the_paragraph_it_splits() {
 #[tokio::test]
 async fn typing_autoformats_rest_on_numbering_and_the_previous_border() {
     let mut doc = document();
-    doc.execute("para.text", json!({ "index": 1, "text": "1." })).unwrap();
-    doc.execute("para.text", json!({ "index": 3, "text": "--" })).unwrap();
+    doc.execute("paragraph.text", json!({ "index": 1, "text": "1." })).unwrap();
+    doc.execute("paragraph.text", json!({ "index": 3, "text": "--" })).unwrap();
     let bytes = doc.save(None).unwrap();
     let mut failures = Vec::new();
     for outside in [false, true] {
@@ -1505,11 +1522,11 @@ async fn typing_autoformats_rest_on_numbering_and_the_previous_border() {
                     ("select.range", json!({ "anchor": { "block": block, "off": 0 }, "focus": { "block": block, "off": 0 } })),
                     (
                         if !relevant {
-                            "para.alignCenter"
+                            "format.alignCenter"
                         } else if border {
-                            "para.borders"
+                            "paragraph.borders"
                         } else {
-                            "para.bullets"
+                            "paragraph.bullets"
                         },
                         if border && relevant { json!({ "kind": "top" }) } else { json!({}) },
                     ),
@@ -1545,14 +1562,14 @@ async fn typing_autoformats_rest_on_numbering_and_the_previous_border() {
 async fn comparing_rests_on_body_paragraphs_and_not_document_properties() {
     let mut failures = Vec::new();
     for outside in [false, true] {
-        for command in ["review.compare", "review.combine"] {
+        for command in ["file.compare", "file.combine"] {
             for relevant in [true, false] {
                 let f = Fixture::new(Guard::Premise);
                 let basis = f.basis().await;
                 let steps = if relevant {
                     vec![
                         ("select.range", json!({ "anchor": { "block": 3, "off": 0 }, "focus": { "block": 3, "off": 0 } })),
-                        ("para.alignCenter", json!({})),
+                        ("format.alignCenter", json!({})),
                     ]
                 } else {
                     vec![("file.properties", json!({ "title": "Colleague title" }))]
@@ -1590,11 +1607,11 @@ async fn fragment_pasting_rests_on_ids_without_unrelated_formatting() {
                 let f = Fixture::new(Guard::Premise);
                 let basis = f.basis().await;
                 let steps = if relevant {
-                    vec![("para.insert", json!({ "before": 4, "text": "New id" }))]
+                    vec![("paragraph.insert", json!({ "before": 4, "text": "New id" }))]
                 } else {
                     vec![
                         ("select.range", json!({ "anchor": { "block": 4, "off": 0 }, "focus": { "block": 4, "off": 0 } })),
-                        ("para.alignCenter", json!({})),
+                        ("format.alignCenter", json!({})),
                     ]
                 };
                 if outside {
@@ -1752,7 +1769,7 @@ async fn a_drawing_insert_rests_on_its_destination_text() {
     doc.execute("caret.set", json!({ "pos": pos })).unwrap();
     let params = json!({ "geometry": { "preset": "rect" }, "frame": { "x": 100, "y": 300, "w": 60, "h": 30 }, "placement": { "page": 0 } });
     doc.execute("drawing.insert", params.clone()).unwrap();
-    let destination = doc.execute("document.selection", json!({})).unwrap()["anchor"]["path"][0].as_u64().unwrap();
+    let destination = doc.execute("file.selection", json!({})).unwrap()["anchor"]["path"][0].as_u64().unwrap();
     assert_ne!(destination, 0);
     let bytes = document().save(None).unwrap();
     let mut failures = Vec::new();
@@ -1844,7 +1861,7 @@ async fn a_drawing_move_rests_on_its_laid_out_frame() {
     let uid = shape["id"].as_str().unwrap().parse::<u32>().unwrap();
     let bytes = doc.save(None).unwrap();
     let before = doc.execute("drawing.describe", json!({ "ids": [uid] })).unwrap();
-    doc.execute("styles.modify", json!({ "style": "Normal", "chr": { "size": 30 } })).unwrap();
+    doc.execute("style.set", json!({ "style": "Normal", "chr": { "size": 30 } })).unwrap();
     let after = doc.execute("drawing.describe", json!({ "ids": [uid] })).unwrap();
     assert_ne!(before, after, "the style change must move the inline frame");
     let mut failures = Vec::new();
@@ -1853,7 +1870,7 @@ async fn a_drawing_move_rests_on_its_laid_out_frame() {
             let f = Fixture::with(Guard::Premise, &bytes);
             let basis = f.basis().await;
             let style = if relevant { "Normal" } else { "Title" };
-            let steps = [("styles.modify", json!({ "style": style, "chr": { "size": 30 } }))];
+            let steps = [("style.set", json!({ "style": style, "chr": { "size": 30 } }))];
             if outside {
                 f.colleague(&steps);
             } else {
@@ -1877,7 +1894,7 @@ async fn a_drawing_move_rests_on_its_laid_out_frame() {
 #[tokio::test]
 async fn paragraph_insertion_rests_on_the_kind_of_its_indexed_block() {
     let mut doc = DocDocument::create(FILE, 612, 792).unwrap();
-    doc.execute("insert.table", json!({ "rows": 1, "cols": 1 })).unwrap();
+    doc.execute("table.insert", json!({ "rows": 1, "cols": 1 })).unwrap();
     let bytes = doc.save(None).unwrap();
     let mut failures = Vec::new();
     for outside in [false, true] {
@@ -1890,7 +1907,7 @@ async fn paragraph_insertion_rests_on_the_kind_of_its_indexed_block() {
         } else {
             same_server(&f, &steps).await;
         }
-        match f.run(Some(basis), json!([by_index(1, 0, 0), { "command": "para.insert", "params": { "after": 0, "text": "New" } }])).await {
+        match f.run(Some(basis), json!([by_index(1, 0, 0), { "command": "paragraph.insert", "params": { "after": 0, "text": "New" } }])).await {
             Ok(_) => failures.push(format!("paragraph inserted after the indexed table became text; outside={outside}")),
             Err(error) => assert_eq!(error["error"]["code"], "conflict", "{error}"),
         }
@@ -1965,7 +1982,7 @@ async fn a_connector_with_endpoint_ids_still_rests_on_the_caret() {
 #[tokio::test]
 async fn list_neighbours_rest_on_the_lists_containing_them() {
     let mut doc = DocDocument::create(FILE, 612, 792).unwrap();
-    doc.execute("insert.table", json!({ "rows": 2, "cols": 2 })).unwrap();
+    doc.execute("table.insert", json!({ "rows": 2, "cols": 2 })).unwrap();
     for (row, text) in [(0, "B"), (1, "A")] {
         let pos = json!({ "story": "body", "path": [0, row, 0, 0], "off": 0 });
         doc.execute("select.range", json!({ "anchor": pos, "focus": pos })).unwrap();
@@ -1989,7 +2006,7 @@ async fn list_neighbours_rest_on_the_lists_containing_them() {
             } else {
                 same_server(&f, &steps).await;
             }
-            let result = f.run(Some(basis), json!([by_index(1, 0, 0), { "command": "para.bullets", "params": {} }])).await;
+            let result = f.run(Some(basis), json!([by_index(1, 0, 0), { "command": "paragraph.bullets", "params": {} }])).await;
             if relevant {
                 match result {
                     Ok(_) => failures.push(format!("list continuation applied after neighbour rows changed; outside={outside}")),
@@ -2043,13 +2060,13 @@ async fn restarting_a_list_rests_on_the_rows_its_forward_scan_visits() {
     let mut doc = document();
     doc.execute("select.range", json!({ "anchor": { "block": 1, "off": TEXTS[1].len() }, "focus": { "block": 1, "off": TEXTS[1].len() } })).unwrap();
     doc.execute("text.newParagraph", json!({})).unwrap();
-    doc.execute("insert.table", json!({ "rows": 2, "cols": 1 })).unwrap();
+    doc.execute("table.insert", json!({ "rows": 2, "cols": 1 })).unwrap();
     for (row, text) in [(0, "Z"), (1, "A")] {
         doc.execute("select.range", json!({ "anchor": { "story": "body", "path": [2, row, 0, 0], "off": 0 }, "focus": { "story": "body", "path": [2, row, 0, 0], "off": 0 } })).unwrap();
         doc.execute("text.insert", json!({ "text": text })).unwrap();
     }
     doc.execute("select.range", json!({ "anchor": { "block": 0, "off": 0 }, "focus": { "story": "body", "path": [2, 0, 0, 0], "off": 1 } })).unwrap();
-    doc.execute("para.numbering", json!({})).unwrap();
+    doc.execute("paragraph.numbering", json!({})).unwrap();
     let bytes = doc.save(None).unwrap();
     let mut failures = Vec::new();
     for outside in [false, true] {
@@ -2073,7 +2090,7 @@ async fn restarting_a_list_rests_on_the_rows_its_forward_scan_visits() {
             } else {
                 same_server(&f, &steps).await;
             }
-            let result = f.run(Some(basis), json!([by_index(0, 0, 0), { "command": "para.restartNumbering", "params": {} }])).await;
+            let result = f.run(Some(basis), json!([by_index(0, 0, 0), { "command": "paragraph.restartNumbering", "params": {} }])).await;
             if relevant {
                 match result {
                     Ok(_) => failures.push(format!("restart applied after the table rows moved; outside={outside}")),
@@ -2092,29 +2109,29 @@ async fn restarting_a_list_rests_on_the_rows_its_forward_scan_visits() {
 async fn header_controls_rest_on_the_body_section_their_handlers_use() {
     let mut doc = document();
     doc.execute("select.range", json!({ "anchor": { "block": 1, "off": TEXTS[1].len() }, "focus": { "block": 1, "off": TEXTS[1].len() } })).unwrap();
-    doc.execute("layout.break", json!({ "kind": "continuous" })).unwrap();
+    doc.execute("page.break", json!({ "kind": "continuous" })).unwrap();
     doc.execute("select.range", json!({ "anchor": { "block": 0, "off": 0 }, "focus": { "block": 0, "off": 0 } })).unwrap();
-    doc.execute("insert.header", json!({ "text": "Head" })).unwrap();
+    doc.execute("header.insert", json!({ "text": "Head" })).unwrap();
     let bytes = doc.save(None).unwrap();
     let mut reopened = DocDocument::open(FILE, &bytes).unwrap();
     let part = (0..64)
         .find(|part| {
             reopened
-                .execute("document.paragraph", json!({ "story": { "part": part }, "path": [0] }))
+                .execute("file.paragraph", json!({ "story": { "part": part }, "path": [0] }))
                 .ok()
                 .is_some_and(|p| p["paragraph"]["text"] == "Head")
         })
         .unwrap();
     let mut failures = Vec::new();
     for outside in [false, true] {
-        for command in ["hf.position", "layout.linkToPrevious"] {
+        for command in ["headerFooter.position", "page.linkToPrevious"] {
             for relevant in [true, false] {
                 let f = Fixture::with(Guard::Premise, &bytes);
                 let basis = f.basis().await;
                 let steps = if relevant {
                     vec![
                         ("select.range", json!({ "anchor": { "block": 0, "off": 0 }, "focus": { "block": 0, "off": 0 } })),
-                        ("layout.margins", json!({ "left": 100 })),
+                        ("page.margins", json!({ "left": 100 })),
                     ]
                 } else {
                     type_at(4, 0, "New ").to_vec()
@@ -2129,7 +2146,7 @@ async fn header_controls_rest_on_the_body_section_their_handlers_use() {
                         Some(basis),
                         json!([
                             { "command": "caret.set", "params": { "pos": { "story": { "part": part }, "path": [0], "off": 0 } } },
-                            { "command": command, "params": if command == "hf.position" { json!({ "header": 36 }) } else { json!({}) } }
+                            { "command": command, "params": if command == "headerFooter.position" { json!({ "header": 36 }) } else { json!({}) } }
                         ]),
                     )
                     .await;
@@ -2162,7 +2179,7 @@ async fn a_write_by_index_after_a_join_before_it_is_refused() {
     )
     .await;
     let joined = f.texts();
-    let error = f.run(Some(basis), json!([by_index(2, 0, 0), { "command": "para.alignCenter", "params": {} }])).await.unwrap_err();
+    let error = f.run(Some(basis), json!([by_index(2, 0, 0), { "command": "format.alignCenter", "params": {} }])).await.unwrap_err();
     assert_eq!(error["error"]["code"], "conflict", "{error}");
     assert_eq!(f.texts(), joined);
     f.close().await;
@@ -2174,7 +2191,7 @@ async fn a_write_by_index_after_a_join_before_it_is_refused() {
         &[("select.range", json!({ "anchor": { "block": 4, "off": 0 }, "focus": { "block": 4, "off": 0 } })), ("text.backspace", json!({}))],
     )
     .await;
-    f.run(Some(basis), json!([by_index(2, 0, 0), { "command": "para.alignCenter", "params": {} }])).await.unwrap();
+    f.run(Some(basis), json!([by_index(2, 0, 0), { "command": "format.alignCenter", "params": {} }])).await.unwrap();
     f.close().await;
 }
 
@@ -2185,14 +2202,14 @@ async fn a_write_by_index_after_a_join_before_it_is_refused() {
 async fn a_reply_rests_on_the_comments_not_on_the_tracked_changes() {
     let mut doc = document();
     doc.execute("select.range", json!({ "anchor": { "block": 2, "off": 7 }, "focus": { "block": 2, "off": 7 } })).unwrap();
-    doc.execute("review.trackChanges", json!({ "value": true })).unwrap();
+    doc.execute("change.track", json!({ "value": true })).unwrap();
     doc.execute("text.insert", json!({ "text": "Z" })).unwrap();
-    doc.execute("review.trackChanges", json!({ "value": false })).unwrap();
+    doc.execute("change.track", json!({ "value": false })).unwrap();
     doc.execute("select.range", json!({ "anchor": { "block": 3, "off": 0 }, "focus": { "block": 3, "off": 5 } })).unwrap();
     let thread = doc.execute("comment.add", json!({ "text": "Look" })).unwrap()["thread"].clone();
     let f = Fixture::with(Guard::Premise, &doc.save(None).unwrap());
     let basis = f.basis().await;
-    same_server(&f, &[("review.acceptAll", json!({}))]).await;
+    same_server(&f, &[("change.acceptAll", json!({}))]).await;
     f.run(Some(basis), json!([{ "command": "comment.reply", "params": { "thread": thread, "text": "Reply" } }])).await.unwrap();
     f.close().await;
 }
@@ -2201,7 +2218,7 @@ async fn a_reply_rests_on_the_comments_not_on_the_tracked_changes() {
 fn tracked() -> Vec<u8> {
     let mut doc = document();
     doc.execute("select.range", json!({ "anchor": { "block": 2, "off": 5 }, "focus": { "block": 2, "off": 5 } })).unwrap();
-    doc.execute("review.trackChanges", json!({ "value": true })).unwrap();
+    doc.execute("change.track", json!({ "value": true })).unwrap();
     doc.execute("text.insert", json!({ "text": "Z" })).unwrap();
     doc.save(None).unwrap()
 }
@@ -2218,9 +2235,9 @@ async fn typing_under_tracking_rests_on_the_revisions() {
         let f = Fixture::with(Guard::Premise, &bytes);
         let basis = f.basis().await;
         if outside {
-            f.colleague(&[("review.rejectAll", json!({}))]);
+            f.colleague(&[("change.rejectAll", json!({}))]);
         } else {
-            same_server(&f, &[("review.rejectAll", json!({}))]).await;
+            same_server(&f, &[("change.rejectAll", json!({}))]).await;
         }
         let before = std::fs::read(f.root.join(FILE)).unwrap();
         let error = f.run(Some(basis), json!([by_index(4, 0, 0), { "command": "text.insert", "params": { "text": "New " } }])).await.unwrap_err();
@@ -2231,9 +2248,9 @@ async fn typing_under_tracking_rests_on_the_revisions() {
         let f = Fixture::with(Guard::Premise, &bytes);
         let basis = f.basis().await;
         if outside {
-            f.colleague(&[("design.pageColor", json!({ "color": "CCEEFF" }))]);
+            f.colleague(&[("page.color", json!({ "color": "CCEEFF" }))]);
         } else {
-            same_server(&f, &[("design.pageColor", json!({ "color": "CCEEFF" }))]).await;
+            same_server(&f, &[("page.color", json!({ "color": "CCEEFF" }))]).await;
         }
         f.run(Some(basis), json!([by_index(4, 0, 0), { "command": "text.insert", "params": { "text": "New " } }])).await.unwrap();
         assert!(f.texts()[4].starts_with("New "), "outside {outside}: {:?}", f.texts());
@@ -2251,7 +2268,7 @@ async fn typing_under_tracking_rests_on_the_revisions() {
 async fn another_agents_equation_editing_is_not_the_agents_mode() {
     let mut doc = document();
     doc.execute("select.range", json!({ "anchor": { "block": 1, "off": 0 }, "focus": { "block": 1, "off": 0 } })).unwrap();
-    doc.execute("insert.equation", json!({ "linear": "x^2", "edit": false })).unwrap();
+    doc.execute("equation.insert", json!({ "linear": "x^2", "edit": false })).unwrap();
     let f = Fixture::with(Guard::Premise, &doc.save(None).unwrap());
     let basis = f.basis().await;
     let at = json!({ "anchor": { "block": 1, "off": 0 }, "focus": { "block": 1, "off": 0 } });
@@ -2277,7 +2294,7 @@ async fn a_table_rests_on_the_page_it_is_as_wide_as() {
     for outside in [false, true] {
         let f = Fixture::new(Guard::Premise);
         let basis = f.basis().await;
-        let margins = ("layout.margins", json!({ "left": 144, "right": 144 }));
+        let margins = ("page.margins", json!({ "left": 144, "right": 144 }));
         if outside {
             f.colleague(&[margins]);
         } else {
@@ -2285,20 +2302,20 @@ async fn a_table_rests_on_the_page_it_is_as_wide_as() {
         }
         let before = std::fs::read(f.root.join(FILE)).unwrap();
         let error =
-            f.run(Some(basis), json!([by_index(4, 0, 0), { "command": "insert.table", "params": { "rows": 2, "cols": 2 } }])).await.unwrap_err();
+            f.run(Some(basis), json!([by_index(4, 0, 0), { "command": "table.insert", "params": { "rows": 2, "cols": 2 } }])).await.unwrap_err();
         assert_eq!(error["error"]["code"], "conflict", "outside {outside}: {error}");
         assert_eq!(std::fs::read(f.root.join(FILE)).unwrap(), before, "a refused write leaves the file as it was");
         f.close().await;
 
         let f = Fixture::new(Guard::Premise);
         let basis = f.basis().await;
-        let colour = ("design.pageColor", json!({ "color": "CCEEFF" }));
+        let colour = ("page.color", json!({ "color": "CCEEFF" }));
         if outside {
             f.colleague(&[colour]);
         } else {
             same_server(&f, &[colour]).await;
         }
-        f.run(Some(basis), json!([by_index(4, 0, 0), { "command": "insert.table", "params": { "rows": 2, "cols": 2 } }])).await.unwrap();
+        f.run(Some(basis), json!([by_index(4, 0, 0), { "command": "table.insert", "params": { "rows": 2, "cols": 2 } }])).await.unwrap();
         f.close().await;
     }
 }
@@ -2335,26 +2352,26 @@ async fn a_command_reading_no_selection_does_not_rest_on_the_calls_selection() {
     let f = Fixture::new(Guard::Premise);
     let basis = f.basis().await;
     // The session's selection is the caret at the start of the document (as opened).
-    same_server(&f, &[("para.insert", json!({ "before": 0, "text": "New " }))]).await;
-    f.run(Some(basis), json!([{ "command": "review.trackChanges", "params": { "value": true } }])).await.unwrap();
+    same_server(&f, &[("paragraph.insert", json!({ "before": 0, "text": "New " }))]).await;
+    f.run(Some(basis), json!([{ "command": "change.track", "params": { "value": true } }])).await.unwrap();
     assert!(f.disk().inspect().unwrap().to_string().contains("New "));
     f.close().await;
 
     let f = Fixture::new(Guard::Premise);
     let basis = f.basis().await;
-    same_server(&f, &[("review.trackChanges", json!({ "value": true }))]).await;
-    let error = f.run(Some(basis), json!([{ "command": "review.trackChanges", "params": { "value": false } }])).await.unwrap_err();
+    same_server(&f, &[("change.track", json!({ "value": true }))]).await;
+    let error = f.run(Some(basis), json!([{ "command": "change.track", "params": { "value": false } }])).await.unwrap_err();
     assert_eq!(error["error"]["code"], "conflict", "{error}");
     f.close().await;
 }
 
 /// Wrong write (C8-doc-5, document-wide reads: the document's properties): a Title field takes
-/// its text from `core.title` (`tools.rs` `insert.docProperty`). Another writer's new title must
+/// its text from `core.title` (`tools.rs` `field.insertDocProperty`). Another writer's new title must
 /// refuse it; another program's save (which stamps `core.modified` and `core.revision`) of an edit
 /// elsewhere must not.
 #[tokio::test]
 async fn a_title_field_rests_on_the_title_only() {
-    let write = json!([by_index(4, 0, 0), { "command": "insert.docProperty", "params": { "name": "Title" } }]);
+    let write = json!([by_index(4, 0, 0), { "command": "field.insertDocProperty", "params": { "name": "Title" } }]);
     for outside in [false, true] {
         let f = Fixture::new(Guard::Premise);
         let basis = f.basis().await;
@@ -2464,10 +2481,10 @@ pub(super) fn png(rgb: [u8; 3]) -> Vec<u8> {
 pub(super) fn with_picture() -> (Vec<u8>, Value) {
     let mut doc = document();
     doc.execute("select.range", json!({ "anchor": { "block": 4, "off": 0 }, "focus": { "block": 4, "off": 0 } })).unwrap();
-    doc.execute("insert.picture", json!({ "data": base64(&png([200, 30, 30])), "width": 40 })).unwrap();
+    doc.execute("image.insert", json!({ "data": base64(&png([200, 30, 30])), "width": 40 })).unwrap();
     let bytes = doc.save(None).unwrap();
     let mut reread = DocDocument::open(FILE, &bytes).unwrap();
-    let paragraph = reread.execute("document.paragraph", json!({ "path": [4] })).unwrap();
+    let paragraph = reread.execute("file.paragraph", json!({ "path": [4] })).unwrap();
     let picture = paragraph
         .to_string()
         .split("\"type\":\"image\"")
@@ -2497,7 +2514,7 @@ fn pictures_replaced(docx: &[u8], bytes: &[u8]) -> Vec<u8> {
 /// Wrong write (C8-doc-6, pictures without a number): a picture had no number (`wp:docPr/@id`
 /// was read for drawing objects only), so an agent could not name it, and a picture command held
 /// it only through its paragraph's text. Now every picture has its number, kept in the file: a
-/// step names it by `on`, and the command (`picture.color` re-encodes its bitmap, `objects.rs`
+/// step names it by `on`, and the command (`image.color` re-encodes its bitmap, `objects.rs`
 /// `adjust`) rests on it and on its bitmap. Another agent's border on the picture, and another
 /// program's replacement of the picture's file in place (same name, other pixels), must refuse
 /// it; another paragraph's text must not.
@@ -2505,7 +2522,7 @@ fn pictures_replaced(docx: &[u8], bytes: &[u8]) -> Vec<u8> {
 async fn a_picture_command_rests_on_the_picture_by_its_number() {
     for outside in [false, true] {
         let (bytes, picture) = with_picture();
-        let write = json!([{ "on": [picture], "command": "picture.color", "params": { "mode": "grayscale" } }]);
+        let write = json!([{ "on": [picture], "command": "image.color", "params": { "mode": "grayscale" } }]);
         let f = Fixture::with(Guard::Premise, &bytes);
         let basis = f.basis().await;
         if outside {
@@ -2515,7 +2532,7 @@ async fn a_picture_command_rests_on_the_picture_by_its_number() {
                 &f,
                 &[
                     ("select.range", json!({ "anchor": { "block": 4, "off": 0 }, "focus": { "block": 4, "off": 3 } })),
-                    ("picture.border", json!({ "color": "00FF00", "width": 2 })),
+                    ("image.border", json!({ "color": "00FF00", "width": 2 })),
                 ],
             )
             .await;
@@ -2548,7 +2565,7 @@ async fn a_picture_command_rests_on_the_picture_by_its_number() {
 fn with_equation() -> Vec<u8> {
     let mut doc = document();
     doc.execute("select.range", json!({ "anchor": { "block": 1, "off": 0 }, "focus": { "block": 1, "off": 0 } })).unwrap();
-    doc.execute("insert.equation", json!({ "linear": "x^2", "edit": false })).unwrap();
+    doc.execute("equation.insert", json!({ "linear": "x^2", "edit": false })).unwrap();
     doc.save(None).unwrap()
 }
 
@@ -2651,13 +2668,13 @@ async fn a_thread_command_rests_on_the_thread_by_its_tool_id() {
 /// file reads.
 fn with_header() -> (Vec<u8>, u64) {
     let mut doc = document();
-    doc.execute("insert.header", json!({ "text": "Header note." })).unwrap();
+    doc.execute("header.insert", json!({ "text": "Header note." })).unwrap();
     let bytes = doc.save(None).unwrap();
     let mut reread = DocDocument::open(FILE, &bytes).unwrap();
     let part = (0..32u64)
         .find(|n| {
             reread
-                .execute("document.paragraph", json!({ "path": [0], "story": { "part": n } }))
+                .execute("file.paragraph", json!({ "path": [0], "story": { "part": n } }))
                 .is_ok_and(|answer| answer.to_string().contains("Header note."))
         })
         .unwrap();
@@ -2716,11 +2733,11 @@ async fn replace_all_in_a_header_rests_on_the_header() {
 /// text must not.
 #[tokio::test]
 async fn columns_for_the_whole_document_rest_on_every_section_break() {
-    let write = json!([by_index(4, 0, 0), { "command": "layout.columns", "params": { "count": 2, "apply": "document" } }]);
+    let write = json!([by_index(4, 0, 0), { "command": "page.columns", "params": { "count": 2, "apply": "document" } }]);
     let end = TEXTS[1].len();
     let brk = [
         ("select.range", json!({ "anchor": { "block": 1, "off": end }, "focus": { "block": 1, "off": end } })),
-        ("layout.break", json!({ "kind": "continuous" })),
+        ("page.break", json!({ "kind": "continuous" })),
     ];
     for outside in [false, true] {
         let f = Fixture::new(Guard::Premise);
@@ -2757,7 +2774,7 @@ async fn columns_for_the_whole_document_rest_on_every_section_break() {
 /// the last paragraph) must not.
 #[tokio::test]
 async fn a_stroke_at_a_point_rests_on_the_layout_of_its_page() {
-    let write = json!([{ "command": "draw.stroke", "params": {
+    let write = json!([{ "command": "ink.stroke", "params": {
         "page": 0, "points": [[100, 150], [200, 150]], "tool": "pen", "color": "C00000", "width": 2
     } }]);
     let long = "Long words ".repeat(60);
@@ -2792,7 +2809,7 @@ async fn a_stroke_at_a_point_rests_on_the_layout_of_its_page() {
 fn with_numbered_block() -> Vec<u8> {
     let mut doc = document();
     doc.execute("select.range", json!({ "anchor": { "block": 1, "off": 0 }, "focus": { "block": 1, "off": 0 } })).unwrap();
-    doc.execute("para.numbering", json!({})).unwrap();
+    doc.execute("paragraph.numbering", json!({})).unwrap();
     doc.save(None).unwrap()
 }
 
@@ -2804,10 +2821,10 @@ fn with_numbered_block() -> Vec<u8> {
 #[tokio::test]
 async fn numbering_rests_on_the_paragraph_before() {
     let bytes = with_numbered_block();
-    let write = json!([by_index(2, 0, 0), { "command": "para.numbering", "params": {} }]);
+    let write = json!([by_index(2, 0, 0), { "command": "paragraph.numbering", "params": {} }]);
     let off = [
         ("select.range", json!({ "anchor": { "block": 1, "off": 0 }, "focus": { "block": 1, "off": 0 } })),
-        ("para.numbering", json!({ "off": true })),
+        ("paragraph.numbering", json!({ "off": true })),
     ];
     for outside in [false, true] {
         let f = Fixture::with(Guard::Premise, &bytes);
@@ -2834,8 +2851,8 @@ async fn numbering_rests_on_the_paragraph_before() {
         answer.unwrap();
         assert!(f.texts()[4].starts_with("New "), "{:?}", f.texts());
         let mut saved = f.disk();
-        let previous = saved.execute("document.paragraph", json!({ "path": [1] })).unwrap();
-        let numbered = saved.execute("document.paragraph", json!({ "path": [2] })).unwrap();
+        let previous = saved.execute("file.paragraph", json!({ "path": [1] })).unwrap();
+        let numbered = saved.execute("file.paragraph", json!({ "path": [2] })).unwrap();
         assert_eq!(numbered["paragraph"]["props"]["numbering"], previous["paragraph"]["props"]["numbering"]);
         f.close().await;
     }
@@ -2847,25 +2864,22 @@ async fn numbering_rests_on_the_paragraph_before() {
 async fn short_reference_commands_do_not_scan_the_document() {
     let mut failures = Vec::new();
     for outside in [false, true] {
-        for command in [
-            "references.addText",
-            "references.footnote",
-            "references.endnote",
-            "references.markEntry",
-            "references.markCitation",
-            "insert.quickParts",
-        ] {
+        for command in ["toc.addText", "footnote.insert", "endnote.insert", "index.markEntry", "tableOfAuthorities.markCitation", "quickPart.insert"]
+        {
             for necessary in [false, true] {
                 let f = Fixture::new(Guard::Premise);
                 let basis = f.basis().await;
                 let steps = if !necessary {
-                    vec![("file.properties", json!({ "custom": { "Peer": "kept" } })), ("para.text", json!({ "index": 4, "text": "Peer ending" }))]
-                } else if command == "references.addText" {
-                    vec![("caret.set", json!({ "pos": { "block": 1, "off": 0 } })), ("para.set", json!({ "props": { "outlineLevel": 2 } }))]
+                    vec![
+                        ("file.properties", json!({ "custom": { "Peer": "kept" } })),
+                        ("paragraph.text", json!({ "index": 4, "text": "Peer ending" })),
+                    ]
+                } else if command == "toc.addText" {
+                    vec![("caret.set", json!({ "pos": { "block": 1, "off": 0 } })), ("paragraph.set", json!({ "props": { "outlineLevel": 2 } }))]
                 } else {
                     vec![(
-                        "para.text",
-                        json!({ "index": if command == "insert.quickParts" { 0 } else { 1 }, "text": "Peer changed the selected text" }),
+                        "paragraph.text",
+                        json!({ "index": if command == "quickPart.insert" { 0 } else { 1 }, "text": "Peer changed the selected text" }),
                     )]
                 };
                 if outside {
@@ -2874,11 +2888,11 @@ async fn short_reference_commands_do_not_scan_the_document() {
                     same_server(&f, &steps).await;
                 }
                 let write = match command {
-                    "references.addText" => json!([by_index(1, 0, 4), { "command": command, "params": { "level": 1 } }]),
-                    "references.footnote" | "references.endnote" => {
+                    "toc.addText" => json!([by_index(1, 0, 4), { "command": command, "params": { "level": 1 } }]),
+                    "footnote.insert" | "endnote.insert" => {
                         json!([by_index(1, 0, 4), { "command": command, "params": { "text": "Agent note" } }])
                     }
-                    "insert.quickParts" => {
+                    "quickPart.insert" => {
                         json!([by_index(0, 0, 5), { "command": command, "params": { "save": "Agent fragment" } }, by_index(1, 0, 4), { "command": command, "params": { "insert": "Agent fragment" } }])
                     }
                     _ => json!([by_index(1, 0, 4), { "command": command, "params": {} }]),
@@ -2899,9 +2913,9 @@ async fn short_reference_commands_do_not_scan_the_document() {
                     let mut texts: Vec<String> = TEXTS.iter().map(|s| s.to_string()).collect();
                     texts[4] = "Peer ending".into();
                     texts[1] = match command {
-                        "references.footnote" | "references.endnote" => " three four".into(),
-                        "references.markEntry" | "references.markCitation" => "Beta three four".into(),
-                        "insert.quickParts" => "Alpha three four".into(),
+                        "footnote.insert" | "endnote.insert" => " three four".into(),
+                        "index.markEntry" | "tableOfAuthorities.markCitation" => "Beta three four".into(),
+                        "quickPart.insert" => "Alpha three four".into(),
                         _ => TEXTS[1].into(),
                     };
                     assert_eq!(f.texts(), texts, "{command}");
@@ -2909,20 +2923,20 @@ async fn short_reference_commands_do_not_scan_the_document() {
                     let data: Value = serde_json::from_slice(&saved.save(Some("check.json")).unwrap()).unwrap();
                     assert!(data["customProps"].as_array().unwrap().iter().any(|p| p["name"] == "Peer" && p["value"] == "kept"));
                     match command {
-                        "references.addText" => {
-                            assert_eq!(saved.execute("document.paragraph", json!({ "path": [1] })).unwrap()["paragraph"]["props"]["outlineLevel"], 0)
+                        "toc.addText" => {
+                            assert_eq!(saved.execute("file.paragraph", json!({ "path": [1] })).unwrap()["paragraph"]["props"]["outlineLevel"], 0)
                         }
-                        "references.footnote" | "references.endnote" => assert!(
+                        "footnote.insert" | "endnote.insert" => assert!(
                             saved
-                                .execute("references.notes", json!({}))
+                                .execute("footnote.show", json!({}))
                                 .unwrap()
                                 .as_array()
                                 .unwrap()
                                 .iter()
                                 .any(|n| n["text"].as_str().is_some_and(|s| s.contains("Agent note")))
                         ),
-                        "references.markEntry" | "references.markCitation" => {
-                            assert!(data.to_string().contains(if command == "references.markEntry" { "XE" } else { "TA" }))
+                        "index.markEntry" | "tableOfAuthorities.markCitation" => {
+                            assert!(data.to_string().contains(if command == "index.markEntry" { "XE" } else { "TA" }))
                         }
                         _ => {}
                     }
@@ -2941,17 +2955,17 @@ async fn section_properties_do_not_hold_caret_characters() {
     let mut failures = Vec::new();
     for outside in [false, true] {
         for (command, params, path, value) in [
-            ("layout.orientation", json!({ "value": "landscape" }), "/lastSection/landscape", json!(true)),
-            ("layout.margins", json!({ "top": 50 }), "/lastSection/marginTop", json!(50.0)),
-            ("layout.size", json!({ "width": 600, "height": 800 }), "/lastSection/pageW", json!(600.0)),
-            ("layout.columns", json!({ "count": 2 }), "/lastSection/columns/count", json!(2)),
-            ("layout.lineNumbers", json!({ "value": "restartPage" }), "/lastSection/lineNumbers/restart", json!("page")),
-            ("layout.pageNumberFormat", json!({ "format": "lowerRoman", "start": 2 }), "/lastSection/pageNumStart", json!(2)),
-            ("layout.pageSetup", json!({ "section": { "marginTop": 50 } }), "/lastSection/marginTop", json!(50.0)),
-            ("layout.verticalAlign", json!({ "value": "center" }), "/lastSection/valign", json!("center")),
-            ("layout.differentFirstPage", json!({ "value": true }), "/lastSection/titlePage", json!(true)),
-            ("layout.differentOddEven", json!({ "value": true }), "/settings/evenOddHeaders", json!(true)),
-            ("design.pageBorders", json!({ "kind": "box" }), "/lastSection/pageBorders/top/style", json!("single")),
+            ("page.orientation", json!({ "value": "landscape" }), "/lastSection/landscape", json!(true)),
+            ("page.margins", json!({ "top": 50 }), "/lastSection/marginTop", json!(50.0)),
+            ("page.size", json!({ "width": 600, "height": 800 }), "/lastSection/pageW", json!(600.0)),
+            ("page.columns", json!({ "count": 2 }), "/lastSection/columns/count", json!(2)),
+            ("page.lineNumbers", json!({ "value": "restartPage" }), "/lastSection/lineNumbers/restart", json!("page")),
+            ("page.pageNumberFormat", json!({ "format": "lowerRoman", "start": 2 }), "/lastSection/pageNumStart", json!(2)),
+            ("page.pageSetup", json!({ "section": { "marginTop": 50 } }), "/lastSection/marginTop", json!(50.0)),
+            ("page.verticalAlign", json!({ "value": "center" }), "/lastSection/valign", json!("center")),
+            ("page.differentFirstPage", json!({ "value": true }), "/lastSection/titlePage", json!(true)),
+            ("page.differentOddEven", json!({ "value": true }), "/settings/evenOddHeaders", json!(true)),
+            ("page.borders", json!({ "kind": "box" }), "/lastSection/pageBorders/top/style", json!("single")),
         ] {
             for necessary in [false, true] {
                 let f = Fixture::new(Guard::Premise);
@@ -2960,7 +2974,7 @@ async fn section_properties_do_not_hold_caret_characters() {
                     vec![(command, params.clone())]
                 } else {
                     vec![
-                        ("para.text", json!({ "index": 0, "text": "Alpine one two" })),
+                        ("paragraph.text", json!({ "index": 0, "text": "Alpine one two" })),
                         ("select.range", by_index(0, 0, 5)["params"].clone()),
                         ("format.bold", json!({ "value": true })),
                     ]
@@ -2989,7 +3003,7 @@ async fn section_properties_do_not_hold_caret_characters() {
                     let mut saved = f.disk();
                     let data: Value = serde_json::from_slice(&saved.save(Some("check.json")).unwrap()).unwrap();
                     assert_eq!(data.pointer(path).unwrap_or(&Value::Null), &value, "{command}: {}", data["lastSection"]);
-                    assert_eq!(saved.execute("document.paragraph", json!({ "path": [0] })).unwrap()["paragraph"]["runs"][0]["props"]["bold"], true);
+                    assert_eq!(saved.execute("file.paragraph", json!({ "path": [0] })).unwrap()["paragraph"]["runs"][0]["props"]["bold"], true);
                 }
                 f.close().await;
             }
@@ -3039,11 +3053,11 @@ async fn absolute_character_operations_hold_assigned_fields() {
                 let f = Fixture::new(Guard::Premise);
                 let basis = f.basis().await;
                 let steps = if !necessary {
-                    vec![("styles.modify", json!({ "style": "Normal", "chr": { "italic": true } }))]
+                    vec![("style.set", json!({ "style": "Normal", "chr": { "italic": true } }))]
                 } else if command == "format.clear" {
-                    vec![("caret.set", json!({ "pos": { "block": 1, "off": 0 } })), ("para.set", json!({ "props": { "indentLeft": 72 } }))]
+                    vec![("caret.set", json!({ "pos": { "block": 1, "off": 0 } })), ("paragraph.set", json!({ "props": { "indentLeft": 72 } }))]
                 } else if command == "format.changeCase" {
-                    vec![("para.text", json!({ "index": 1, "text": "Beto three four" }))]
+                    vec![("paragraph.text", json!({ "index": 1, "text": "Beto three four" }))]
                 } else {
                     vec![("select.range", by_index(1, 0, 4)["params"].clone()), ("format.set", json!({ "props": peer }))]
                 };
@@ -3066,7 +3080,7 @@ async fn absolute_character_operations_hold_assigned_fields() {
                     failures.push(format!("{command}, outside {outside}: {}", error["conflicts"]));
                 } else {
                     let mut saved = f.disk();
-                    let paragraph = saved.execute("document.paragraph", json!({ "path": [1] })).unwrap()["paragraph"].clone();
+                    let paragraph = saved.execute("file.paragraph", json!({ "path": [1] })).unwrap()["paragraph"].clone();
                     assert_eq!(paragraph.pointer(path).unwrap_or(&Value::Null), &value, "{command}: {paragraph}");
                     let data: Value = serde_json::from_slice(&saved.save(Some("check.json")).unwrap()).unwrap();
                     let normal = data["styles"]["styles"].as_array().unwrap().iter().find(|s| s["id"] == "Normal").unwrap();
@@ -3090,7 +3104,7 @@ async fn absolute_character_operations_hold_assigned_fields() {
 async fn table_properties_hold_the_table_fields_they_use() {
     let mut doc = document();
     doc.execute("caret.set", json!({ "pos": { "block": 0, "off": 0 } })).unwrap();
-    let table = doc.execute("insert.table", json!({ "rows": 2, "cols": 2 })).unwrap()["table"][0].as_u64().unwrap();
+    let table = doc.execute("table.insert", json!({ "rows": 2, "cols": 2 })).unwrap()["table"][0].as_u64().unwrap();
     for (row, col, text) in [(0, 0, "A1"), (0, 1, "B1"), (1, 0, "A2"), (1, 1, "B2")] {
         doc.execute("caret.set", json!({ "pos": { "story": "body", "path": [table, row, col, 0], "off": 0 } })).unwrap();
         doc.execute("text.insert", json!({ "text": text })).unwrap();
@@ -3117,7 +3131,7 @@ async fn table_properties_hold_the_table_fields_they_use() {
                         ("table.properties", json!({ "rowHeight": 40 })),
                     ],
                     3 => vec![("caret.set", json!({ "pos": at })), ("table.deleteTable", json!({}))],
-                    4 => vec![("insert.coverPage", json!({ "title": "Peer before table" }))],
+                    4 => vec![("page.insertCover", json!({ "title": "Peer before table" }))],
                     _ => vec![
                         ("caret.set", json!({ "pos": at })),
                         (command, if command == "table.style" { json!({ "style": "Normal Table" }) } else { params.clone() }),
@@ -3148,7 +3162,7 @@ async fn table_properties_hold_the_table_fields_they_use() {
                     let tab = &data["body"][table as usize];
                     assert_eq!(tab.pointer(path).unwrap_or(&Value::Null), &value, "{command}: {tab}");
                     for (col, text) in [(0, if change == 0 { "Peer A1" } else { "A1" }), (1, if change == 1 { "Peer B1" } else { "B1" })] {
-                        assert_eq!(saved.execute("document.paragraph", json!({ "path": [table, 0, col, 0] })).unwrap()["paragraph"]["text"], text);
+                        assert_eq!(saved.execute("file.paragraph", json!({ "path": [table, 0, col, 0] })).unwrap()["paragraph"]["text"], text);
                     }
                     if change == 1 {
                         assert_eq!(tab["rows"][0]["props"]["height"], 40.0);
@@ -3201,7 +3215,7 @@ async fn shape_frames_do_not_hold_appearance() {
                 } else if let Err(error) = result {
                     failures.push(format!("{command}, outside {outside}: {error}"));
                 } else {
-                    let p = f.disk().execute("document.paragraph", json!({ "path": [block] })).unwrap()["paragraph"].clone();
+                    let p = f.disk().execute("file.paragraph", json!({ "path": [block] })).unwrap()["paragraph"].clone();
                     let object = p["objects"].as_array().unwrap().iter().find(|o| o["uid"] == uid).unwrap();
                     assert_eq!(object.pointer(path).unwrap_or(&Value::Null), &value, "{command}: {object}");
                     assert_eq!(object["fill"], json!([18, 52, 86]));
@@ -3224,14 +3238,14 @@ async fn document_operations_do_not_hold_unrelated_metadata() {
             ("file.properties", json!({ "title": "Agent title" }), "Agent title"),
             ("edit.replace", json!({ "text": "Beta", "with": "Agent" }), "Agent three four"),
             ("edit.replaceAll", json!({ "text": "three", "with": "Agent" }), "Beta Agent four"),
-            ("references.caption", json!({ "text": "Agent caption" }), "Agent caption"),
-            ("references.toc", json!({ "title": "Agent contents" }), "Agent contents"),
-            ("mailings.insertField", json!({ "field": "City" }), "MERGEFIELD"),
-            ("mailings.addressBlock", json!({}), "ADDRESSBLOCK"),
-            ("mailings.greetingLine", json!({}), "GREETINGLINE"),
-            ("mailings.rules", json!({ "rule": "MERGEREC" }), "MERGEREC"),
-            ("review.acceptAll", json!({}), ""),
-            ("review.rejectAll", json!({}), ""),
+            ("caption.insert", json!({ "text": "Agent caption" }), "Agent caption"),
+            ("toc.insert", json!({ "title": "Agent contents" }), "Agent contents"),
+            ("mailMerge.insertField", json!({ "field": "City" }), "MERGEFIELD"),
+            ("mailMerge.addressBlock", json!({}), "ADDRESSBLOCK"),
+            ("mailMerge.greetingLine", json!({}), "GREETINGLINE"),
+            ("mailMerge.rules", json!({ "rule": "MERGEREC" }), "MERGEREC"),
+            ("change.acceptAll", json!({}), ""),
+            ("change.rejectAll", json!({}), ""),
         ] {
             for necessary in [false, true] {
                 let bytes = if command.starts_with("review.") { tracked() } else { document().save(None).unwrap() };
@@ -3242,7 +3256,7 @@ async fn document_operations_do_not_hold_unrelated_metadata() {
                 } else if command == "file.properties" {
                     vec![(command, json!({ "title": "Peer title" }))]
                 } else {
-                    vec![("para.text", json!({ "index": 1, "text": "Peer three four" }))]
+                    vec![("paragraph.text", json!({ "index": 1, "text": "Peer three four" }))]
                 };
                 if outside {
                     f.colleague(&steps);
@@ -3271,7 +3285,7 @@ async fn document_operations_do_not_hold_unrelated_metadata() {
                     } else if command.starts_with("review.") {
                         assert!(data["revisions"].as_array().unwrap().is_empty());
                         let mut texts: Vec<String> = TEXTS.iter().map(|s| s.to_string()).collect();
-                        if command == "review.acceptAll" {
+                        if command == "change.acceptAll" {
                             texts[2] = "GammaZ five six".into();
                         }
                         assert_eq!(f.texts(), texts);
@@ -3296,7 +3310,7 @@ async fn document_operations_do_not_hold_unrelated_metadata() {
 async fn replacement_paragraph_breaks_hold_the_split_style() {
     let mut doc = document();
     doc.execute("caret.set", json!({ "pos": { "block": 1, "off": 0 } })).unwrap();
-    doc.execute("para.set", json!({ "props": { "style": "Heading1" } })).unwrap();
+    doc.execute("paragraph.set", json!({ "props": { "style": "Heading1" } })).unwrap();
     let bytes = doc.save(None).unwrap();
     let mut failures = Vec::new();
     for outside in [false, true] {
@@ -3304,7 +3318,7 @@ async fn replacement_paragraph_breaks_hold_the_split_style() {
             let f = Fixture::with(Guard::Premise, &bytes);
             let basis = f.basis().await;
             let steps = if necessary {
-                vec![("styles.modify", json!({ "style": "Heading1", "next": "Heading2" }))]
+                vec![("style.set", json!({ "style": "Heading1", "next": "Heading2" }))]
             } else {
                 vec![("file.properties", json!({ "custom": { "Peer": "kept" } }))]
             };
@@ -3333,7 +3347,7 @@ async fn replacement_paragraph_breaks_hold_the_split_style() {
             } else {
                 assert_eq!(f.texts(), ["Alpha one two", "Agent", "Next", "Gamma five six", "Delta seven eight", "Epsilon nine ten"]);
                 let mut saved = f.disk();
-                assert_eq!(saved.execute("document.paragraph", json!({ "path": [2] })).unwrap()["paragraph"]["props"]["style"], "Normal");
+                assert_eq!(saved.execute("file.paragraph", json!({ "path": [2] })).unwrap()["paragraph"]["props"]["style"], "Normal");
                 let data: Value = serde_json::from_slice(&saved.save(Some("check.json")).unwrap()).unwrap();
                 assert!(data["customProps"].as_array().unwrap().iter().any(|p| p["name"] == "Peer" && p["value"] == "kept"));
             }
@@ -3357,16 +3371,16 @@ async fn named_comment_operations_do_not_hold_the_body_caret() {
     let reply: u64 = threads[0]["comments"][1]["id"].as_str().unwrap().trim_start_matches('c').parse().unwrap();
     let mut failures = Vec::new();
     for outside in [false, true] {
-        for command in ["comment.delete", "review.deleteComment", "review.resolveComment"] {
+        for command in ["comment.delete", "comment.deleteCurrent", "comment.resolveCurrent"] {
             for necessary in [false, true] {
                 let f = Fixture::with(Guard::Premise, &bytes);
                 let basis = f.basis().await;
                 let steps = if !necessary {
-                    vec![("para.insert", json!({ "before": 0, "text": "Peer paragraph" }))]
-                } else if command == "review.resolveComment" {
+                    vec![("paragraph.insert", json!({ "before": 0, "text": "Peer paragraph" }))]
+                } else if command == "comment.resolveCurrent" {
                     vec![(command, json!({ "id": root, "value": true }))]
                 } else {
-                    vec![("review.editComment", json!({ "id": reply, "text": "Peer reply" }))]
+                    vec![("comment.edit", json!({ "id": reply, "text": "Peer reply" }))]
                 };
                 if outside {
                     f.colleague(&steps);
@@ -3375,7 +3389,7 @@ async fn named_comment_operations_do_not_hold_the_body_caret() {
                 }
                 let params = match command {
                     "comment.delete" => json!({ "thread": thread }),
-                    "review.deleteComment" => json!({ "id": reply }),
+                    "comment.deleteCurrent" => json!({ "id": reply }),
                     _ => json!({ "id": root, "value": true }),
                 };
                 let before = std::fs::read(f.root.join(FILE)).unwrap();
@@ -3395,7 +3409,7 @@ async fn named_comment_operations_do_not_hold_the_body_caret() {
                     let threads = f.disk().execute("comment.threads", json!({})).unwrap();
                     if command == "comment.delete" {
                         assert!(threads.as_array().unwrap().is_empty());
-                    } else if command == "review.deleteComment" {
+                    } else if command == "comment.deleteCurrent" {
                         assert_eq!(threads[0]["comments"].as_array().unwrap().len(), 1);
                         assert_eq!(threads[0]["comments"][0]["body"], "Look");
                     } else {
@@ -3417,13 +3431,13 @@ async fn list_properties_do_not_hold_caret_characters() {
     let mut failures = Vec::new();
     for outside in [false, true] {
         for (command, params) in [
-            ("para.bullets", json!({})),
-            ("para.bullets", json!({ "off": true })),
-            ("para.numbering", json!({})),
-            ("para.numbering", json!({ "off": true })),
-            ("para.multilevel", json!({})),
-            ("para.defineBullet", json!({ "char": "★" })),
-            ("para.defineNumber", json!({ "format": "upperRoman", "start": 3 })),
+            ("paragraph.bullets", json!({})),
+            ("paragraph.bullets", json!({ "off": true })),
+            ("paragraph.numbering", json!({})),
+            ("paragraph.numbering", json!({ "off": true })),
+            ("paragraph.multilevel", json!({})),
+            ("paragraph.defineBullet", json!({ "char": "★" })),
+            ("paragraph.defineNumber", json!({ "format": "upperRoman", "start": 3 })),
             ("list.define", json!({ "levels": [{ "format": "upperRoman" }] })),
         ] {
             let bytes = document().save(None).unwrap();
@@ -3431,7 +3445,7 @@ async fn list_properties_do_not_hold_caret_characters() {
                 let f = Fixture::with(Guard::Premise, &bytes);
                 let basis = f.basis().await;
                 let steps = if necessary {
-                    vec![("para.numbering", json!({}))]
+                    vec![("paragraph.numbering", json!({}))]
                 } else {
                     vec![
                         ("select.range", json!({ "anchor": { "block": 0, "off": 0 }, "focus": { "block": 0, "off": 5 } })),
@@ -3458,7 +3472,7 @@ async fn list_properties_do_not_hold_caret_characters() {
                 } else {
                     assert_eq!(f.texts(), TEXTS);
                     let mut saved = f.disk();
-                    let para = saved.execute("document.paragraph", json!({ "path": [0] })).unwrap()["paragraph"].clone();
+                    let para = saved.execute("file.paragraph", json!({ "path": [0] })).unwrap()["paragraph"].clone();
                     assert_eq!(para["runs"][0]["props"]["bold"], true);
                     let numbering = para["props"]["numbering"].clone();
                     if params.get("off") == Some(&json!(true)) {
@@ -3466,10 +3480,10 @@ async fn list_properties_do_not_hold_caret_characters() {
                     } else {
                         let levels = saved.execute("list.get", json!({ "num": numbering["num"] })).unwrap();
                         assert_eq!(numbering["level"], 0);
-                        if command == "para.bullets" || command == "para.defineBullet" {
+                        if command == "paragraph.bullets" || command == "paragraph.defineBullet" {
                             assert_eq!(levels["levels"][0]["format"], "bullet");
                         }
-                        if command == "para.defineNumber" || command == "list.define" {
+                        if command == "paragraph.defineNumber" || command == "list.define" {
                             assert_eq!(levels["levels"][0]["format"], "upperRoman");
                         }
                     }
@@ -3491,8 +3505,8 @@ async fn an_unapplied_unlinked_list_uses_definitions_only() {
             let f = Fixture::new(Guard::Premise);
             let basis = f.basis().await;
             let steps = match peer {
-                "body" => vec![("para.insert", json!({ "before": 0, "text": "Peer paragraph" }))],
-                "styles" => vec![("styles.modify", json!({ "style": "Normal", "chr": { "italic": true } }))],
+                "body" => vec![("paragraph.insert", json!({ "before": 0, "text": "Peer paragraph" }))],
+                "styles" => vec![("style.set", json!({ "style": "Normal", "chr": { "italic": true } }))],
                 _ => vec![("list.define", json!({ "apply": false, "levels": [{ "format": "lowerRoman" }] }))],
             };
             if outside {
@@ -3518,7 +3532,7 @@ async fn an_unapplied_unlinked_list_uses_definitions_only() {
                 let data: Value = serde_json::from_slice(&saved.save(Some("check.json")).unwrap()).unwrap();
                 assert!(data["numbering"]["abstracts"].as_array().unwrap().iter().any(|n| n["levels"][0]["format"] == "upperRoman"));
                 for index in 0..f.texts().len() {
-                    assert!(saved.execute("document.paragraph", json!({ "path": [index] })).unwrap()["paragraph"]["props"]["numbering"].is_null());
+                    assert!(saved.execute("file.paragraph", json!({ "path": [index] })).unwrap()["paragraph"]["props"]["numbering"].is_null());
                 }
                 if peer == "body" {
                     assert_eq!(f.texts(), [vec!["Peer paragraph".to_owned()], TEXTS.iter().map(|s| s.to_string()).collect()].concat());
@@ -3539,14 +3553,14 @@ async fn an_unapplied_unlinked_list_uses_definitions_only() {
 async fn explicitly_disabling_a_list_does_not_resolve_definitions() {
     let mut failures = Vec::new();
     for outside in [false, true] {
-        for command in ["para.bullets", "para.numbering"] {
+        for command in ["paragraph.bullets", "paragraph.numbering"] {
             for peer in ["definitions", "styles", "assigned"] {
                 let f = Fixture::new(Guard::Premise);
                 let basis = f.basis().await;
                 let steps = match peer {
                     "definitions" => vec![("list.define", json!({ "apply": false, "levels": [{ "format": "lowerRoman" }] }))],
-                    "styles" => vec![("styles.modify", json!({ "style": "Normal", "chr": { "italic": true } }))],
-                    _ => vec![("para.numbering", json!({}))],
+                    "styles" => vec![("style.set", json!({ "style": "Normal", "chr": { "italic": true } }))],
+                    _ => vec![("paragraph.numbering", json!({}))],
                 };
                 if outside {
                     f.colleague(&steps);
@@ -3568,7 +3582,7 @@ async fn explicitly_disabling_a_list_does_not_resolve_definitions() {
                 } else {
                     let mut saved = f.disk();
                     let data: Value = serde_json::from_slice(&saved.save(Some("check.json")).unwrap()).unwrap();
-                    assert_eq!(saved.execute("document.paragraph", json!({ "path": [0] })).unwrap()["paragraph"]["props"]["numbering"]["num"], 0);
+                    assert_eq!(saved.execute("file.paragraph", json!({ "path": [0] })).unwrap()["paragraph"]["props"]["numbering"]["num"], 0);
                     assert_eq!(f.texts(), TEXTS);
                     if peer == "definitions" {
                         assert!(data["numbering"]["abstracts"].as_array().unwrap().iter().any(|n| n["levels"][0]["format"] == "lowerRoman"));
@@ -3589,7 +3603,7 @@ async fn explicitly_disabling_a_list_does_not_resolve_definitions() {
 async fn direct_paragraph_operations_do_not_resolve_styles() {
     let mut doc = document();
     doc.execute("caret.set", json!({ "pos": { "block": 0, "off": 0 } })).unwrap();
-    doc.execute("para.set", json!({ "props": { "style": "Heading1", "indentLeft": 36 } })).unwrap();
+    doc.execute("paragraph.set", json!({ "props": { "style": "Heading1", "indentLeft": 36 } })).unwrap();
     doc.execute("select.range", json!({ "anchor": { "block": 0, "off": 0 }, "focus": { "block": 0, "off": 5 } })).unwrap();
     doc.execute("format.charStyle", json!({ "style": "Strong" })).unwrap();
     doc.execute("format.bold", json!({ "value": true })).unwrap();
@@ -3601,12 +3615,12 @@ async fn direct_paragraph_operations_do_not_resolve_styles() {
                 let f = Fixture::with(Guard::Premise, &bytes);
                 let basis = f.basis().await;
                 let steps = if !necessary {
-                    vec![("styles.modify", json!({ "style": "Normal", "chr": { "italic": true } }))]
+                    vec![("style.set", json!({ "style": "Normal", "chr": { "italic": true } }))]
                 } else {
                     match level {
-                        "sort" => vec![("para.text", json!({ "index": 1, "text": "Peer three four" }))],
-                        "paragraphStyle" => vec![("para.set", json!({ "props": { "style": "Heading2" } }))],
-                        "paragraphFormatting" => vec![("para.set", json!({ "props": { "indentLeft": 72 } }))],
+                        "sort" => vec![("paragraph.text", json!({ "index": 1, "text": "Peer three four" }))],
+                        "paragraphStyle" => vec![("paragraph.set", json!({ "props": { "style": "Heading2" } }))],
+                        "paragraphFormatting" => vec![("paragraph.set", json!({ "props": { "indentLeft": 72 } }))],
                         _ => vec![
                             ("select.range", json!({ "anchor": { "block": 0, "off": 0 }, "focus": { "block": 0, "off": 5 } })),
                             if level == "characterStyle" {
@@ -3625,9 +3639,9 @@ async fn direct_paragraph_operations_do_not_resolve_styles() {
                 let before = std::fs::read(f.root.join(FILE)).unwrap();
                 let write = match level {
                     "sort" => {
-                        json!([{ "command": "select.range", "params": { "anchor": { "block": 0, "off": 0 }, "focus": { "block": 3, "off": TEXTS[3].len() } } }, { "command": "para.sort", "params": { "descending": true } }])
+                        json!([{ "command": "select.range", "params": { "anchor": { "block": 0, "off": 0 }, "focus": { "block": 3, "off": TEXTS[3].len() } } }, { "command": "paragraph.sort", "params": { "descending": true } }])
                     }
-                    _ => json!([by_index(0, 0, 5), { "command": "styles.inspectorClear", "params": { "level": level } }]),
+                    _ => json!([by_index(0, 0, 5), { "command": "style.inspectorClear", "params": { "level": level } }]),
                 };
                 let result = f.run(Some(basis), write).await;
                 if necessary {
@@ -3644,7 +3658,7 @@ async fn direct_paragraph_operations_do_not_resolve_styles() {
                     let mut saved = f.disk();
                     let data: Value = serde_json::from_slice(&saved.save(Some("check.json")).unwrap()).unwrap();
                     assert!(data["styles"]["styles"].as_array().unwrap().iter().any(|s| s["id"] == "Normal" && s["chr"]["italic"] == true));
-                    let para = saved.execute("document.paragraph", json!({ "path": [0] })).unwrap()["paragraph"].clone();
+                    let para = saved.execute("file.paragraph", json!({ "path": [0] })).unwrap()["paragraph"].clone();
                     match level {
                         "sort" => assert_eq!(f.texts(), [TEXTS[2], TEXTS[3], TEXTS[1], TEXTS[0], TEXTS[4]]),
                         _ => {
@@ -3677,7 +3691,7 @@ async fn direct_paragraph_operations_do_not_resolve_styles() {
 async fn paragraph_inspector_does_not_hold_caret_characters() {
     let mut doc = document();
     doc.execute("caret.set", json!({ "pos": { "block": 0, "off": 0 } })).unwrap();
-    doc.execute("para.set", json!({ "props": { "style": "Heading1", "indentLeft": 36 } })).unwrap();
+    doc.execute("paragraph.set", json!({ "props": { "style": "Heading1", "indentLeft": 36 } })).unwrap();
     let bytes = doc.save(None).unwrap();
     let mut failures = Vec::new();
     for outside in [false, true] {
@@ -3687,7 +3701,7 @@ async fn paragraph_inspector_does_not_hold_caret_characters() {
                 let basis = f.basis().await;
                 let steps = if necessary {
                     vec![(
-                        "para.set",
+                        "paragraph.set",
                         if level == "paragraphStyle" {
                             json!({ "props": { "style": "Heading2" } })
                         } else {
@@ -3706,7 +3720,7 @@ async fn paragraph_inspector_does_not_hold_caret_characters() {
                     same_server(&f, &steps).await;
                 }
                 let before = std::fs::read(f.root.join(FILE)).unwrap();
-                let result = f.run(Some(basis), json!([{ "command": "styles.inspectorClear", "params": { "level": level } }])).await;
+                let result = f.run(Some(basis), json!([{ "command": "style.inspectorClear", "params": { "level": level } }])).await;
                 if necessary {
                     match result {
                         Err(error) => {
@@ -3718,7 +3732,7 @@ async fn paragraph_inspector_does_not_hold_caret_characters() {
                 } else if let Err(error) = result {
                     failures.push(format!("{level}, outside {outside}: {error}"));
                 } else {
-                    let p = f.disk().execute("document.paragraph", json!({ "path": [0] })).unwrap()["paragraph"].clone();
+                    let p = f.disk().execute("file.paragraph", json!({ "path": [0] })).unwrap()["paragraph"].clone();
                     assert_eq!(p["runs"][0]["props"]["bold"], true);
                     assert_eq!(f.texts(), TEXTS);
                     if level == "paragraphStyle" {
@@ -3743,23 +3757,23 @@ async fn picture_properties_do_not_hold_unrelated_bitmaps() {
     let (bytes, picture) = with_picture();
     let mut doc = DocDocument::open(FILE, &bytes).unwrap();
     doc.execute("select.range", json!({ "anchor": { "block": 3, "off": 0 }, "focus": { "block": 3, "off": 0 } })).unwrap();
-    doc.execute("insert.picture", json!({ "data": base64(&png([30, 30, 200])), "width": 40 })).unwrap();
+    doc.execute("image.insert", json!({ "data": base64(&png([30, 30, 200])), "width": 40 })).unwrap();
     let bytes = doc.save(None).unwrap();
     let mut failures = Vec::new();
     for outside in [false, true] {
         for (command, params, peer) in [
-            ("picture.altText", json!({ "text": "Agent description" }), json!({ "text": "Peer description" })),
-            ("picture.crop", json!({ "left": 0.1 }), json!({ "left": 0.2 })),
-            ("picture.size", json!({ "width": 100 }), json!({ "width": 80 })),
-            ("picture.reset", json!({}), json!({ "left": 0.2 })),
+            ("image.altText", json!({ "text": "Agent description" }), json!({ "text": "Peer description" })),
+            ("image.crop", json!({ "left": 0.1 }), json!({ "left": 0.2 })),
+            ("image.size", json!({ "width": 100 }), json!({ "width": 80 })),
+            ("image.reset", json!({}), json!({ "left": 0.2 })),
         ] {
             for necessary in [false, true] {
                 let f = Fixture::with(Guard::Premise, &bytes);
                 let basis = f.basis().await;
                 let (block, peer_command, peer_params) = if necessary {
-                    (4, if command == "picture.reset" { "picture.crop" } else { command }, peer.clone())
+                    (4, if command == "image.reset" { "image.crop" } else { command }, peer.clone())
                 } else {
-                    (3, "picture.color", json!({ "mode": "grayscale" }))
+                    (3, "image.color", json!({ "mode": "grayscale" }))
                 };
                 let steps = [
                     ("select.range", json!({ "anchor": { "block": block, "off": 0 }, "focus": { "block": block, "off": 3 } })),
@@ -3784,15 +3798,15 @@ async fn picture_properties_do_not_hold_unrelated_bitmaps() {
                     failures.push(format!("{command}, outside {outside}: {error}"));
                 } else {
                     let mut saved = f.disk();
-                    let p = saved.execute("document.paragraph", json!({ "path": [4] })).unwrap()["paragraph"].clone();
+                    let p = saved.execute("file.paragraph", json!({ "path": [4] })).unwrap()["paragraph"].clone();
                     let target = p["objects"].as_array().unwrap().iter().find(|o| o["uid"] == picture).unwrap();
                     match command {
-                        "picture.altText" => assert_eq!(target["alt"], "Agent description"),
-                        "picture.crop" => assert_eq!(target["crop"][0], json!(0.1_f32)),
-                        "picture.size" => assert_eq!(target["w"].as_f64(), Some(100.0)),
+                        "image.altText" => assert_eq!(target["alt"], "Agent description"),
+                        "image.crop" => assert_eq!(target["crop"][0], json!(0.1_f32)),
+                        "image.size" => assert_eq!(target["w"].as_f64(), Some(100.0)),
                         _ => assert_eq!(target["crop"], json!([0.0, 0.0, 0.0, 0.0])),
                     }
-                    let p = saved.execute("document.paragraph", json!({ "path": [3] })).unwrap()["paragraph"].clone();
+                    let p = saved.execute("file.paragraph", json!({ "path": [3] })).unwrap()["paragraph"].clone();
                     let blue = p["objects"].as_array().unwrap().iter().find(|o| o["type"] == "image").unwrap();
                     // JSON omits embedded media; verify the bitmap in the saved package.
                     let mut archive = zip::ZipArchive::new(std::io::Cursor::new(std::fs::read(f.root.join(FILE)).unwrap())).unwrap();
@@ -3803,7 +3817,7 @@ async fn picture_properties_do_not_hold_unrelated_bitmaps() {
                     let pixel = pixels.get_pixel(0, 0).0;
                     assert_eq!(pixel[0], pixel[1]);
                     assert_eq!(pixel[1], pixel[2]);
-                    assert_eq!(saved.execute("document.paragraph", json!({ "path": [1] })).unwrap()["paragraph"]["text"], TEXTS[1]);
+                    assert_eq!(saved.execute("file.paragraph", json!({ "path": [1] })).unwrap()["paragraph"]["text"], TEXTS[1]);
                 }
                 f.close().await;
             }
@@ -3818,7 +3832,7 @@ async fn picture_properties_do_not_hold_unrelated_bitmaps() {
 async fn table_style_definitions_do_not_hold_the_caret_table() {
     let mut doc = document();
     doc.execute("caret.set", json!({ "pos": { "block": 0, "off": 0 } })).unwrap();
-    let table = doc.execute("insert.table", json!({ "rows": 2, "cols": 2 })).unwrap()["table"][0].as_u64().unwrap();
+    let table = doc.execute("table.insert", json!({ "rows": 2, "cols": 2 })).unwrap()["table"][0].as_u64().unwrap();
     let at = json!({ "story": "body", "path": [table, 0, 0, 0], "off": 0 });
     doc.execute("caret.set", json!({ "pos": at })).unwrap();
     doc.execute("text.insert", json!({ "text": "A1" })).unwrap();
@@ -3826,7 +3840,7 @@ async fn table_style_definitions_do_not_hold_the_caret_table() {
     let bytes = doc.save(None).unwrap();
     let mut failures = Vec::new();
     for outside in [false, true] {
-        for command in ["table.newStyle", "table.modifyStyle"] {
+        for command in ["table.newStyle", "table.setStyle"] {
             for necessary in [false, true] {
                 let f = Fixture::with(Guard::Premise, &bytes);
                 let basis = f.basis().await;
@@ -3872,7 +3886,7 @@ async fn table_style_definitions_do_not_hold_the_caret_table() {
                     assert_eq!(style["table"]["fill"], json!([18, 52, 86]));
                     let t = &data["body"][table as usize];
                     assert_eq!(t["props"]["style"], "TableGrid");
-                    let p = saved.execute("document.paragraph", json!({ "path": [table, 0, 0, 0] })).unwrap();
+                    let p = saved.execute("file.paragraph", json!({ "path": [table, 0, 0, 0] })).unwrap();
                     assert_eq!(p["paragraph"]["text"], "Peer A1");
                 }
                 f.close().await;
@@ -3892,9 +3906,9 @@ async fn plain_paragraph_replacement_does_not_resolve_styles() {
             let f = Fixture::new(Guard::Premise);
             let basis = f.basis().await;
             let steps = match peer {
-                "styles" => vec![("styles.modify", json!({ "style": "Normal", "chr": { "italic": true } }))],
-                "paragraph" => vec![("caret.set", json!({ "pos": { "block": 1, "off": 0 } })), ("para.align", json!({ "value": "center" }))],
-                _ => vec![("para.text", json!({ "index": 1, "text": "Peer three four" }))],
+                "styles" => vec![("style.set", json!({ "style": "Normal", "chr": { "italic": true } }))],
+                "paragraph" => vec![("caret.set", json!({ "pos": { "block": 1, "off": 0 } })), ("paragraph.align", json!({ "value": "center" }))],
+                _ => vec![("paragraph.text", json!({ "index": 1, "text": "Peer three four" }))],
             };
             if outside {
                 f.colleague(&steps);
@@ -3902,7 +3916,7 @@ async fn plain_paragraph_replacement_does_not_resolve_styles() {
                 same_server(&f, &steps).await;
             }
             let before = std::fs::read(f.root.join(FILE)).unwrap();
-            let result = f.run(Some(basis), json!([{ "command": "para.text", "params": { "index": 1, "text": "Agent paragraph" } }])).await;
+            let result = f.run(Some(basis), json!([{ "command": "paragraph.text", "params": { "index": 1, "text": "Agent paragraph" } }])).await;
             if peer == "assigned" {
                 match result {
                     Err(error) => {
@@ -3919,7 +3933,7 @@ async fn plain_paragraph_replacement_does_not_resolve_styles() {
                 texts[1] = "Agent paragraph".into();
                 assert_eq!(f.texts(), texts);
                 if peer == "paragraph" {
-                    assert_eq!(saved.execute("document.paragraph", json!({ "path": [1] })).unwrap()["paragraph"]["props"]["align"], "center");
+                    assert_eq!(saved.execute("file.paragraph", json!({ "path": [1] })).unwrap()["paragraph"]["props"]["align"], "center");
                 } else {
                     let data: Value = serde_json::from_slice(&saved.save(Some("check.json")).unwrap()).unwrap();
                     assert!(data["styles"]["styles"].as_array().unwrap().iter().any(|s| s["id"] == "Normal" && s["chr"]["italic"] == true));
@@ -3929,17 +3943,17 @@ async fn plain_paragraph_replacement_does_not_resolve_styles() {
         }
         let mut doc = document();
         doc.execute("caret.set", json!({ "pos": { "block": 1, "off": 0 } })).unwrap();
-        doc.execute("para.set", json!({ "props": { "style": "Heading1" } })).unwrap();
+        doc.execute("paragraph.set", json!({ "props": { "style": "Heading1" } })).unwrap();
         let f = Fixture::with(Guard::Premise, &doc.save(None).unwrap());
         let basis = f.basis().await;
-        let steps = [("styles.modify", json!({ "style": "Heading1", "next": "Heading2" }))];
+        let steps = [("style.set", json!({ "style": "Heading1", "next": "Heading2" }))];
         if outside {
             f.colleague(&steps);
         } else {
             same_server(&f, &steps).await;
         }
         let before = std::fs::read(f.root.join(FILE)).unwrap();
-        match f.run(Some(basis), json!([{ "command": "para.text", "params": { "index": 1, "text": "Agent\rNext" } }])).await {
+        match f.run(Some(basis), json!([{ "command": "paragraph.text", "params": { "index": 1, "text": "Agent\rNext" } }])).await {
             Err(error) => {
                 conflict(&error, "changed");
                 assert_eq!(std::fs::read(f.root.join(FILE)).unwrap(), before);

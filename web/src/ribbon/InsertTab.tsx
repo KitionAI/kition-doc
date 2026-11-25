@@ -25,22 +25,22 @@ export function InsertTab() {
 
   const insertPicture = async () => {
     const file = await picker.pick('picture', PICTURE_TYPES)
-    if (file) await run('insert.picture', { data: base64(file.bytes) })
+    if (file) await run('image.insert', { data: base64(file.bytes) })
   }
 
   return (
     <>
       <RibbonGroup label={p('Pages')} icon={FileText}>
         <RibbonStack>
-          <CommandButton command="insert.coverPage" icon={FileText} label={p('Cover Page')} />
-          <CommandButton command="insert.blankPage" icon={FilePlus2} label={p('Blank Page')} />
-          <CommandButton command="insert.pageBreak" primary icon={SeparatorHorizontal} label={p('Page Break')} />
+          <CommandButton command="page.insertCover" icon={FileText} label={p('Cover Page')} />
+          <CommandButton command="page.insertBlank" icon={FilePlus2} label={p('Blank Page')} />
+          <CommandButton command="page.insertBreak" primary icon={SeparatorHorizontal} label={p('Page Break')} />
         </RibbonStack>
       </RibbonGroup>
 
       <RibbonGroup label={p('Tables')} icon={Table}>
-        <RibbonMenu icon={Table} label={p('Table')} size="large" disabled={!enabled('insert.table')} testId={`${testId}-table`} primary>
-          <TableSizePicker onPick={(rows, cols) => void run('insert.table', { rows, cols })} label={(rows, columns) => (rows ? t('tableSize', { rows, columns }) : t('insertTable'))} />
+        <RibbonMenu icon={Table} label={p('Table')} size="large" disabled={!enabled('table.insert')} testId={`${testId}-table`} primary>
+          <TableSizePicker onPick={(rows, cols) => void run('table.insert', { rows, cols })} label={(rows, columns) => (rows ? t('tableSize', { rows, columns }) : t('insertTable'))} />
           <MenuSeparator />
           <CommandItem command="table.fromText" label={p('Convert Text to Table…')} />
           <CommandItem command="table.quick" params={{ kind: 'tabular' }} label={p('Tabular List')} />
@@ -50,7 +50,7 @@ export function InsertTab() {
       </RibbonGroup>
 
       <RibbonGroup label={p('Illustrations')} icon={Image}>
-        <RibbonButton icon={Image} label={p('Pictures')} size="large" disabled={!picker.can || !enabled('insert.picture')} onClick={() => void insertPicture()} data-testid={`${testId}-picture`} primary />
+        <RibbonButton icon={Image} label={p('Pictures')} size="large" disabled={!picker.can || !enabled('image.insert')} onClick={() => void insertPicture()} data-testid={`${testId}-picture`} primary />
         <RibbonStack>
           <CommandButton command="insert.icon" icon={Smile} label={p('Icons')} />
           <CommandButton command="insert.smartGraphic" icon={Workflow} label={p('Smart graphics')} />
@@ -62,70 +62,70 @@ export function InsertTab() {
 
       <RibbonGroup label={p('Links')} icon={Link}>
         <RibbonStack>
-          <CommandButton command="insert.link" primary icon={Link} label={p('Link')} ask />
-          <CommandButton command="insert.bookmark" icon={BookMarked} label={p('Bookmark')} ask />
-          <CommandButton command="insert.crossReference" icon={Pilcrow} label={p('Cross-reference')} />
+          <CommandButton command="link.insert" primary icon={Link} label={p('Link')} ask />
+          <CommandButton command="bookmark.insert" icon={BookMarked} label={p('Bookmark')} ask />
+          <CommandButton command="crossReference.insert" icon={Pilcrow} label={p('Cross-reference')} />
         </RibbonStack>
       </RibbonGroup>
 
       <RibbonGroup label={p('Comments')} icon={MessageSquarePlus}>
-        <CommandButton command="review.newComment" primary icon={MessageSquarePlus} size="large" label={p('Comment')} ask />
+        <CommandButton command="comment.new" primary icon={MessageSquarePlus} size="large" label={p('Comment')} ask />
       </RibbonGroup>
 
       <RibbonGroup label={p('Header & Footer')} icon={PanelTop}>
         <RibbonMenu icon={PanelTop} label={p('Header')} size="large" primary>
-          <CommandItem command="insert.header" params={{ preset: 'blank' }} label={p('Blank')} />
-          <CommandItem command="insert.header" params={{ preset: 'blankThree' }} label={p('Blank (Three Columns)')} />
-          <CommandItem command="insert.header" params={{ preset: 'title' }} label={p('Document Title')} />
+          <CommandItem command="header.insert" params={{ preset: 'blank' }} label={p('Blank')} />
+          <CommandItem command="header.insert" params={{ preset: 'blankThree' }} label={p('Blank (Three Columns)')} />
+          <CommandItem command="header.insert" params={{ preset: 'title' }} label={p('Document Title')} />
           <MenuSeparator />
-          <CommandItem command="insert.editHeader" label={p('Edit Header')} />
-          <CommandItem command="insert.removeHeader" label={p('Remove Header')} />
+          <CommandItem command="header.edit" label={p('Edit Header')} />
+          <CommandItem command="header.remove" label={p('Remove Header')} />
         </RibbonMenu>
         <RibbonMenu icon={PanelBottom} label={p('Footer')} size="large">
-          <CommandItem command="insert.footer" params={{ preset: 'blank' }} label={p('Blank')} />
-          <CommandItem command="insert.footer" params={{ preset: 'blankThree' }} label={p('Blank (Three Columns)')} />
-          <CommandItem command="insert.footer" params={{ preset: 'pageNumber' }} label={p('Page Number')} />
+          <CommandItem command="footer.insert" params={{ preset: 'blank' }} label={p('Blank')} />
+          <CommandItem command="footer.insert" params={{ preset: 'blankThree' }} label={p('Blank (Three Columns)')} />
+          <CommandItem command="footer.insert" params={{ preset: 'pageNumber' }} label={p('Page Number')} />
           <MenuSeparator />
-          <CommandItem command="insert.editFooter" label={p('Edit Footer')} />
-          <CommandItem command="insert.removeFooter" label={p('Remove Footer')} />
+          <CommandItem command="footer.edit" label={p('Edit Footer')} />
+          <CommandItem command="footer.remove" label={p('Remove Footer')} />
         </RibbonMenu>
         <RibbonMenu icon={Hash} label={p('Page Number')} size="large" primary>
-          <CommandItem command="insert.pageNumber" params={{ position: 'top', align: 'right' }} label={p('Top of Page')} />
-          <CommandItem command="insert.pageNumber" params={{ position: 'bottom', align: 'center' }} label={p('Bottom of Page')} />
-          <CommandItem command="insert.pageNumber" params={{ position: 'bottom', format: 'x of y' }} label={p('Page X of Y')} />
-          <CommandItem command="insert.pageNumber" params={{ position: 'current' }} label={p('Current Position')} />
+          <CommandItem command="pageNumber.insert" params={{ position: 'top', align: 'right' }} label={p('Top of Page')} />
+          <CommandItem command="pageNumber.insert" params={{ position: 'bottom', align: 'center' }} label={p('Bottom of Page')} />
+          <CommandItem command="pageNumber.insert" params={{ position: 'bottom', format: 'x of y' }} label={p('Page X of Y')} />
+          <CommandItem command="pageNumber.insert" params={{ position: 'current' }} label={p('Current Position')} />
         </RibbonMenu>
       </RibbonGroup>
 
       <RibbonGroup label={p('Text')} icon={Type}>
         <RibbonStack>
           <RibbonMenu icon={Puzzle} label={p('Quick Parts')}>
-            <CommandItem command="insert.field" label={p('Field…')} />
-            <CommandItem command="insert.autoText" label={p('AutoText')} />
-            <CommandItem command="insert.docProperty" label={p('Document Property')} />
+            <CommandItem command="field.insert" label={p('Field…')} />
+            <CommandItem command="autoText.insert" label={p('AutoText')} />
+            <CommandItem command="field.insertDocProperty" label={p('Document Property')} />
           </RibbonMenu>
-          <CommandButton command="insert.artText" icon={Type} label={p('Art text')} />
-          <CommandButton command="insert.dropCap" icon={CaseUpper} label={p('Drop Cap')} />
+          <CommandButton command="artText.insert" icon={Type} label={p('Art text')} />
+          <CommandButton command="dropCap.set" icon={CaseUpper} label={p('Drop Cap')} />
         </RibbonStack>
         <RibbonStack>
-          <CommandButton command="insert.signatureLine" icon={Signature} label={p('Signature Line')} />
-          <CommandButton command="insert.dateTime" icon={CalendarClock} label={p('Date & Time')} />
-          <CommandButton command="insert.object" icon={Box} label={p('Object')} />
+          <CommandButton command="signatureLine.insert" icon={Signature} label={p('Signature Line')} />
+          <CommandButton command="field.insertDateTime" icon={CalendarClock} label={p('Date & Time')} />
+          <CommandButton command="object.insert" icon={Box} label={p('Object')} />
         </RibbonStack>
       </RibbonGroup>
 
       <RibbonGroup label={p('Symbols')} icon={Omega}>
-        <CommandButton command="insert.equation" icon={Sigma} size="large" label={p('Equation')} />
-        <RibbonMenu icon={Omega} label={p('Symbol')} size="large" disabled={!enabled('insert.symbol')} testId={`${testId}-symbol`} primary>
+        <CommandButton command="equation.insert" icon={Sigma} size="large" label={p('Equation')} />
+        <RibbonMenu icon={Omega} label={p('Symbol')} size="large" disabled={!enabled('symbol.insert')} testId={`${testId}-symbol`} primary>
           <div className="doc-symbols">
             {SYMBOLS.map((char) => (
-              <button key={char} type="button" className="doc-symbol" onClick={() => void run('insert.symbol', { char })} aria-label={char}>
+              <button key={char} type="button" className="doc-symbol" onClick={() => void run('symbol.insert', { char })} aria-label={char}>
                 {char}
               </button>
             ))}
           </div>
           <MenuSeparator />
-          <RibbonButton label={p('More Symbols…')} onClick={() => ask('insert.symbol')} />
+          <RibbonButton label={p('More Symbols…')} onClick={() => ask('symbol.insert')} />
         </RibbonMenu>
       </RibbonGroup>
     </>

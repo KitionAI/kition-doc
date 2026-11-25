@@ -3,7 +3,7 @@
 //! less than every field of its target. Read from each handler; every command not named here keeps
 //! the SDK's default (every field and every position of each object it names).
 //!
-//! **Text by position** (`select.range`, `caret.set`, `select.column`, `review.suggestions`,
+//! **Text by position** (`select.range`, `caret.set`, `select.column`, `spelling.suggestions`,
 //! `equation.edit`): a position names a paragraph (by its body index, by a path of indexes into a
 //! table cell or a story, or by its id) and a byte offset in it. A later step of the run acts on
 //! that place through the selection. The write rests on:
@@ -15,9 +15,9 @@
 //!   holds (`changed`, `Covered.content`), one after it changes nothing the write rests on;
 //! - for a range across paragraphs, the whole text of every paragraph but the last.
 //!
-//! **Paragraph by index** (`para.text`, `para.insert`): the paragraph's place in the body; its
-//! characters for `para.text` (replaced whole) and the formatting of its last character (which the
-//! new text takes), its paragraph properties for `para.insert` (the new paragraph
+//! **Paragraph by index** (`paragraph.text`, `paragraph.insert`): the paragraph's place in the body; its
+//! characters for `paragraph.text` (replaced whole) and the formatting of its last character (which the
+//! new text takes), its paragraph properties for `paragraph.insert` (the new paragraph
 //! inherits them).
 //!
 //! **Styles by name**: a command given a `style` (or `basedOn`, `next`) rests on the root's
@@ -39,7 +39,7 @@ const ROOT: &str = "document";
 fn positions(command: &str) -> &'static [&'static str] {
     match command {
         "select.range" | "select.column" => &["anchor", "focus"],
-        "caret.set" | "review.suggestions" | "equation.edit" => &["pos"],
+        "caret.set" | "spelling.suggestions" | "equation.edit" => &["pos"],
         _ => &[],
     }
 }
@@ -89,7 +89,7 @@ pub(crate) struct Pass {
 
 impl Pass {
     pub(crate) fn executing(&self, command: &str, on: bool) {
-        if sets_selection(command, on) || matches!(command, "para.text" | "para.insert") {
+        if sets_selection(command, on) || matches!(command, "paragraph.text" | "paragraph.insert") {
             self.selection_set.set(true);
         }
         self.actual_state();
@@ -136,44 +136,44 @@ fn sets_selection(command: &str, on: bool) -> bool {
 fn paragraph_properties_only(command: &str, params: &Value) -> bool {
     matches!(
         command,
-        "references.addText"
-            | "para.align"
-            | "para.alignCenter"
-            | "para.alignLeft"
-            | "para.alignRight"
-            | "para.justify"
-            | "para.distribute"
-            | "para.spacing"
-            | "para.addSpaceBefore"
-            | "para.removeSpaceAfter"
-            | "para.asianTypography"
-            | "para.set"
-            | "para.indents"
-            | "para.hangingIndent"
-            | "para.removeHanging"
-            | "para.rtl"
-            | "para.ltr"
-            | "para.lineSpacing"
-            | "para.single"
-            | "para.double"
-            | "para.oneAndHalf"
-            | "para.keepNext"
-            | "para.keepLines"
-            | "para.pageBreakBefore"
-            | "para.widowControl"
-            | "para.outlineLevel"
-            | "para.shading"
-            | "para.borders"
-            | "para.indent"
-            | "para.outdent"
-            | "para.tabs"
-            | "para.bullets"
-            | "para.numbering"
-            | "para.multilevel"
-            | "para.defineBullet"
-            | "para.defineNumber"
+        "toc.addText"
+            | "paragraph.align"
+            | "format.alignCenter"
+            | "format.alignLeft"
+            | "format.alignRight"
+            | "format.justify"
+            | "paragraph.distribute"
+            | "paragraph.spacing"
+            | "paragraph.addSpaceBefore"
+            | "paragraph.removeSpaceAfter"
+            | "paragraph.asianTypography"
+            | "paragraph.set"
+            | "paragraph.indents"
+            | "paragraph.hangingIndent"
+            | "paragraph.removeHanging"
+            | "paragraph.rtl"
+            | "paragraph.ltr"
+            | "paragraph.lineSpacing"
+            | "paragraph.single"
+            | "paragraph.double"
+            | "paragraph.oneAndHalf"
+            | "paragraph.keepNext"
+            | "paragraph.keepLines"
+            | "paragraph.pageBreakBefore"
+            | "paragraph.widowControl"
+            | "paragraph.outlineLevel"
+            | "paragraph.shading"
+            | "paragraph.borders"
+            | "paragraph.indent"
+            | "paragraph.outdent"
+            | "paragraph.tabs"
+            | "paragraph.bullets"
+            | "paragraph.numbering"
+            | "paragraph.multilevel"
+            | "paragraph.defineBullet"
+            | "paragraph.defineNumber"
             | "list.define"
-    ) || (command == "styles.inspectorClear" && matches!(params.get("level").and_then(Value::as_str), Some("paragraphStyle" | "paragraphFormatting")))
+    ) || (command == "style.inspectorClear" && matches!(params.get("level").and_then(Value::as_str), Some("paragraphStyle" | "paragraphFormatting")))
 }
 
 /// Section properties use paragraph indexes and section breaks, without text
@@ -181,17 +181,17 @@ fn paragraph_properties_only(command: &str, params: &Value) -> bool {
 fn section_properties_only(command: &str, params: &Value) -> bool {
     matches!(
         command,
-        "layout.orientation"
-            | "layout.margins"
-            | "layout.size"
-            | "layout.lineNumbers"
-            | "layout.pageNumberFormat"
-            | "layout.pageSetup"
-            | "layout.verticalAlign"
-            | "layout.differentFirstPage"
-            | "layout.linkToPrevious"
-            | "design.pageBorders"
-    ) || (command == "layout.columns" && params.get("apply").and_then(Value::as_str) != Some("forward"))
+        "page.orientation"
+            | "page.margins"
+            | "page.size"
+            | "page.lineNumbers"
+            | "page.pageNumberFormat"
+            | "page.pageSetup"
+            | "page.verticalAlign"
+            | "page.differentFirstPage"
+            | "page.linkToPrevious"
+            | "page.borders"
+    ) || (command == "page.columns" && params.get("apply").and_then(Value::as_str) != Some("forward"))
 }
 
 /// What of a paragraph's text a call rests on.
@@ -202,12 +202,12 @@ enum Hold {
     Range,
     /// The whole text and its marks (a paragraph a range runs through).
     Whole,
-    /// Enter at the end (`para.insert after`, or before an empty paragraph): whether the text
+    /// Enter at the end (`paragraph.insert after`, or before an empty paragraph): whether the text
     /// is empty (an empty list item leaves its list), what AutoCorrect does to its last word,
     /// and the marks of its last character (the new paragraph's text continues them); not the
     /// other characters, not where they are.
     Enter,
-    /// The characters and the marks of the last one (`para.text` replaces the text whole).
+    /// The characters and the marks of the last one (`paragraph.text` replaces the text whole).
     LastMarks,
     /// The set of formats its characters carry, not which characters (a character command
     /// with `on`: the whole text is selected when it runs; a toggle reads whether all of it has
@@ -391,7 +391,7 @@ impl DocDocument {
         let session = self.session.borrow();
         let doc = &session.doc;
         let index = |name: &str| params.get(name).and_then(Value::as_u64).and_then(|i| usize::try_from(i).ok());
-        if command == "para.text" {
+        if command == "paragraph.text" {
             // A body paragraph by index whose characters the write replaces whole: its place and
             // its characters, not their formatting (the new text takes the paragraph's style).
             let i = index("index")?;
@@ -406,7 +406,7 @@ impl DocDocument {
             let len = p.text.chars().count();
             return Some(vec![Held { id, start: len.saturating_sub(1), end: len, hold: Hold::LastMarks }]);
         }
-        if command == "para.insert" {
+        if command == "paragraph.insert" {
             // Enter at the end of paragraph `after` (or the start of `before`), then typing
             // (C8-doc-2 item 2). Enter reads the paragraph's text (its last word's AutoCorrect,
             // whether it is empty: an empty list item leaves its list), its paragraph properties
@@ -534,14 +534,14 @@ impl DocDocument {
             return false;
         }
         if (command == "comment.delete" && params.get("thread").is_some_and(|v| !v.is_null()))
-            || (matches!(command, "review.deleteComment" | "review.resolveComment") && params.get("id").is_some_and(|v| !v.is_null()))
-            || (command == "review.deleteComment" && params.get("all").and_then(Value::as_bool) == Some(true))
+            || (matches!(command, "comment.deleteCurrent" | "comment.resolveCurrent") && params.get("id").is_some_and(|v| !v.is_null()))
+            || (command == "comment.deleteCurrent" && params.get("all").and_then(Value::as_bool) == Some(true))
         {
             // The comment id or all-comments branch chooses the target without
             // the body caret. Keep selection reads on the caret fallback.
             return false;
         }
-        if matches!(command, "draw.stroke" | "draw.erase" | "drawing.ink" | "drawing.erase") {
+        if matches!(command, "ink.stroke" | "ink.erase" | "drawing.ink" | "drawing.erase") {
             // These adjust selection offsets after editing at a page point; they consume no
             // text from the caret's paragraph. Their actual anchors are held by the family.
             return false;
@@ -586,7 +586,7 @@ impl DocDocument {
                 fields.push("styleDefaults".into());
             }
         }
-        if sets_selection(command, !self.context_on.is_empty()) || matches!(command, "para.text" | "para.insert") {
+        if sets_selection(command, !self.context_on.is_empty()) || matches!(command, "paragraph.text" | "paragraph.insert") {
             self.pass.selection_set.set(true);
         }
         // A step naming positions: the range a later step of the run acts on.
@@ -752,7 +752,7 @@ impl DocDocument {
         let named = command.starts_with("styles.")
             || matches!(
                 command,
-                "format.charStyle" | "para.style" | "insert.table" | "table.style" | "table.newStyle" | "table.modifyStyle" | "table.deleteStyle"
+                "format.charStyle" | "paragraph.style" | "table.insert" | "table.style" | "table.newStyle" | "table.setStyle" | "table.deleteStyle"
             );
         let mut names: Vec<&str> = if named {
             ["style", "basedOn", "next"].iter().filter_map(|name| params.get(*name).and_then(Value::as_str)).collect()
@@ -884,7 +884,7 @@ impl DocDocument {
             let suffix = was.iter().rev().zip(now.iter().rev()).take_while(|(a, b)| a == b).count();
             let earliest = if was == now { was.len() } else { prefix.min(was.len().min(now.len()).saturating_sub(suffix)) };
             let (start, end) = if item.hold == Hold::Range { (item.start, item.end) } else { (0, usize::MAX) };
-            // A paragraph replaced whole (`para.text`) holds the marks of its last character only.
+            // A paragraph replaced whole (`paragraph.text`) holds the marks of its last character only.
             let marks_last = item.hold == Hold::LastMarks && !was_marks.is_empty() && was_marks.last() != now_marks.last();
             let text_changed = was != now;
             if text_changed && earliest < start {
@@ -1087,7 +1087,7 @@ fn on_family(command: &str) -> Option<OnFamily> {
     let (family, _) = command.split_once('.')?;
     match family {
         "format" | "font" => Some(OnFamily::Characters),
-        "para" if !matches!(command, "para.text" | "para.insert" | "para.dialog") => Some(OnFamily::Paragraph),
+        "para" if !matches!(command, "paragraph.text" | "paragraph.insert" | "paragraph.dialog") => Some(OnFamily::Paragraph),
         _ => None,
     }
 }

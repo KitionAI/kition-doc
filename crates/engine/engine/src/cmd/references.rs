@@ -10,13 +10,13 @@ use crate::{CmdError, CmdResult, CommandSpec, Selection, Session, p};
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("references.toc", "Table of Contents", "References › Table of Contents", insert_toc)
+        CommandSpec::new("toc.insert", "Table of Contents", "References › Table of Contents", insert_toc)
             .params(r#"{"levels"?: 1-9, "title"?: string}"#),
-        CommandSpec::new("references.updateToc", "Update Table", "References › Table of Contents", |s, _| {
+        CommandSpec::new("toc.update", "Update Table", "References › Table of Contents", |s, _| {
             update_toc(s)?;
             sel_result(s)
         }),
-        CommandSpec::new("references.removeToc", "Remove Table of Contents", "References › Table of Contents", |s, _| {
+        CommandSpec::new("toc.remove", "Remove Table of Contents", "References › Table of Contents", |s, _| {
             if let Some((start, end)) = toc_range(s) {
                 for i in (start..=end).rev() {
                     s.doc.remove_block(StoryRef::Body, &Path::top(i))?;
@@ -25,18 +25,18 @@ pub fn specs() -> Vec<CommandSpec> {
             }
             sel_result(s)
         }),
-        CommandSpec::new("references.addText", "Add Text", "References › Table of Contents", |s, v| {
+        CommandSpec::new("toc.addText", "Add Text", "References › Table of Contents", |s, v| {
             let level = p::u64(v, "level").unwrap_or(0).min(9) as u8;
             super::para::fmt(s, &|pp| pp.outline_level = if level == 0 { Some(9) } else { Some(level - 1) })
         })
         .params(r#"{"level": 0 (do not show) | 1-9}"#),
-        CommandSpec::new("references.footnote", "Insert Footnote", "References › Footnotes", |s, v| note(s, v, NoteKind::Footnote))
+        CommandSpec::new("footnote.insert", "Insert Footnote", "References › Footnotes", |s, v| note(s, v, NoteKind::Footnote))
             .key("Mod+Alt+F")
-            .params(r#"{"text"?: string} (with text the caret stays in the body after the reference; without, it goes into the note, and insert.closeHeader brings it back)"#),
-        CommandSpec::new("references.endnote", "Insert Endnote", "References › Footnotes", |s, v| note(s, v, NoteKind::Endnote))
+            .params(r#"{"text"?: string} (with text the caret stays in the body after the reference; without, it goes into the note, and header.close brings it back)"#),
+        CommandSpec::new("endnote.insert", "Insert Endnote", "References › Footnotes", |s, v| note(s, v, NoteKind::Endnote))
             .key("Mod+Alt+D")
-            .params(r#"{"text"?: string} (with text the caret stays in the body after the reference; without, it goes into the note, and insert.closeHeader brings it back)"#),
-        CommandSpec::new("references.nextFootnote", "Next Footnote", "References › Footnotes", |s, _| {
+            .params(r#"{"text"?: string} (with text the caret stays in the body after the reference; without, it goes into the note, and header.close brings it back)"#),
+        CommandSpec::new("footnote.next", "Next Footnote", "References › Footnotes", |s, _| {
             let caret = s.sel.focus.clone();
             let refs = note_refs(s);
             if let Some(p) = refs.iter().find(|p| **p > caret).or(refs.first()) {
@@ -45,7 +45,7 @@ pub fn specs() -> Vec<CommandSpec> {
             sel_result(s)
         })
         .pure(),
-        CommandSpec::new("references.notes", "Show Notes", "References › Footnotes", |s, _| {
+        CommandSpec::new("footnote.show", "Show Notes", "References › Footnotes", |s, _| {
             let mut out = Vec::new();
             for (id, part) in &s.doc.parts {
                 if matches!(part.kind, PartKind::Footnote | PartKind::Endnote) {
@@ -55,9 +55,9 @@ pub fn specs() -> Vec<CommandSpec> {
             Ok(Value::Array(out))
         })
         .pure(),
-        CommandSpec::new("references.caption", "Insert Caption", "References › Captions", caption)
+        CommandSpec::new("caption.insert", "Insert Caption", "References › Captions", caption)
             .params(r#"{"label"?: "Figure|Table|Equation", "text"?: string}"#),
-        CommandSpec::new("references.updateFields", "Update Field", "References", |s, _| {
+        CommandSpec::new("field.updateAll", "Update Field", "References", |s, _| {
             update_fields(s)?;
             sel_result(s)
         })

@@ -82,14 +82,14 @@ pub fn specs() -> Vec<CommandSpec> {
         CommandSpec::new("file.setAuthor", "User Name", "File › Options › General", set_author)
             .params(r#"{"name": string (author of new tracked changes and comments)}"#)
             .pure(),
-        CommandSpec::new("document.inspect", "Inspect Document", "Agents", inspect).params(r#"{"text"?: bool}"#).pure(),
-        CommandSpec::new("document.text", "Document Text", "Agents", |s, v| {
+        CommandSpec::new("file.inspect", "Inspect Document", "Agents", inspect).params(r#"{"text"?: bool}"#).pure(),
+        CommandSpec::new("file.text", "Document Text", "Agents", |s, v| {
             let story = super::story_param(s, v);
             Ok(json!({"text": s.doc.plain_text(story)}))
         })
         .pure(),
-        CommandSpec::new("document.paragraph", "Paragraph Details", "Agents", paragraph).params(r#"{"path": [n], "story"?: Story}"#).pure(),
-        CommandSpec::new("document.selection", "Selection", "Agents", |s, _| {
+        CommandSpec::new("file.paragraph", "Paragraph Details", "Agents", paragraph).params(r#"{"path": [n], "story"?: Story}"#).pure(),
+        CommandSpec::new("file.selection", "Selection", "Agents", |s, _| {
             let mut r = sel_result(s)?;
             if let Some(o) = r.as_object_mut() {
                 o.insert("text".into(), json!(s.selected_text()));
@@ -98,8 +98,8 @@ pub fn specs() -> Vec<CommandSpec> {
             Ok(r)
         })
         .pure(),
-        CommandSpec::new("document.layout", "Layout Summary", "Agents", layout_summary).pure(),
-        CommandSpec::new("document.setText", "Replace Document Text", "Agents", |s, v| {
+        CommandSpec::new("file.layout", "Layout Summary", "Agents", layout_summary).pure(),
+        CommandSpec::new("file.setText", "Replace Document Text", "Agents", |s, v| {
             let text = p::req_str(v, "text")?;
             let d = Document::from_text(text);
             s.doc.body = d.body;
@@ -107,9 +107,9 @@ pub fn specs() -> Vec<CommandSpec> {
             sel_result(s)
         })
         .params(r#"{"text": string}"#),
-        CommandSpec::new("para.insert", "Insert Paragraph", "Agents", para_insert)
-            .params(r#"{"after"?: n, "before"?: n, "text": string}  (n: a paragraph's index, as document.inspect lists it)"#),
-        CommandSpec::new("para.text", "Set Paragraph Text", "Agents", para_text)
+        CommandSpec::new("paragraph.insert", "Insert Paragraph", "Agents", para_insert)
+            .params(r#"{"after"?: n, "before"?: n, "text": string}  (n: a paragraph's index, as file.inspect lists it)"#),
+        CommandSpec::new("paragraph.text", "Set Paragraph Text", "Agents", para_text)
             .params(r#"{"index": n, "text": string}  (the paragraph's text replaced, its style kept)"#),
     ]
 }
@@ -127,7 +127,7 @@ fn index_param(v: &Value, key: &str) -> Option<usize> {
     v.get(key).and_then(Value::as_u64).and_then(|n| usize::try_from(n).ok())
 }
 
-/// `para.insert`: the caret steps a person would take (end of the paragraph, Enter, type).
+/// `paragraph.insert`: the caret steps a person would take (end of the paragraph, Enter, type).
 fn para_insert(s: &mut Session, v: &Value) -> CmdResult {
     let text = p::req_str(v, "text")?.to_owned();
     if let Some(after) = index_param(v, "after") {
@@ -148,7 +148,7 @@ fn para_insert(s: &mut Session, v: &Value) -> CmdResult {
     sel_result(s)
 }
 
-/// `para.text`: select the paragraph's text and type over it, so its paragraph style stays.
+/// `paragraph.text`: select the paragraph's text and type over it, so its paragraph style stays.
 fn para_text(s: &mut Session, v: &Value) -> CmdResult {
     let index = index_param(v, "index").ok_or_else(|| CmdError::Params("`index` is a paragraph index".into()))?;
     let text = p::req_str(v, "text")?.to_owned();

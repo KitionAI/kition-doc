@@ -36,7 +36,7 @@ pub const MERGE_KINDS: [&str; 6] = ["letters", "emails", "envelopes", "labels", 
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("mailings.start", "Start Mail Merge", "Mailings › Start Mail Merge", |s, v| {
+        CommandSpec::new("mailMerge.start", "Start Mail Merge", "Mailings › Start Mail Merge", |s, v| {
             let kind = p::str(v, "kind").unwrap_or("letters").trim().to_ascii_lowercase();
             if !MERGE_KINDS.contains(&kind.as_str()) {
                 return Err(CmdError::Params(format!("`kind` must be one of {}", MERGE_KINDS.join(", "))));
@@ -46,10 +46,10 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"kind": "letters|emails|envelopes|labels|directory|normal"}"#)
         .pure(),
-        CommandSpec::new("mailings.recipients", "Select Recipients", "Mailings › Start Mail Merge", recipients)
+        CommandSpec::new("mailMerge.recipients", "Select Recipients", "Mailings › Start Mail Merge", recipients)
             .params(r#"{"csv"?: string, "path"?: string, "rows"?: [{field: value}] | [[value]], "fields"?: [string] (column order; required with array rows)}"#)
             .pure(),
-        CommandSpec::new("mailings.editRecipients", "Edit Recipient List", "Mailings › Start Mail Merge", |s, v| {
+        CommandSpec::new("mailMerge.editRecipients", "Edit Recipient List", "Mailings › Start Mail Merge", |s, v| {
             if v.get("rows").and_then(Value::as_array).is_some() {
                 return recipients(s, &json!({"rows": v.get("rows"), "fields": v.get("fields")}));
             }
@@ -58,18 +58,18 @@ pub fn specs() -> Vec<CommandSpec> {
         .params(r#"{"rows"?: [{field: value}] | [[value]], "fields"?: [string]}"#)
         .when(has_list)
         .pure(),
-        CommandSpec::new("mailings.insertField", "Insert Merge Field", "Mailings › Write & Insert Fields", |s, v| {
+        CommandSpec::new("mailMerge.insertField", "Insert Merge Field", "Mailings › Write & Insert Fields", |s, v| {
             let f = p::req_str(v, "field")?.to_string();
             insert_field(s, &format!("MERGEFIELD {}", quote(&f)), &format!("«{f}»"))
         })
         .params(r#"{"field": string}"#),
-        CommandSpec::new("mailings.addressBlock", "Address Block", "Mailings › Write & Insert Fields", |s, _| {
+        CommandSpec::new("mailMerge.addressBlock", "Address Block", "Mailings › Write & Insert Fields", |s, _| {
             insert_field(s, "ADDRESSBLOCK", "«AddressBlock»")
         }),
-        CommandSpec::new("mailings.greetingLine", "Greeting Line", "Mailings › Write & Insert Fields", |s, _| {
+        CommandSpec::new("mailMerge.greetingLine", "Greeting Line", "Mailings › Write & Insert Fields", |s, _| {
             insert_field(s, "GREETINGLINE", "«GreetingLine»")
         }),
-        CommandSpec::new("mailings.rules", "Rules", "Mailings › Write & Insert Fields", |s, v| {
+        CommandSpec::new("mailMerge.rules", "Rules", "Mailings › Write & Insert Fields", |s, v| {
             let rule = p::str(v, "rule").unwrap_or("NEXT").to_ascii_uppercase();
             let instr = match rule.as_str() {
                 "IF" => format!(
@@ -86,24 +86,24 @@ pub fn specs() -> Vec<CommandSpec> {
             insert_field(s, &instr, "")
         })
         .params(r#"{"rule": "IF|SKIPIF|NEXT|MERGEREC", "field"?, "value"?, "then"?, "else"?}"#),
-        CommandSpec::new("mailings.matchFields", "Match Fields", "Mailings › Write & Insert Fields", |s, _| {
+        CommandSpec::new("mailMerge.matchFields", "Match Fields", "Mailings › Write & Insert Fields", |s, _| {
             Ok(json!({"fields": s.merge.headers, "address": address_map(&s.merge.headers)}))
         })
         .pure(),
-        CommandSpec::new("mailings.highlightFields", "Highlight Merge Fields", "Mailings › Write & Insert Fields", |s, v| {
+        CommandSpec::new("mailMerge.highlightFields", "Highlight Merge Fields", "Mailings › Write & Insert Fields", |s, v| {
             s.merge.highlight = p::bool(v, "value").unwrap_or(!s.merge.highlight);
             Ok(json!({"value": s.merge.highlight}))
         })
         .pure(),
-        CommandSpec::new("mailings.preview", "Preview Results", "Mailings › Preview Results", |s, v| {
+        CommandSpec::new("mailMerge.preview", "Preview Results", "Mailings › Preview Results", |s, v| {
             s.merge.preview = p::bool(v, "value").unwrap_or(!s.merge.preview);
             refresh(s);
             Ok(json!({"preview": s.merge.preview, "record": s.merge.record + 1}))
         })
         .when(has_recipients),
-        CommandSpec::new("mailings.next", "Next Record", "Mailings › Preview Results", |s, _| step(s, 1)).when(has_recipients),
-        CommandSpec::new("mailings.previous", "Previous Record", "Mailings › Preview Results", |s, _| step(s, -1)).when(has_recipients),
-        CommandSpec::new("mailings.findRecipient", "Find Recipient", "Mailings › Preview Results", |s, v| {
+        CommandSpec::new("mailMerge.next", "Next Record", "Mailings › Preview Results", |s, _| step(s, 1)).when(has_recipients),
+        CommandSpec::new("mailMerge.previous", "Previous Record", "Mailings › Preview Results", |s, _| step(s, -1)).when(has_recipients),
+        CommandSpec::new("mailMerge.findRecipient", "Find Recipient", "Mailings › Preview Results", |s, v| {
             let q = p::req_str(v, "text")?.to_lowercase();
             let idx = s
                 .merge
@@ -117,7 +117,7 @@ pub fn specs() -> Vec<CommandSpec> {
             Ok(json!({"record": idx + 1}))
         })
         .when(has_recipients),
-        CommandSpec::new("mailings.checkErrors", "Check for Errors", "Mailings › Finish", |s, _| {
+        CommandSpec::new("mailMerge.checkErrors", "Check for Errors", "Mailings › Finish", |s, _| {
             let mut missing = Vec::new();
             for f in merge_fields(&s.doc) {
                 if !s.merge.headers.iter().any(|h| h.eq_ignore_ascii_case(&f)) {
@@ -127,12 +127,12 @@ pub fn specs() -> Vec<CommandSpec> {
             Ok(json!({"ok": missing.is_empty(), "unknownFields": missing, "records": s.merge.rows.len()}))
         })
         .pure(),
-        CommandSpec::new("mailings.finish", "Finish & Merge", "Mailings › Finish", finish)
+        CommandSpec::new("mailMerge.finish", "Finish & Merge", "Mailings › Finish", finish)
             .params(r#"{"path"?: string (save the merged document), "from"?: n, "to"?: n}"#)
             .when(has_recipients),
-        CommandSpec::new("mailings.envelopes", "Envelopes", "Mailings › Create", envelopes)
+        CommandSpec::new("mailMerge.envelopes", "Envelopes", "Mailings › Create", envelopes)
             .params(r#"{"delivery": string, "return"?: string, "size"?: "Envelope #10|Envelope DL"}"#),
-        CommandSpec::new("mailings.labels", "Labels", "Mailings › Create", labels)
+        CommandSpec::new("mailMerge.labels", "Labels", "Mailings › Create", labels)
             .params(r#"{"text"?: string, "rows"?: n, "cols"?: n, "fromRecipients"?: bool}"#),
     ]
 }
@@ -591,19 +591,19 @@ mod tests {
     #[test]
     fn merge_end_to_end() {
         let mut s = Session::new(Document::new());
-        s.run("mailings.recipients", &json!({"csv": "First Name,Last Name,City\nAda,Lovelace,London\nAlan,Turing,Wilmslow"})).unwrap();
-        s.run("mailings.greetingLine", &json!({})).unwrap();
+        s.run("mailMerge.recipients", &json!({"csv": "First Name,Last Name,City\nAda,Lovelace,London\nAlan,Turing,Wilmslow"})).unwrap();
+        s.run("mailMerge.greetingLine", &json!({})).unwrap();
         s.run("text.newParagraph", &json!({})).unwrap();
         s.run("text.insert", &json!({"text": "See you in "})).unwrap();
-        s.run("mailings.insertField", &json!({"field": "City"})).unwrap();
+        s.run("mailMerge.insertField", &json!({"field": "City"})).unwrap();
         assert!(s.doc.plain_text(StoryRef::Body).contains("«City»"));
-        s.run("mailings.preview", &json!({"value": true})).unwrap();
+        s.run("mailMerge.preview", &json!({"value": true})).unwrap();
         assert!(s.doc.plain_text(StoryRef::Body).contains("Dear Ada Lovelace,"));
-        s.run("mailings.next", &json!({})).unwrap();
+        s.run("mailMerge.next", &json!({})).unwrap();
         assert!(s.doc.plain_text(StoryRef::Body).contains("Wilmslow"));
-        let chk = s.run("mailings.checkErrors", &json!({})).unwrap();
+        let chk = s.run("mailMerge.checkErrors", &json!({})).unwrap();
         assert_eq!(chk["ok"], true);
-        let r = s.run("mailings.finish", &json!({})).unwrap();
+        let r = s.run("mailMerge.finish", &json!({})).unwrap();
         assert_eq!(r["records"], 2);
         let t = s.doc.plain_text(StoryRef::Body);
         assert!(t.contains("See you in London") && t.contains("Dear Alan Turing,"), "{t}");
@@ -616,16 +616,16 @@ mod tests {
     #[test]
     fn finish_with_a_range_naming_no_recipient_changes_nothing() {
         let mut s = Session::new(Document::new());
-        s.run("mailings.recipients", &json!({"csv": "First Name\nAda\nAlan"})).unwrap();
+        s.run("mailMerge.recipients", &json!({"csv": "First Name\nAda\nAlan"})).unwrap();
         s.run("text.insert", &json!({"text": "Hello "})).unwrap();
-        s.run("mailings.insertField", &json!({"field": "First Name"})).unwrap();
+        s.run("mailMerge.insertField", &json!({"field": "First Name"})).unwrap();
         let before = s.doc.plain_text(StoryRef::Body);
         for range in [json!({"from": 9}), json!({"from": 2, "to": 1}), json!({"from": 3, "path": "never.docx"})] {
-            assert!(s.run("mailings.finish", &range).is_err(), "{range}");
+            assert!(s.run("mailMerge.finish", &range).is_err(), "{range}");
             assert_eq!(s.doc.plain_text(StoryRef::Body), before, "{range}");
         }
         assert!(!std::path::Path::new("never.docx").exists());
-        assert_eq!(s.run("mailings.finish", &json!({"from": 2})).unwrap()["records"], 1);
+        assert_eq!(s.run("mailMerge.finish", &json!({"from": 2})).unwrap()["records"], 1);
     }
 
     /// A typed list keeps its column order, and rows may be arrays in that order.
@@ -633,7 +633,7 @@ mod tests {
     fn recipients_from_fields_and_array_rows() {
         let mut s = Session::new(Document::new());
         let r = s
-            .run("mailings.recipients", &json!({"fields": ["Last Name", " City ", "Age"], "rows": [["Lovelace", "London", 36], ["Turing"], 7]}))
+            .run("mailMerge.recipients", &json!({"fields": ["Last Name", " City ", "Age"], "rows": [["Lovelace", "London", 36], ["Turing"], 7]}))
             .unwrap();
         assert_eq!(r, json!({"fields": ["Last Name", "City", "Age"], "records": 2}));
         assert_eq!(
@@ -641,11 +641,11 @@ mod tests {
             vec![vec!["Lovelace".to_string(), "London".into(), "36".into()], vec!["Turing".into(), String::new(), String::new()]]
         );
         // Objects follow `fields` too; missing and null cells are blank.
-        s.run("mailings.editRecipients", &json!({"fields": ["Name", "City"], "rows": [{"City": "Paris", "Name": null}]})).unwrap();
+        s.run("mailMerge.editRecipients", &json!({"fields": ["Name", "City"], "rows": [{"City": "Paris", "Name": null}]})).unwrap();
         assert_eq!(s.merge.headers, vec!["Name", "City"]);
         assert_eq!(s.merge.rows, vec![vec![String::new(), "Paris".to_string()]]);
         // Array rows need the field names.
-        let err = s.run("mailings.recipients", &json!({"rows": [["Ada"]]})).unwrap_err();
+        let err = s.run("mailMerge.recipients", &json!({"rows": [["Ada"]]})).unwrap_err();
         assert!(matches!(err, CmdError::Params(_)), "{err}");
         assert!(s.ui_requests.is_empty(), "programmatic calls never open dialogs");
     }
@@ -655,22 +655,22 @@ mod tests {
     fn merge_kinds_and_edit_list_needs_recipients() {
         let mut s = Session::new(Document::new());
         for k in MERGE_KINDS {
-            assert_eq!(s.run("mailings.start", &json!({"kind": k})).unwrap(), json!({"kind": k}));
+            assert_eq!(s.run("mailMerge.start", &json!({"kind": k})).unwrap(), json!({"kind": k}));
         }
-        assert_eq!(s.run("mailings.start", &json!({"kind": " Directory "})).unwrap(), json!({"kind": "directory"}));
-        assert!(matches!(s.run("mailings.start", &json!({"kind": "fax"})), Err(CmdError::Params(_))));
+        assert_eq!(s.run("mailMerge.start", &json!({"kind": " Directory "})).unwrap(), json!({"kind": "directory"}));
+        assert!(matches!(s.run("mailMerge.start", &json!({"kind": "fax"})), Err(CmdError::Params(_))));
         assert_eq!(s.merge.kind, "directory", "a rejected kind leaves the current one");
-        assert!(matches!(s.run("mailings.editRecipients", &json!({})), Err(CmdError::Disabled(_))));
-        s.run("mailings.recipients", &json!({"csv": "Name\nAda"})).unwrap();
-        assert_eq!(s.run("mailings.editRecipients", &json!({})).unwrap(), json!({"headers": ["Name"], "rows": [["Ada"]]}));
+        assert!(matches!(s.run("mailMerge.editRecipients", &json!({})), Err(CmdError::Disabled(_))));
+        s.run("mailMerge.recipients", &json!({"csv": "Name\nAda"})).unwrap();
+        assert_eq!(s.run("mailMerge.editRecipients", &json!({})).unwrap(), json!({"headers": ["Name"], "rows": [["Ada"]]}));
     }
 
     #[test]
     fn envelopes_and_labels() {
         let mut s = Session::new(Document::new());
-        s.run("mailings.envelopes", &json!({"delivery": "Jo Doe\n1 Main St"})).unwrap();
+        s.run("mailMerge.envelopes", &json!({"delivery": "Jo Doe\n1 Main St"})).unwrap();
         assert!(s.doc.last_section.page_w > s.doc.last_section.page_h);
-        s.run("mailings.labels", &json!({"text": "Hello"})).unwrap();
+        s.run("mailMerge.labels", &json!({"text": "Hello"})).unwrap();
         assert!(s.doc.plain_text(StoryRef::Body).matches("Hello").count() == 30);
     }
 }

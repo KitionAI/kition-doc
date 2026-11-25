@@ -22,7 +22,7 @@ fn near_equation(s: &Session) -> Option<&'static str> {
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("insert.equation", "Equation", "Insert › Symbols", insert)
+        CommandSpec::new("equation.insert", "Equation", "Insert › Symbols", insert)
             .key("Alt+=")
             .params(r#"{"linear"?: string, "latex"?: string, "builtin"?: "pythagoras|area|quadratic|binomial|expansion|euler|derivative|taylor|gaussian|fourier|trig1|trig2|normal|bayes", "display"?: bool, "edit"?: bool (default true)}"#),
         CommandSpec::new("equation.edit", "Edit Equation", "Equation", edit)
@@ -655,7 +655,7 @@ mod tests {
 
     fn session() -> Session {
         let mut s = Session::new(Document::new());
-        s.run("document.setText", &json!({"text": ""})).unwrap();
+        s.run("file.setText", &json!({"text": ""})).unwrap();
         s
     }
 
@@ -666,7 +666,7 @@ mod tests {
     #[test]
     fn type_an_equation_like_word() {
         let mut s = session();
-        s.run("insert.equation", &json!({})).unwrap();
+        s.run("equation.insert", &json!({})).unwrap();
         assert!(s.math.is_some(), "editing the new equation");
         // An empty line gives a display equation.
         assert!(matches!(s.doc.para_at(&s.math.as_ref().unwrap().at).unwrap().object_at(0), Some(InlineObject::Equation { display: true, .. })));
@@ -713,7 +713,7 @@ mod tests {
     #[test]
     fn numbering_conversion_and_display() {
         let mut s = session();
-        s.run("insert.equation", &json!({"linear": "E=mc^2"})).unwrap();
+        s.run("equation.insert", &json!({"linear": "E=mc^2"})).unwrap();
         s.run("equation.type", &json!({"text": "#(1)"})).unwrap();
         s.run("equation.enter", &json!({})).unwrap();
         assert_eq!(linear(&s), "E=mc^2#(1)");
@@ -748,7 +748,7 @@ mod tests {
         assert!(g["symbols"].as_array().unwrap().len() >= 8);
         for b in crate::math_gallery::BUILT_INS {
             let mut s = session();
-            s.run("insert.equation", &json!({"builtin": b.0, "edit": false})).unwrap();
+            s.run("equation.insert", &json!({"builtin": b.0, "edit": false})).unwrap();
         }
     }
 }

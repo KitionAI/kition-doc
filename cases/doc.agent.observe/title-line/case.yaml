@@ -34,6 +34,6 @@ expected:
       content.paragraphs.2.text: The team thanks everyone involved.
 solution:
   - tool: doc_run
-    args: { path: report.docx, steps: [{ command: para.insert, params: { after: 2, text: "Title: Quarterly report" } }] }
+    args: { path: report.docx, steps: [{ command: paragraph.insert, params: { after: 2, text: "Title: Quarterly report" } }] }
 since: "2026-11-17"
 timeout_s: 600

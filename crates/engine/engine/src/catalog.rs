@@ -21,7 +21,7 @@ File|Backstage|Export Image|file.exportPng
 File|Backstage|Options|file.options
 File|Backstage|Share|file.share
 File|Backstage|Protect Document|file.protect
-File|Backstage|Inspect Document|file.inspect
+File|Backstage|Inspect Document|file.removeHiddenContent
 File|Backstage|Check Accessibility|file.accessibility
 File|Backstage|Check Compatibility|file.compatibility
 File|Backstage|Version History|file.versions
@@ -42,10 +42,10 @@ Home|Clipboard|Format Painter|edit.formatPainter
 Home|Clipboard|Copy Formatting|edit.copyFormat
 Home|Clipboard|Paste Formatting|edit.pasteFormat
 Home|Clipboard|Clipboard Pane|edit.clipboardPane
-Home|Font|Font|format.font
-Home|Font|Font Size|format.size
-Home|Font|Increase Font Size|format.growFont
-Home|Font|Decrease Font Size|format.shrinkFont
+Home|Font|Font|format.fontName
+Home|Font|Font Size|format.fontSize
+Home|Font|Increase Font Size|format.increaseFontSize
+Home|Font|Decrease Font Size|format.decreaseFontSize
 Home|Font|Change Case|format.changeCase
 Home|Font|Clear All Formatting|format.clear
 Home|Font|Bold|format.bold
@@ -73,54 +73,54 @@ Home|Font|Character Position|format.position
 Home|Font|Character Border|format.border
 Home|Font|Phonetic Guide|format.phonetic
 Home|Font|Enclose Characters|format.enclose
-Home|Paragraph|Bullets|para.bullets
-Home|Paragraph|Numbering|para.numbering
-Home|Paragraph|Multilevel List|para.multilevel
+Home|Paragraph|Bullets|paragraph.bullets
+Home|Paragraph|Numbering|paragraph.numbering
+Home|Paragraph|Multilevel List|paragraph.multilevel
 Home|Paragraph|Define New Multilevel List|list.define
-Home|Paragraph|Change List Level|para.listLevel
-Home|Paragraph|Restart Numbering|para.restartNumbering
-Home|Paragraph|Define New Bullet|para.defineBullet
-Home|Paragraph|Define New Number Format|para.defineNumber
-Home|Paragraph|Set Numbering Value|para.setNumberingValue
-Home|Paragraph|Decrease Indent|para.outdent
-Home|Paragraph|Increase Indent|para.indent
-Home|Paragraph|Sort|para.sort
+Home|Paragraph|Change List Level|paragraph.listLevel
+Home|Paragraph|Restart Numbering|paragraph.restartNumbering
+Home|Paragraph|Define New Bullet|paragraph.defineBullet
+Home|Paragraph|Define New Number Format|paragraph.defineNumber
+Home|Paragraph|Set Numbering Value|paragraph.setNumberingValue
+Home|Paragraph|Decrease Indent|paragraph.outdent
+Home|Paragraph|Increase Indent|paragraph.indent
+Home|Paragraph|Sort|paragraph.sort
 Home|Paragraph|Show/Hide Marks|view.marks
-Home|Paragraph|Align Left|para.alignLeft
-Home|Paragraph|Center|para.alignCenter
-Home|Paragraph|Align Right|para.alignRight
-Home|Paragraph|Justify|para.justify
-Home|Paragraph|Distributed|para.distribute
-Home|Paragraph|Line Spacing|para.lineSpacing
-Home|Paragraph|Add Space Before|para.addSpaceBefore
-Home|Paragraph|Remove Space After|para.removeSpaceAfter
-Home|Paragraph|Shading|para.shading
-Home|Paragraph|Borders|para.borders
-Home|Paragraph|Horizontal Line|insert.horizontalLine
-Home|Paragraph|Paragraph Dialog|para.dialog
-Home|Paragraph|Tabs|para.tabs
-Home|Paragraph|Keep with Next|para.keepNext
-Home|Paragraph|Keep Lines Together|para.keepLines
-Home|Paragraph|Page Break Before|para.pageBreakBefore
-Home|Paragraph|Widow/Orphan Control|para.widowControl
-Home|Paragraph|Outline Level|para.outlineLevel
-Home|Paragraph|Hanging Indent|para.hangingIndent
-Home|Paragraph|Right-to-Left Text Direction|para.rtl
-Home|Paragraph|Left-to-Right Text Direction|para.ltr
-Home|Paragraph|Asian Typography|para.asianTypography
-Home|Styles|Styles Gallery|para.style
-Home|Styles|Normal|para.normal
-Home|Styles|Heading 1|para.heading1
-Home|Styles|Heading 2|para.heading2
-Home|Styles|Heading 3|para.heading3
-Home|Styles|Create a Style|styles.create
-Home|Styles|Modify Style|styles.modify
-Home|Styles|Update Style to Match|styles.updateToMatch
-Home|Styles|Delete Style|styles.delete
-Home|Styles|Styles Pane|styles.pane
-Home|Styles|Style Inspector|styles.inspector
-Home|Styles|Manage Styles|styles.manage
-Home|Styles|Apply Styles|styles.apply
+Home|Paragraph|Align Left|format.alignLeft
+Home|Paragraph|Center|format.alignCenter
+Home|Paragraph|Align Right|format.alignRight
+Home|Paragraph|Justify|format.justify
+Home|Paragraph|Distributed|paragraph.distribute
+Home|Paragraph|Line Spacing|paragraph.lineSpacing
+Home|Paragraph|Add Space Before|paragraph.addSpaceBefore
+Home|Paragraph|Remove Space After|paragraph.removeSpaceAfter
+Home|Paragraph|Shading|paragraph.shading
+Home|Paragraph|Borders|paragraph.borders
+Home|Paragraph|Horizontal Line|horizontalLine.insert
+Home|Paragraph|Paragraph Dialog|paragraph.dialog
+Home|Paragraph|Tabs|paragraph.tabs
+Home|Paragraph|Keep with Next|paragraph.keepNext
+Home|Paragraph|Keep Lines Together|paragraph.keepLines
+Home|Paragraph|Page Break Before|paragraph.pageBreakBefore
+Home|Paragraph|Widow/Orphan Control|paragraph.widowControl
+Home|Paragraph|Outline Level|paragraph.outlineLevel
+Home|Paragraph|Hanging Indent|paragraph.hangingIndent
+Home|Paragraph|Right-to-Left Text Direction|paragraph.rtl
+Home|Paragraph|Left-to-Right Text Direction|paragraph.ltr
+Home|Paragraph|Asian Typography|paragraph.asianTypography
+Home|Styles|Styles Gallery|paragraph.style
+Home|Styles|Normal|paragraph.normal
+Home|Styles|Heading 1|paragraph.heading1
+Home|Styles|Heading 2|paragraph.heading2
+Home|Styles|Heading 3|paragraph.heading3
+Home|Styles|Create a Style|style.add
+Home|Styles|Modify Style|style.set
+Home|Styles|Update Style to Match|style.updateToMatch
+Home|Styles|Delete Style|style.delete
+Home|Styles|Styles Pane|style.pane
+Home|Styles|Style Inspector|style.inspector
+Home|Styles|Manage Styles|style.manage
+Home|Styles|Apply Styles|style.apply
 Home|Styles|Character Style|format.charStyle
 Home|Editing|Find|edit.find
 Home|Editing|Find Next|edit.findNext
@@ -129,96 +129,96 @@ Home|Editing|Advanced Find|edit.advancedFind
 Home|Editing|Replace|edit.replace
 Home|Editing|Replace All|edit.replaceAll
 Home|Editing|Go To|edit.goto
-Home|Editing|Select All|select.all
+Home|Editing|Select All|edit.selectAll
 Home|Editing|Select Objects|select.objects
 Home|Editing|Select Similar Formatting|select.similar
 Home|Voice|Dictate|tools.dictate
-Home|Editor|Editor|review.editor
-Insert|Pages|Cover Page|insert.coverPage
-Insert|Pages|Blank Page|insert.blankPage
-Insert|Pages|Page Break|insert.pageBreak
-Insert|Tables|Insert Table|insert.table
+Home|Editor|Editor|spelling.editor
+Insert|Pages|Cover Page|page.insertCover
+Insert|Pages|Blank Page|page.insertBlank
+Insert|Pages|Page Break|page.insertBreak
+Insert|Tables|Insert Table|table.insert
 Insert|Tables|Draw Table|table.draw
 Insert|Tables|Convert Text to Table|table.fromText
-Insert|Tables|Spreadsheet|insert.spreadsheet
+Insert|Tables|Spreadsheet|spreadsheet.insert
 Insert|Tables|Quick Tables|table.quick
-Insert|Illustrations|Pictures|insert.picture
+Insert|Illustrations|Pictures|image.insert
 Insert|Illustrations|Online Pictures|insert.onlinePicture
-Insert|Illustrations|Shapes|insert.shape
+Insert|Illustrations|Shapes|shape.insert
 Insert|Illustrations|Icons|insert.icon
 Insert|Illustrations|3D Models|insert.model3d
 Insert|Illustrations|Smart graphics|insert.smartGraphic
-Insert|Illustrations|Chart|insert.chart
+Insert|Illustrations|Chart|chart.insert
 Insert|Illustrations|Screenshot|insert.screenshot
 Insert|Illustrations|Drawing Canvas|insert.canvas
 Insert|Add-ins|Get Add-ins|addins.get
 Insert|Media|Online Video|insert.video
-Insert|Links|Link|insert.link
-Insert|Links|Remove Link|insert.removeLink
-Insert|Links|Bookmark|insert.bookmark
-Insert|Links|Cross-reference|insert.crossReference
-Insert|Comments|Comment|review.newComment
-Insert|Header & Footer|Header|insert.header
-Insert|Header & Footer|Footer|insert.footer
-Insert|Header & Footer|Page Number|insert.pageNumber
-Insert|Header & Footer|Edit Header|insert.editHeader
-Insert|Header & Footer|Edit Footer|insert.editFooter
-Insert|Header & Footer|Remove Header|insert.removeHeader
-Insert|Header & Footer|Remove Footer|insert.removeFooter
-Insert|Header & Footer|Format Page Numbers|layout.pageNumberFormat
-Insert|Header & Footer|Close Header and Footer|insert.closeHeader
-Insert|Header & Footer|Different First Page|layout.differentFirstPage
-Insert|Header & Footer|Different Odd & Even|layout.differentOddEven
-Insert|Header & Footer|Link to Previous|layout.linkToPrevious
-Insert|Text|Text Box|insert.textBox
-Insert|Text|Quick Parts|insert.quickParts
-Insert|Text|AutoText|insert.autoText
-Insert|Text|Document Property|insert.docProperty
-Insert|Text|Field|insert.field
-Insert|Text|Art text|insert.artText
-Insert|Text|Drop Cap|insert.dropCap
-Insert|Text|Signature Line|insert.signatureLine
-Insert|Text|Date & Time|insert.dateTime
-Insert|Text|Object|insert.object
-Insert|Text|Text from File|insert.textFromFile
-Insert|Symbols|Equation|insert.equation
+Insert|Links|Link|link.insert
+Insert|Links|Remove Link|link.remove
+Insert|Links|Bookmark|bookmark.insert
+Insert|Links|Cross-reference|crossReference.insert
+Insert|Comments|Comment|comment.new
+Insert|Header & Footer|Header|header.insert
+Insert|Header & Footer|Footer|footer.insert
+Insert|Header & Footer|Page Number|pageNumber.insert
+Insert|Header & Footer|Edit Header|header.edit
+Insert|Header & Footer|Edit Footer|footer.edit
+Insert|Header & Footer|Remove Header|header.remove
+Insert|Header & Footer|Remove Footer|footer.remove
+Insert|Header & Footer|Format Page Numbers|page.pageNumberFormat
+Insert|Header & Footer|Close Header and Footer|header.close
+Insert|Header & Footer|Different First Page|page.differentFirstPage
+Insert|Header & Footer|Different Odd & Even|page.differentOddEven
+Insert|Header & Footer|Link to Previous|page.linkToPrevious
+Insert|Text|Text Box|textBox.insert
+Insert|Text|Quick Parts|quickPart.insert
+Insert|Text|AutoText|autoText.insert
+Insert|Text|Document Property|field.insertDocProperty
+Insert|Text|Field|field.insert
+Insert|Text|Art text|artText.insert
+Insert|Text|Drop Cap|dropCap.set
+Insert|Text|Signature Line|signatureLine.insert
+Insert|Text|Date & Time|field.insertDateTime
+Insert|Text|Object|object.insert
+Insert|Text|Text from File|text.insertFromFile
+Insert|Symbols|Equation|equation.insert
 Insert|Symbols|Ink Equation|insert.inkEquation
-Insert|Symbols|Symbol|insert.symbol
+Insert|Symbols|Symbol|symbol.insert
 Insert|Symbols|Nonbreaking Space|text.nbsp
 Insert|Symbols|Nonbreaking Hyphen|text.nbHyphen
 Insert|Symbols|Optional Hyphen|text.optionalHyphen
-Draw|Tools|Select|draw.select
+Draw|Tools|Select|ink.select
 Draw|Tools|Lasso Select|draw.lasso
-Draw|Tools|Eraser|draw.eraser
-Draw|Pens|Pen|draw.pen
-Draw|Pens|Pencil|draw.pencil
-Draw|Pens|Highlighter|draw.highlighter
+Draw|Tools|Eraser|ink.eraser
+Draw|Pens|Pen|ink.pen
+Draw|Pens|Pencil|ink.pencil
+Draw|Pens|Highlighter|ink.highlighter
 Draw|Pens|Add Pen|draw.addPen
 Draw|Convert|Ink to Shape|draw.inkToShape
 Draw|Convert|Ink to Math|draw.inkToMath
 Draw|Insert|Drawing Canvas|insert.canvas
 Draw|Replay|Ink Replay|draw.replay
-Design|Document Formatting|Themes|design.theme
-Design|Document Formatting|Style Set|design.styleSet
-Design|Document Formatting|Colors|design.themeColors
-Design|Document Formatting|Fonts|design.themeFonts
-Design|Document Formatting|Paragraph Spacing|design.paragraphSpacing
-Design|Document Formatting|Effects|design.effects
-Design|Document Formatting|Set as Default|design.setDefault
-Design|Page Background|Watermark|design.watermark
-Design|Page Background|Page Color|design.pageColor
-Design|Page Background|Page Borders|design.pageBorders
-Layout|Page Setup|Margins|layout.margins
-Layout|Page Setup|Orientation|layout.orientation
-Layout|Page Setup|Size|layout.size
-Layout|Page Setup|Columns|layout.columns
-Layout|Page Setup|Breaks|layout.break
-Layout|Page Setup|Line Numbers|layout.lineNumbers
-Layout|Page Setup|Hyphenation|layout.hyphenation
-Layout|Page Setup|Page Setup Dialog|layout.pageSetup
-Layout|Page Setup|Vertical Alignment|layout.verticalAlign
-Layout|Paragraph|Indent|para.indents
-Layout|Paragraph|Spacing|para.spacing
+Design|Document Formatting|Themes|theme.set
+Design|Document Formatting|Style Set|theme.styleSet
+Design|Document Formatting|Colors|theme.colors
+Design|Document Formatting|Fonts|theme.fonts
+Design|Document Formatting|Paragraph Spacing|theme.paragraphSpacing
+Design|Document Formatting|Effects|theme.effects
+Design|Document Formatting|Set as Default|theme.setDefault
+Design|Page Background|Watermark|page.watermark
+Design|Page Background|Page Color|page.color
+Design|Page Background|Page Borders|page.borders
+Layout|Page Setup|Margins|page.margins
+Layout|Page Setup|Orientation|page.orientation
+Layout|Page Setup|Size|page.size
+Layout|Page Setup|Columns|page.columns
+Layout|Page Setup|Breaks|page.break
+Layout|Page Setup|Line Numbers|page.lineNumbers
+Layout|Page Setup|Hyphenation|page.hyphenation
+Layout|Page Setup|Page Setup Dialog|page.pageSetup
+Layout|Page Setup|Vertical Alignment|page.verticalAlign
+Layout|Paragraph|Indent|paragraph.indents
+Layout|Paragraph|Spacing|paragraph.spacing
 Layout|Arrange|Position|arrange.position
 Layout|Arrange|Wrap Text|arrange.wrap
 Layout|Arrange|Bring Forward|arrange.bringForward
@@ -227,77 +227,77 @@ Layout|Arrange|Selection Pane|arrange.selectionPane
 Layout|Arrange|Align|arrange.align
 Layout|Arrange|Group|arrange.group
 Layout|Arrange|Rotate|arrange.rotate
-References|Table of Contents|Table of Contents|references.toc
-References|Table of Contents|Add Text|references.addText
-References|Table of Contents|Update Table|references.updateToc
-References|Table of Contents|Remove Table of Contents|references.removeToc
-References|Footnotes|Insert Footnote|references.footnote
-References|Footnotes|Insert Endnote|references.endnote
-References|Footnotes|Next Footnote|references.nextFootnote
-References|Footnotes|Show Notes|references.notes
-References|Footnotes|Footnote Options|references.noteOptions
-References|Research|Researcher|references.researcher
-References|Citations|Insert Citation|references.citation
-References|Citations|Manage Sources|references.sources
-References|Citations|Style|references.citationStyle
-References|Citations|Bibliography|references.bibliography
-References|Captions|Insert Caption|references.caption
-References|Captions|Insert Table of Figures|references.tableOfFigures
-References|Captions|Update Table of Figures|references.updateFigures
-References|Captions|Cross-reference|insert.crossReference
-References|Index|Mark Entry|references.markEntry
-References|Index|Insert Index|references.index
-References|Index|Update Index|references.updateIndex
-References|Table of Authorities|Mark Citation|references.markCitation
-References|Table of Authorities|Insert Table of Authorities|references.tableOfAuthorities
-References|Fields|Update Fields|references.updateFields
-Mailings|Create|Envelopes|mailings.envelopes
-Mailings|Create|Labels|mailings.labels
-Mailings|Start Mail Merge|Start Mail Merge|mailings.start
-Mailings|Start Mail Merge|Select Recipients|mailings.recipients
-Mailings|Start Mail Merge|Edit Recipient List|mailings.editRecipients
-Mailings|Write & Insert Fields|Highlight Merge Fields|mailings.highlightFields
-Mailings|Write & Insert Fields|Address Block|mailings.addressBlock
-Mailings|Write & Insert Fields|Greeting Line|mailings.greetingLine
-Mailings|Write & Insert Fields|Insert Merge Field|mailings.insertField
-Mailings|Write & Insert Fields|Rules|mailings.rules
-Mailings|Write & Insert Fields|Match Fields|mailings.matchFields
-Mailings|Preview Results|Preview Results|mailings.preview
-Mailings|Preview Results|Next Record|mailings.next
-Mailings|Preview Results|Previous Record|mailings.previous
-Mailings|Preview Results|Find Recipient|mailings.findRecipient
-Mailings|Preview Results|Check for Errors|mailings.checkErrors
-Mailings|Finish|Finish & Merge|mailings.finish
-Review|Proofing|Spelling & Grammar|review.spelling
-Review|Proofing|Thesaurus|review.thesaurus
-Review|Proofing|Word Count|review.wordCount
-Review|Speech|Read Aloud|review.readAloud
+References|Table of Contents|Table of Contents|toc.insert
+References|Table of Contents|Add Text|toc.addText
+References|Table of Contents|Update Table|toc.update
+References|Table of Contents|Remove Table of Contents|toc.remove
+References|Footnotes|Insert Footnote|footnote.insert
+References|Footnotes|Insert Endnote|endnote.insert
+References|Footnotes|Next Footnote|footnote.next
+References|Footnotes|Show Notes|footnote.show
+References|Footnotes|Footnote Options|footnote.options
+References|Research|Researcher|research.open
+References|Citations|Insert Citation|citation.insert
+References|Citations|Manage Sources|citation.sources
+References|Citations|Style|citation.style
+References|Citations|Bibliography|bibliography.insert
+References|Captions|Insert Caption|caption.insert
+References|Captions|Insert Table of Figures|tableOfFigures.insert
+References|Captions|Update Table of Figures|tableOfFigures.update
+References|Captions|Cross-reference|crossReference.insert
+References|Index|Mark Entry|index.markEntry
+References|Index|Insert Index|index.insert
+References|Index|Update Index|index.update
+References|Table of Authorities|Mark Citation|tableOfAuthorities.markCitation
+References|Table of Authorities|Insert Table of Authorities|tableOfAuthorities.insert
+References|Fields|Update Fields|field.updateAll
+Mailings|Create|Envelopes|mailMerge.envelopes
+Mailings|Create|Labels|mailMerge.labels
+Mailings|Start Mail Merge|Start Mail Merge|mailMerge.start
+Mailings|Start Mail Merge|Select Recipients|mailMerge.recipients
+Mailings|Start Mail Merge|Edit Recipient List|mailMerge.editRecipients
+Mailings|Write & Insert Fields|Highlight Merge Fields|mailMerge.highlightFields
+Mailings|Write & Insert Fields|Address Block|mailMerge.addressBlock
+Mailings|Write & Insert Fields|Greeting Line|mailMerge.greetingLine
+Mailings|Write & Insert Fields|Insert Merge Field|mailMerge.insertField
+Mailings|Write & Insert Fields|Rules|mailMerge.rules
+Mailings|Write & Insert Fields|Match Fields|mailMerge.matchFields
+Mailings|Preview Results|Preview Results|mailMerge.preview
+Mailings|Preview Results|Next Record|mailMerge.next
+Mailings|Preview Results|Previous Record|mailMerge.previous
+Mailings|Preview Results|Find Recipient|mailMerge.findRecipient
+Mailings|Preview Results|Check for Errors|mailMerge.checkErrors
+Mailings|Finish|Finish & Merge|mailMerge.finish
+Review|Proofing|Spelling & Grammar|spelling.check
+Review|Proofing|Thesaurus|spelling.thesaurus
+Review|Proofing|Word Count|file.wordCount
+Review|Speech|Read Aloud|readAloud.open
 Review|Accessibility|Check Accessibility|file.accessibility
 Review|Language|Translate|review.translate
-Review|Language|Language|review.language
-Review|Comments|New Comment|review.newComment
-Review|Comments|Delete|review.deleteComment
-Review|Comments|Previous|review.previousComment
-Review|Comments|Next|review.nextComment
-Review|Comments|Show Comments|review.comments
-Review|Comments|Resolve|review.resolveComment
-Review|Comments|Reply|review.reply
-Review|Tracking|Track Changes|review.trackChanges
-Review|Tracking|Display for Review|review.markup
-Review|Tracking|Show Markup|review.showMarkup
-Review|Tracking|Reviewing Pane|review.changes
-Review|Tracking|Track Changes Options|review.trackingOptions
-Review|Changes|Accept|review.accept
-Review|Changes|Reject|review.reject
-Review|Changes|Accept All|review.acceptAll
-Review|Changes|Reject All|review.rejectAll
-Review|Changes|Previous Change|review.previousChange
-Review|Changes|Next Change|review.nextChange
-Review|Compare|Compare|review.compare
-Review|Compare|Combine|review.combine
+Review|Language|Language|spelling.language
+Review|Comments|New Comment|comment.new
+Review|Comments|Delete|comment.deleteCurrent
+Review|Comments|Previous|comment.previous
+Review|Comments|Next|comment.next
+Review|Comments|Show Comments|comment.pane
+Review|Comments|Resolve|comment.resolveCurrent
+Review|Comments|Reply|comment.replyCurrent
+Review|Tracking|Track Changes|change.track
+Review|Tracking|Display for Review|change.markup
+Review|Tracking|Show Markup|change.showMarkup
+Review|Tracking|Reviewing Pane|change.list
+Review|Tracking|Track Changes Options|change.options
+Review|Changes|Accept|change.accept
+Review|Changes|Reject|change.reject
+Review|Changes|Accept All|change.acceptAll
+Review|Changes|Reject All|change.rejectAll
+Review|Changes|Previous Change|change.previous
+Review|Changes|Next Change|change.next
+Review|Compare|Compare|file.compare
+Review|Compare|Combine|file.combine
 Review|Protect|Block Authors|review.blockAuthors
-Review|Protect|Restrict Editing|review.restrict
-Review|Ink|Hide Ink|review.hideInk
+Review|Protect|Restrict Editing|file.restrictEditing
+Review|Ink|Hide Ink|ink.hide
 View|Views|Read Mode|view.readMode
 View|Views|Print Layout|view.printLayout
 View|Views|Web Layout|view.webLayout
@@ -324,13 +324,13 @@ View|Window|Split|view.split
 View|Window|View Side by Side|view.sideBySide
 View|Window|Synchronous Scrolling|view.syncScroll
 View|Window|Switch Windows|view.switchWindows
-View|Macros|Macros|tools.macros
-View|Macros|Record Macro|tools.recordMacro
+View|Macros|Macros|macro.list
+View|Macros|Record Macro|macro.record
 View|Properties|Properties|file.properties
 Table Design|Table Style Options|Table Style Options|table.look
 Table Design|Table Styles|Table Styles|table.style
 Table Design|Table Styles|New Table Style|table.newStyle
-Table Design|Table Styles|Modify Table Style|table.modifyStyle
+Table Design|Table Styles|Modify Table Style|table.setStyle
 Table Design|Table Styles|Delete Table Style|table.deleteStyle
 Table Design|Table Styles|Shading|table.shading
 Table Design|Borders|Borders|table.borders
@@ -365,7 +365,7 @@ Table Layout|Data|Sort|table.sort
 Table Layout|Data|Repeat Header Rows|table.repeatHeader
 Table Layout|Data|Convert to Text|table.toText
 Table Layout|Data|Formula|table.formula
-Equation|Tools|Equation|insert.equation
+Equation|Tools|Equation|equation.insert
 Equation|Tools|Ink Equation|insert.inkEquation
 Equation|Conversions|Unicode|equation.inputFormat
 Equation|Conversions|LaTeX|equation.inputFormat
@@ -387,19 +387,19 @@ Equation|Equation Options|Change to Inline / Display|equation.display
 Equation|Equation Options|Justification|equation.justify
 Equation|Equation Options|Equation Number (#)|equation.number
 Equation|Equation Options|Structure Commands|equation.structure
-Picture Format|Adjust|Remove Background|picture.removeBackground
-Picture Format|Adjust|Corrections|picture.corrections
-Picture Format|Adjust|Color|picture.color
-Picture Format|Adjust|Artistic Effects|picture.effects
-Picture Format|Adjust|Transparency|picture.transparency
-Picture Format|Adjust|Compress Pictures|picture.compress
-Picture Format|Adjust|Change Picture|picture.change
-Picture Format|Adjust|Reset Picture|picture.reset
-Picture Format|Picture Styles|Picture Styles|picture.style
-Picture Format|Picture Styles|Picture Border|picture.border
-Picture Format|Accessibility|Alt Text|picture.altText
-Picture Format|Size|Crop|picture.crop
-Picture Format|Size|Size|picture.size
+Picture Format|Adjust|Remove Background|image.removeBackground
+Picture Format|Adjust|Corrections|image.corrections
+Picture Format|Adjust|Color|image.color
+Picture Format|Adjust|Artistic Effects|image.effects
+Picture Format|Adjust|Transparency|image.transparency
+Picture Format|Adjust|Compress Pictures|image.compress
+Picture Format|Adjust|Change Picture|image.change
+Picture Format|Adjust|Reset Picture|image.reset
+Picture Format|Picture Styles|Picture Styles|image.style
+Picture Format|Picture Styles|Picture Border|image.border
+Picture Format|Accessibility|Alt Text|image.altText
+Picture Format|Size|Crop|image.crop
+Picture Format|Size|Size|image.size
 Picture Format|Size|Rotation|arrange.rotation
 Shape Format|Shape Styles|Shape Fill|shape.fill
 Shape Format|Shape Styles|Shape Outline|shape.outline
@@ -407,11 +407,11 @@ Shape Format|Shape Styles|Shape Effects|shape.effects
 Shape Format|Text|Text Direction|shape.textDirection
 Shape Format|Text|Align Text|shape.alignText
 Shape Format|Text|Create Link|shape.link
-Header & Footer|Navigation|Go to Header|insert.editHeader
-Header & Footer|Navigation|Go to Footer|insert.editFooter
-Header & Footer|Navigation|Previous Section|hf.previous
-Header & Footer|Navigation|Next Section|hf.next
-Header & Footer|Position|Header from Top|hf.position
+Header & Footer|Navigation|Go to Header|header.edit
+Header & Footer|Navigation|Go to Footer|footer.edit
+Header & Footer|Navigation|Previous Section|headerFooter.previous
+Header & Footer|Navigation|Next Section|headerFooter.next
+Header & Footer|Position|Header from Top|headerFooter.position
 Editing|Keyboard|Type Text|text.insert
 Editing|Keyboard|New Paragraph|text.newParagraph
 Editing|Keyboard|Line Break|text.lineBreak
@@ -436,8 +436,8 @@ Editing|Selection|Select Sentence|select.sentence
 Editing|Selection|Select Paragraph|select.paragraph
 Editing|Selection|Extend Selection (F8)|select.extend
 Editing|Selection|Column Selection|select.column
-Tools|Proofing|AutoCorrect Options|tools.autocorrect
-Tools|Proofing|Set Proofing Language|review.language
+Tools|Proofing|AutoCorrect Options|autocorrect.options
+Tools|Proofing|Set Proofing Language|spelling.language
 Tools|Customize|Customize Ribbon|tools.customizeRibbon
 Tools|Customize|Customize Keyboard|tools.customizeKeyboard
 Tools|Protection|Encrypt with Password|file.encrypt

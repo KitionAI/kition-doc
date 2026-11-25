@@ -1,7 +1,7 @@
 format: 1
 id: regressions/issue-7
 feature: doc.caret.navigation
-intent: edit.goto's paragraph is the body block index document.inspect gives (from 0, a table's index going to its first cell), so an agent goes where it looked; and AutoFormat's border line on Enter acts only right after "###" (or ---, ===...) was typed, so text an agent inserts whole stays text.
+intent: edit.goto's paragraph is the body block index file.inspect gives (from 0, a table's index going to its first cell), so an agent goes where it looked; and AutoFormat's border line on Enter acts only right after "###" (or ---, ===...) was typed, so text an agent inserts whole stays text.
 layer: gate
 source:
   kind: issue

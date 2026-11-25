@@ -96,7 +96,7 @@ try {
   step('an edit inside the passage keeps the anchor around it', located?.found === true && located.text === 'charged, fast particles', JSON.stringify(located))
 
   // A page break above: the anchor moves to page 2, and so does its marker.
-  await runSteps([{ command: 'caret.docStart', params: {} }, { command: 'insert.pageBreak', params: {} }])
+  await runSteps([{ command: 'caret.docStart', params: {} }, { command: 'page.insertBreak', params: {} }])
   const paged = (await run('comment.locate', { anchors: [created.anchor] }))?.[0]
   step('a page break above moves the anchor to page 2', paged?.found === true && paged.page === 2, JSON.stringify(paged))
   await until(async () => {
@@ -117,7 +117,7 @@ try {
   step('scrolled to page 2, the marker is beside its line there', (await marker('t1').count()) === 1)
 
   // The file's own Word comments stay the kit's.
-  await runSteps([{ command: 'select.text', params: { text: 'oxygen' } }, { command: 'review.newComment', params: { text: 'A Word comment' } }])
+  await runSteps([{ command: 'select.text', params: { text: 'oxygen' } }, { command: 'comment.new', params: { text: 'A Word comment' } }])
   await kit.getByTestId('doc-comments-toggle').click()
   await until(async () => (await kit.getByTestId('doc-comments-panel').textContent())?.includes('A Word comment'))
   step('the Comments pane still lists the file\'s Word comment', (await kit.getByTestId('doc-comments-panel').textContent())?.includes('A Word comment'))
@@ -132,8 +132,8 @@ try {
   await kit.getByTestId('ribbon-tab-review').click()
   await selectAsPerson('Spare batteries')
   await until(async () => (await add().count()) === 1)
-  await until(async () => !(await kit.getByTestId('doc-cmd-review.newComment').isDisabled()))
-  await kit.getByTestId('doc-cmd-review.newComment').click()
+  await until(async () => !(await kit.getByTestId('doc-cmd-comment.new').isDisabled()))
+  await kit.getByTestId('doc-cmd-comment.new').click()
   await until(async () => (await mock()).created.length === 3)
   step('Review › New Comment sends comment.create', (await mock()).created[2]?.anchor?.quote === 'Spare batteries', JSON.stringify((await mock()).created[2]))
   step('still one Word comment', (await run('comment.threads'))?.length === 1)

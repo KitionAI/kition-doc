@@ -1,7 +1,7 @@
 format: 1
 id: regressions/issue-5
 feature: doc.format.character
-intent: Colours in format.set, styles.modify and para.set are given as RRGGBB (auto for text) as documented; formatting picked at the caret stays in its story; Reset Character Formatting keeps the paragraph style while Clear All Formatting makes it Normal, as in Word; a drop cap stays on its paragraph and spans its lines at any line spacing; para.dialog answers a paragraph's formatting.
+intent: Colours in format.set, style.set and paragraph.set are given as RRGGBB (auto for text) as documented; formatting picked at the caret stays in its story; Reset Character Formatting keeps the paragraph style while Clear All Formatting makes it Normal, as in Word; a drop cap stays on its paragraph and spans its lines at any line spacing; paragraph.dialog answers a paragraph's formatting.
 layer: gate
 source:
   kind: issue

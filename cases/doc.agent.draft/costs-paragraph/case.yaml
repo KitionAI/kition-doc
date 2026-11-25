@@ -38,8 +38,8 @@ expected:
       content.paragraphs.0.text: Quarterly report
 solution:
   - tool: doc_run
-    args: { path: report.docx, draft: true, steps: [{ command: para.insert, params: { after: 1, text: Costs fell by a tenth. } }] }
+    args: { path: report.docx, draft: true, steps: [{ command: paragraph.insert, params: { after: 1, text: Costs fell by a tenth. } }] }
   - tool: doc_run
-    args: { path: report.docx, draft: true, steps: [{ command: para.text, params: { index: 0, text: Quarterly report 2026 } }] }
+    args: { path: report.docx, draft: true, steps: [{ command: paragraph.text, params: { index: 0, text: Quarterly report 2026 } }] }
 since: "2026-11-17"
 timeout_s: 600

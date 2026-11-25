@@ -8,5 +8,5 @@ await runModeSmoke({
   config: new URL('../vite.config.ts', import.meta.url).pathname,
   browser: process.argv[2] === 'webkit' ? webkit : chromium,
   createServer,
-  line: { tab: 'home', primary: ['doc-paste', 'doc-font', 'doc-size', 'doc-cmd-format.bold', 'doc-font-color', 'doc-bullets', 'doc-cmd-para.alignCenter', 'doc-find'] },
+  line: { tab: 'home', primary: ['doc-paste', 'doc-font', 'doc-size', 'doc-cmd-format.bold', 'doc-font-color', 'doc-bullets', 'doc-cmd-format.alignCenter', 'doc-find'] },
 })

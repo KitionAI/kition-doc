@@ -39,9 +39,9 @@ export function HomeTab({ onFind }: { onFind: (replace: boolean) => void }) {
   const { run, enabled, phrase: p, testId } = useKitEditor()
   const format = useEngineQuery<FormatState>('format.state') ?? {}
   const view = useEngineQuery<ViewState>('view.state') ?? {}
-  const styles = (useEngineQuery<StyleEntry[]>('styles.list') ?? []).filter((style) => style.quick && style.kind === 'paragraph')
-  const fonts = format.font && !FONTS.includes(format.font) ? [format.font, ...FONTS] : FONTS
-  const size = format.size ?? null
+  const styles = (useEngineQuery<StyleEntry[]>('style.list') ?? []).filter((style) => style.quick && style.kind === 'paragraph')
+  const fonts = format.fontName && !FONTS.includes(format.fontName) ? [format.fontName, ...FONTS] : FONTS
+  const size = format.fontSize ?? null
 
   return (
     <>
@@ -65,10 +65,10 @@ export function HomeTab({ onFind }: { onFind: (replace: boolean) => void }) {
               <select
                 className="kui-ribbon-field"
                 style={{ width: 150 }}
-                value={format.font ?? ''}
+                value={format.fontName ?? ''}
                 aria-label={p('Font')}
-                disabled={!enabled('format.font')}
-                onChange={(event) => void run('format.font', { name: event.target.value })}
+                disabled={!enabled('format.fontName')}
+                onChange={(event) => void run('format.fontName', { name: event.target.value })}
                 data-testid="doc-font"
               >
                 {fonts.map((font) => (
@@ -84,8 +84,8 @@ export function HomeTab({ onFind }: { onFind: (replace: boolean) => void }) {
                 style={{ width: 58 }}
                 value={size ?? ''}
                 aria-label={p('Font Size')}
-                disabled={!enabled('format.size')}
-                onChange={(event) => void run('format.size', { size: Number(event.target.value) })}
+                disabled={!enabled('format.fontSize')}
+                onChange={(event) => void run('format.fontSize', { size: Number(event.target.value) })}
                 data-testid="doc-size"
               >
                 {size != null && !SIZES.includes(size) ? <option value={size}>{size}</option> : null}
@@ -97,8 +97,8 @@ export function HomeTab({ onFind }: { onFind: (replace: boolean) => void }) {
                 ))}
               </select>
             </RibbonItem>
-            <CommandButton command="format.growFont" icon={AArrowUp} size="icon" label={p('Increase Font Size')} title={p('Increase Font Size')} />
-            <CommandButton command="format.shrinkFont" icon={AArrowDown} size="icon" label={p('Decrease Font Size')} title={p('Decrease Font Size')} />
+            <CommandButton command="format.increaseFontSize" icon={AArrowUp} size="icon" label={p('Increase Font Size')} title={p('Increase Font Size')} />
+            <CommandButton command="format.decreaseFontSize" icon={AArrowDown} size="icon" label={p('Decrease Font Size')} title={p('Decrease Font Size')} />
             <RibbonMenu icon={CaseSensitive} label={p('Change Case')} size="icon">
               <CommandItem command="format.changeCase" params={{ mode: 'sentence' }} label={p('Sentence case.')} />
               <CommandItem command="format.changeCase" params={{ mode: 'lower' }} label={p('lowercase')} />
@@ -140,10 +140,10 @@ export function HomeTab({ onFind }: { onFind: (replace: boolean) => void }) {
           <RibbonRow>
             <RibbonMenu icon={List} label={p('Bullets')} size="icon" testId="doc-bullets" primary>
               {['•', '○', '▪', '◆', '✓', '–'].map((kind) => (
-                <CommandItem key={kind} command="para.bullets" params={{ kind }} label={kind} />
+                <CommandItem key={kind} command="paragraph.bullets" params={{ kind }} label={kind} />
               ))}
               <MenuSeparator />
-              <CommandItem command="para.bullets" params={{ off: true }} label={p('None')} />
+              <CommandItem command="paragraph.bullets" params={{ off: true }} label={p('None')} />
             </RibbonMenu>
             <RibbonMenu icon={ListOrdered} label={p('Numbering')} size="icon" primary>
               {[
@@ -154,41 +154,41 @@ export function HomeTab({ onFind }: { onFind: (replace: boolean) => void }) {
                 ['a) b) c)', 'lowerLetter'],
                 ['i. ii. iii.', 'lowerRoman'],
               ].map(([label, kind]) => (
-                <CommandItem key={kind} command="para.numbering" params={{ kind }} label={label} />
+                <CommandItem key={kind} command="paragraph.numbering" params={{ kind }} label={label} />
               ))}
               <MenuSeparator />
-              <CommandItem command="para.restartNumbering" label={p('Restart at 1')} />
-              <CommandItem command="para.numbering" params={{ off: true }} label={p('None')} />
+              <CommandItem command="paragraph.restartNumbering" label={p('Restart at 1')} />
+              <CommandItem command="paragraph.numbering" params={{ off: true }} label={p('None')} />
             </RibbonMenu>
             <RibbonMenu icon={ListTree} label={p('Multilevel List')} size="icon">
-              <CommandItem command="para.multilevel" params={{ kind: 'legal' }} label="1. 1.1. 1.1.1." />
-              <CommandItem command="para.multilevel" params={{ kind: 'outline' }} label="I. A. 1. a." />
+              <CommandItem command="paragraph.multilevel" params={{ kind: 'legal' }} label="1. 1.1. 1.1.1." />
+              <CommandItem command="paragraph.multilevel" params={{ kind: 'outline' }} label="I. A. 1. a." />
               <MenuSeparator />
               {[0, 1, 2, 3, 4].map((level) => (
-                <CommandItem key={level} command="para.listLevel" params={{ level }} label={p('Change to Level {n}').replace('{n}', String(level + 1))} />
+                <CommandItem key={level} command="paragraph.listLevel" params={{ level }} label={p('Change to Level {n}').replace('{n}', String(level + 1))} />
               ))}
             </RibbonMenu>
-            <CommandButton command="para.outdent" icon={IndentDecrease} size="icon" label={p('Decrease Indent')} title={p('Decrease Indent')} />
-            <CommandButton command="para.indent" icon={IndentIncrease} size="icon" label={p('Increase Indent')} title={p('Increase Indent')} />
-            <CommandButton command="para.sort" icon={ArrowDownAZ} size="icon" label={p('Sort')} title={p('Sort')} />
+            <CommandButton command="paragraph.outdent" icon={IndentDecrease} size="icon" label={p('Decrease Indent')} title={p('Decrease Indent')} />
+            <CommandButton command="paragraph.indent" icon={IndentIncrease} size="icon" label={p('Increase Indent')} title={p('Increase Indent')} />
+            <CommandButton command="paragraph.sort" icon={ArrowDownAZ} size="icon" label={p('Sort')} title={p('Sort')} />
             <CommandButton command="view.marks" icon={Pilcrow} size="icon" pressed={view.marks} label={p('Show/Hide ¶')} title={p('Show/Hide ¶')} />
           </RibbonRow>
           <RibbonRow>
-            <CommandButton command="para.alignLeft" primary icon={AlignLeft} size="icon" label={p('Align Left')} title={p('Align Left')} />
-            <CommandButton command="para.alignCenter" primary icon={AlignCenter} size="icon" label={p('Center')} title={p('Center')} />
-            <CommandButton command="para.alignRight" icon={AlignRight} size="icon" label={p('Align Right')} title={p('Align Right')} />
-            <CommandButton command="para.justify" icon={AlignJustify} size="icon" label={p('Justify')} title={p('Justify')} />
+            <CommandButton command="format.alignLeft" primary icon={AlignLeft} size="icon" label={p('Align Left')} title={p('Align Left')} />
+            <CommandButton command="format.alignCenter" primary icon={AlignCenter} size="icon" label={p('Center')} title={p('Center')} />
+            <CommandButton command="format.alignRight" icon={AlignRight} size="icon" label={p('Align Right')} title={p('Align Right')} />
+            <CommandButton command="format.justify" icon={AlignJustify} size="icon" label={p('Justify')} title={p('Justify')} />
             <RibbonMenu icon={UnfoldVertical} label={p('Line and Paragraph Spacing')} size="icon">
               {[1, 1.15, 1.5, 2, 2.5, 3].map((value) => (
-                <CommandItem key={value} command="para.lineSpacing" params={{ value }} label={String(value)} />
+                <CommandItem key={value} command="paragraph.lineSpacing" params={{ value }} label={String(value)} />
               ))}
               <MenuSeparator />
-              <CommandItem command="para.addSpaceBefore" label={p('Add Space Before Paragraph')} />
-              <CommandItem command="para.removeSpaceAfter" label={p('Remove Space After Paragraph')} />
+              <CommandItem command="paragraph.addSpaceBefore" label={p('Add Space Before Paragraph')} />
+              <CommandItem command="paragraph.removeSpaceAfter" label={p('Remove Space After Paragraph')} />
             </RibbonMenu>
-            <RibbonMenu icon={PaintBucket} label={p('Shading')} size="icon" disabled={!enabled('para.shading')}>
-              <CommandItem command="para.shading" params={{ color: null }} label={p('No Color')} />
-              <ColorGrid onPick={(color) => void run('para.shading', { color: hex(color) })} />
+            <RibbonMenu icon={PaintBucket} label={p('Shading')} size="icon" disabled={!enabled('paragraph.shading')}>
+              <CommandItem command="paragraph.shading" params={{ color: null }} label={p('No Color')} />
+              <ColorGrid onPick={(color) => void run('paragraph.shading', { color: hex(color) })} />
             </RibbonMenu>
             <RibbonMenu icon={Grid2x2} label={p('Borders')} size="icon">
               {[
@@ -201,10 +201,10 @@ export function HomeTab({ onFind }: { onFind: (replace: boolean) => void }) {
                 ['Outside Borders', 'outside'],
                 ['Inside Borders', 'inside'],
               ].map(([label, kind]) => (
-                <CommandItem key={kind} command="para.borders" params={{ kind }} label={p(label)} />
+                <CommandItem key={kind} command="paragraph.borders" params={{ kind }} label={p(label)} />
               ))}
               <MenuSeparator />
-              <CommandItem command="insert.horizontalLine" label={p('Horizontal Line')} />
+              <CommandItem command="horizontalLine.insert" label={p('Horizontal Line')} />
             </RibbonMenu>
           </RibbonRow>
         </RibbonStack>
@@ -219,8 +219,8 @@ export function HomeTab({ onFind }: { onFind: (replace: boolean) => void }) {
               className="kui-gallery-item doc-style"
               data-style={style.id}
               aria-pressed={format.styleName === style.name}
-              disabled={!enabled('para.style')}
-              onClick={() => void run('para.style', { style: style.id })}
+              disabled={!enabled('paragraph.style')}
+              onClick={() => void run('paragraph.style', { style: style.id })}
               data-testid={`doc-style-${style.id}`}
             >
               {p(style.name)}
@@ -234,7 +234,7 @@ export function HomeTab({ onFind }: { onFind: (replace: boolean) => void }) {
           <RibbonButton icon={Search} label={p('Find')} onClick={() => onFind(false)} data-testid="doc-find" primary />
           <RibbonButton icon={Replace} label={p('Replace')} onClick={() => onFind(true)} data-testid="doc-replace" />
           <RibbonMenu icon={MousePointer2} label={p('Select')}>
-            <CommandItem command="select.all" label={p('Select All')} />
+            <CommandItem command="edit.selectAll" label={p('Select All')} />
             <CommandItem command="select.paragraph" label={p('Select Paragraph')} />
             <CommandItem command="select.sentence" label={p('Select Sentence')} />
           </RibbonMenu>

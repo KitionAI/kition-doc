@@ -45,7 +45,7 @@ async fn a_shape_named_by_id_does_not_hold_its_paragraph_index() {
         if same {
             f.colleague(&[("drawing.transform", json!({ "ids": [ids[0]], "rotateBy": 45 }))]);
         } else {
-            f.colleague(&[("para.insert", json!({ "before": 0, "text": "Peer paragraph" }))]);
+            f.colleague(&[("paragraph.insert", json!({ "before": 0, "text": "Peer paragraph" }))]);
         }
         let before = std::fs::read(f.root.join(FILE)).unwrap();
         let answer = f.run(Some(basis), json!([{ "on": [ids[0]], "command": "arrange.rotation", "params": { "degrees": 90 } }])).await;
@@ -68,7 +68,7 @@ async fn bitmap_adjustments_hold_media_but_allow_other_picture_metadata() {
     let (bytes, picture) = with_picture();
     let mut doc = DocDocument::open(FILE, &bytes).unwrap();
     doc.execute("caret.set", json!({ "pos": { "block": 3, "off": 0 } })).unwrap();
-    doc.execute("insert.picture", json!({ "data": base64(&png([30, 50, 200])), "width": 40 })).unwrap();
+    doc.execute("image.insert", json!({ "data": base64(&png([30, 50, 200])), "width": 40 })).unwrap();
     let bytes = doc.save(None).unwrap();
     for same in [false, true] {
         let f = Fixture::with(Guard::Premise, &bytes);
@@ -79,12 +79,12 @@ async fn bitmap_adjustments_hold_media_but_allow_other_picture_metadata() {
                 json!({ "anchor": { "block": if same { 4 } else { 3 }, "off": 0 }, "focus": { "block": if same { 4 } else { 3 }, "off": 3 } }),
             ),
             (
-                if same { "picture.color" } else { "picture.altText" },
+                if same { "image.color" } else { "image.altText" },
                 if same { json!({ "mode": "grayscale" }) } else { json!({ "text": "Peer picture" }) },
             ),
         ]);
         let before = std::fs::read(f.root.join(FILE)).unwrap();
-        let answer = f.run(Some(basis), json!([{ "on": [picture], "command": "picture.color", "params": { "mode": "grayscale" } }])).await;
+        let answer = f.run(Some(basis), json!([{ "on": [picture], "command": "image.color", "params": { "mode": "grayscale" } }])).await;
         if same {
             conflict(&answer.unwrap_err(), "changed");
             assert_eq!(std::fs::read(f.root.join(FILE)).unwrap(), before);
@@ -105,7 +105,7 @@ async fn bitmap_adjustments_hold_media_but_allow_other_picture_metadata() {
             assert_eq!(colors.len(), 2);
             assert_eq!(colors.iter().filter(|pixel| **pixel == [30, 50, 200]).count(), 1);
             assert_eq!(colors.iter().filter(|pixel| pixel[0] == pixel[1] && pixel[1] == pixel[2]).count(), 1);
-            let paragraph = f.disk().execute("document.paragraph", json!({ "path": [3] })).unwrap();
+            let paragraph = f.disk().execute("file.paragraph", json!({ "path": [3] })).unwrap();
             assert!(paragraph.to_string().contains("Peer picture"), "{paragraph}");
         }
         f.close().await;
@@ -118,7 +118,7 @@ async fn watermark_holds_its_settings_without_the_caret_paragraph() {
         let f = Fixture::new(Guard::Premise);
         let basis = f.basis().await;
         if same {
-            f.colleague(&[("design.pageColor", json!({ "color": "EECCAA" }))]);
+            f.colleague(&[("page.color", json!({ "color": "EECCAA" }))]);
         } else {
             f.colleague(&[
                 ("select.range", json!({ "anchor": { "block": 0, "off": 0 }, "focus": { "block": 0, "off": 5 } })),
@@ -126,14 +126,14 @@ async fn watermark_holds_its_settings_without_the_caret_paragraph() {
             ]);
         }
         let before = std::fs::read(f.root.join(FILE)).unwrap();
-        let answer = f.run(Some(basis), json!([{ "command": "design.watermark", "params": { "text": "Agent" } }])).await;
+        let answer = f.run(Some(basis), json!([{ "command": "page.watermark", "params": { "text": "Agent" } }])).await;
         if same {
             conflict(&answer.unwrap_err(), "changed");
             assert_eq!(std::fs::read(f.root.join(FILE)).unwrap(), before);
         } else {
             answer.unwrap();
             assert_eq!(f.texts(), TEXTS);
-            let paragraph = f.disk().execute("document.paragraph", json!({ "path": [0] })).unwrap();
+            let paragraph = f.disk().execute("file.paragraph", json!({ "path": [0] })).unwrap();
             assert_eq!(paragraph["paragraph"]["runs"][0]["props"]["bold"], true);
         }
         f.close().await;

@@ -11,12 +11,12 @@ use crate::{CmdError, CmdResult, CommandSpec, Session, p};
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("para.alignLeft", "Align Left", "Home › Paragraph", |s, _| align(s, Align::Left)).key("Mod+L"),
-        CommandSpec::new("para.alignCenter", "Center", "Home › Paragraph", |s, _| align(s, Align::Center)).key("Mod+E"),
-        CommandSpec::new("para.alignRight", "Align Right", "Home › Paragraph", |s, _| align(s, Align::Right)).key("Mod+R"),
-        CommandSpec::new("para.justify", "Justify", "Home › Paragraph", |s, _| align(s, Align::Justify)).key("Mod+J"),
-        CommandSpec::new("para.distribute", "Distributed", "Home › Paragraph", |s, _| align(s, Align::Distribute)).key("Mod+Shift+J"),
-        CommandSpec::new("para.align", "Alignment", "Home › Paragraph", |s, v| {
+        CommandSpec::new("format.alignLeft", "Align Left", "Home › Paragraph", |s, _| align(s, Align::Left)).key("Mod+L"),
+        CommandSpec::new("format.alignCenter", "Center", "Home › Paragraph", |s, _| align(s, Align::Center)).key("Mod+E"),
+        CommandSpec::new("format.alignRight", "Align Right", "Home › Paragraph", |s, _| align(s, Align::Right)).key("Mod+R"),
+        CommandSpec::new("format.justify", "Justify", "Home › Paragraph", |s, _| align(s, Align::Justify)).key("Mod+J"),
+        CommandSpec::new("paragraph.distribute", "Distributed", "Home › Paragraph", |s, _| align(s, Align::Distribute)).key("Mod+Shift+J"),
+        CommandSpec::new("paragraph.align", "Alignment", "Home › Paragraph", |s, v| {
             let a = match p::req_str(v, "value")? {
                 "left" => Align::Left,
                 "center" => Align::Center,
@@ -32,13 +32,13 @@ pub fn specs() -> Vec<CommandSpec> {
             set_align(s, a)
         })
         .params(r#"{"value": "left|center|right|justify|distribute (as seen on the page) | start|end (reading direction)"}"#),
-        CommandSpec::new("para.rtl", "Right-to-Left Text Direction", "Home › Paragraph", |s, v| direction(s, v, true))
+        CommandSpec::new("paragraph.rtl", "Right-to-Left Text Direction", "Home › Paragraph", |s, v| direction(s, v, true))
             .params(r#"{"value"?: bool (false = left to right)}"#),
-        CommandSpec::new("para.ltr", "Left-to-Right Text Direction", "Home › Paragraph", |s, v| direction(s, v, false))
+        CommandSpec::new("paragraph.ltr", "Left-to-Right Text Direction", "Home › Paragraph", |s, v| direction(s, v, false))
             .params(r#"{"value"?: bool (false = right to left)}"#),
-        CommandSpec::new("para.indent", "Increase Indent", "Home › Paragraph", indent).key("Mod+M"),
-        CommandSpec::new("para.outdent", "Decrease Indent", "Home › Paragraph", outdent).key("Mod+Shift+M"),
-        CommandSpec::new("para.hangingIndent", "Hanging Indent", "Home › Paragraph › Paragraph", |s, _| {
+        CommandSpec::new("paragraph.indent", "Increase Indent", "Home › Paragraph", indent).key("Mod+M"),
+        CommandSpec::new("paragraph.outdent", "Decrease Indent", "Home › Paragraph", outdent).key("Mod+Shift+M"),
+        CommandSpec::new("paragraph.hangingIndent", "Hanging Indent", "Home › Paragraph › Paragraph", |s, _| {
             fmt(s, &|p| {
                 let l = p.indent_left.unwrap_or(0.0) + 36.0;
                 p.indent_left = Some(l);
@@ -46,14 +46,14 @@ pub fn specs() -> Vec<CommandSpec> {
             })
         })
         .key("Mod+T"),
-        CommandSpec::new("para.removeHanging", "Reduce Hanging Indent", "Home › Paragraph › Paragraph", |s, _| {
+        CommandSpec::new("paragraph.removeHanging", "Reduce Hanging Indent", "Home › Paragraph › Paragraph", |s, _| {
             fmt(s, &|p| {
                 p.indent_left = Some((p.indent_left.unwrap_or(0.0) - 36.0).max(0.0));
                 p.indent_first = Some(0.0);
             })
         })
         .key("Mod+Shift+T"),
-        CommandSpec::new("para.indents", "Indents", "Layout › Paragraph", |s, v| {
+        CommandSpec::new("paragraph.indents", "Indents", "Layout › Paragraph", |s, v| {
             let (l, r, f) = (p::f32(v, "left"), p::f32(v, "right"), p::f32(v, "firstLine"));
             fmt(s, &|p| {
                 if let Some(x) = l {
@@ -68,37 +68,37 @@ pub fn specs() -> Vec<CommandSpec> {
             })
         })
         .params(r#"{"left"?: pt, "right"?: pt, "firstLine"?: pt (negative = hanging)}"#),
-        CommandSpec::new("para.lineSpacing", "Line and Paragraph Spacing", "Home › Paragraph", line_spacing)
+        CommandSpec::new("paragraph.lineSpacing", "Line and Paragraph Spacing", "Home › Paragraph", line_spacing)
             .params(r#"{"value": number (multiple) } | {"atLeast": pt} | {"exactly": pt}"#),
-        CommandSpec::new("para.single", "Single Spacing", "Home › Paragraph › Line Spacing", |s, _| ls(s, LineSpacing::Multiple(1.0))).key("Mod+1"),
-        CommandSpec::new("para.double", "Double Spacing", "Home › Paragraph › Line Spacing", |s, _| ls(s, LineSpacing::Multiple(2.0))).key("Mod+2"),
-        CommandSpec::new("para.oneAndHalf", "1.5 Line Spacing", "Home › Paragraph › Line Spacing", |s, _| ls(s, LineSpacing::Multiple(1.5))).key("Mod+5"),
-        CommandSpec::new("para.spacing", "Paragraph Spacing", "Layout › Paragraph", |s, v| {
+        CommandSpec::new("paragraph.single", "Single Spacing", "Home › Paragraph › Line Spacing", |s, _| ls(s, LineSpacing::Multiple(1.0))).key("Mod+1"),
+        CommandSpec::new("paragraph.double", "Double Spacing", "Home › Paragraph › Line Spacing", |s, _| ls(s, LineSpacing::Multiple(2.0))).key("Mod+2"),
+        CommandSpec::new("paragraph.oneAndHalf", "1.5 Line Spacing", "Home › Paragraph › Line Spacing", |s, _| ls(s, LineSpacing::Multiple(1.5))).key("Mod+5"),
+        CommandSpec::new("paragraph.spacing", "Paragraph Spacing", "Layout › Paragraph", |s, v| {
             let (b, a) = (p::f32(v, "before"), p::f32(v, "after"));
             point_spacing(s, b, a)
         })
         .params(r#"{"before"?: pt, "after"?: pt}"#),
-        CommandSpec::new("para.addSpaceBefore", "Add Space Before Paragraph", "Home › Paragraph › Line Spacing", |s, _| {
+        CommandSpec::new("paragraph.addSpaceBefore", "Add Space Before Paragraph", "Home › Paragraph › Line Spacing", |s, _| {
             let paragraph = cur(s);
             let has = paragraph.space_before > 0.0 || paragraph.space_before_lines.is_some_and(|lines| lines > 0) || paragraph.space_before_auto;
             point_spacing(s, Some(if has { 0.0 } else { 12.0 }), None)
         })
         .key("Mod+0"),
-        CommandSpec::new("para.removeSpaceAfter", "Remove Space After Paragraph", "Home › Paragraph › Line Spacing", |s, _| {
+        CommandSpec::new("paragraph.removeSpaceAfter", "Remove Space After Paragraph", "Home › Paragraph › Line Spacing", |s, _| {
             let paragraph = cur(s);
             let has = paragraph.space_after > 0.0 || paragraph.space_after_lines.is_some_and(|lines| lines > 0) || paragraph.space_after_auto;
             point_spacing(s, None, Some(if has { 0.0 } else { 8.0 }))
         }),
-        CommandSpec::new("para.style", "Apply Style", "Home › Styles", apply_style).params(r#"{"style": string (name or id)}"#),
-        CommandSpec::new("para.normal", "Normal Style", "Home › Styles", |s, _| apply_style(s, &json!({"style": "Normal"}))).key("Mod+Shift+N"),
-        CommandSpec::new("para.heading1", "Heading 1", "Home › Styles", |s, _| apply_style(s, &json!({"style": "Heading1"}))).key("Mod+Alt+1"),
-        CommandSpec::new("para.heading2", "Heading 2", "Home › Styles", |s, _| apply_style(s, &json!({"style": "Heading2"}))).key("Mod+Alt+2"),
-        CommandSpec::new("para.heading3", "Heading 3", "Home › Styles", |s, _| apply_style(s, &json!({"style": "Heading3"}))).key("Mod+Alt+3"),
-        CommandSpec::new("para.bullets", "Bullets", "Home › Paragraph", |s, v| list(s, v, ListKind::Bullet)).params(r#"{"kind"?: "bullet" | single char, "off"?: bool}"#).key("Mod+Shift+L"),
-        CommandSpec::new("para.numbering", "Numbering", "Home › Paragraph", |s, v| list(s, v, ListKind::Numbered))
+        CommandSpec::new("paragraph.style", "Apply Style", "Home › Styles", apply_style).params(r#"{"style": string (name or id)}"#),
+        CommandSpec::new("paragraph.normal", "Normal Style", "Home › Styles", |s, _| apply_style(s, &json!({"style": "Normal"}))).key("Mod+Shift+N"),
+        CommandSpec::new("paragraph.heading1", "Heading 1", "Home › Styles", |s, _| apply_style(s, &json!({"style": "Heading1"}))).key("Mod+Alt+1"),
+        CommandSpec::new("paragraph.heading2", "Heading 2", "Home › Styles", |s, _| apply_style(s, &json!({"style": "Heading2"}))).key("Mod+Alt+2"),
+        CommandSpec::new("paragraph.heading3", "Heading 3", "Home › Styles", |s, _| apply_style(s, &json!({"style": "Heading3"}))).key("Mod+Alt+3"),
+        CommandSpec::new("paragraph.bullets", "Bullets", "Home › Paragraph", |s, v| list(s, v, ListKind::Bullet)).params(r#"{"kind"?: "bullet" | single char, "off"?: bool}"#).key("Mod+Shift+L"),
+        CommandSpec::new("paragraph.numbering", "Numbering", "Home › Paragraph", |s, v| list(s, v, ListKind::Numbered))
             .params(r#"{"kind"?: "numbered|numberedParen|upperLetter|lowerLetter|lowerRoman|outline", "off"?: bool}"#),
-        CommandSpec::new("para.multilevel", "Multilevel List", "Home › Paragraph", |s, v| list(s, v, ListKind::Legal)).params(r#"{"kind"?: "legal|outline"}"#),
-        CommandSpec::new("para.listLevel", "Change List Level", "Home › Paragraph › Bullets", |s, v| {
+        CommandSpec::new("paragraph.multilevel", "Multilevel List", "Home › Paragraph", |s, v| list(s, v, ListKind::Legal)).params(r#"{"kind"?: "legal|outline"}"#),
+        CommandSpec::new("paragraph.listLevel", "Change List Level", "Home › Paragraph › Bullets", |s, v| {
             let lvl = p::u64(v, "level").unwrap_or(0).min(8) as u8;
             fmt(s, &|p| {
                 if let Some(n) = p.numbering.as_mut() {
@@ -107,47 +107,47 @@ pub fn specs() -> Vec<CommandSpec> {
             })
         })
         .params(r#"{"level": 0-8}"#),
-        CommandSpec::new("para.restartNumbering", "Restart at 1", "Home › Paragraph › Numbering", restart_numbering),
-        CommandSpec::new("para.shading", "Shading", "Home › Paragraph", |s, v| {
+        CommandSpec::new("paragraph.restartNumbering", "Restart at 1", "Home › Paragraph › Numbering", restart_numbering),
+        CommandSpec::new("paragraph.shading", "Shading", "Home › Paragraph", |s, v| {
             let c = p::str(v, "color").and_then(Rgb::parse);
             fmt(s, &|p| p.shading = c)
         })
         .params(r#"{"color": "RRGGBB" | null}"#),
-        CommandSpec::new("para.borders", "Borders", "Home › Paragraph", borders).params(
+        CommandSpec::new("paragraph.borders", "Borders", "Home › Paragraph", borders).params(
             r#"{"kind": "bottom|top|left|right|none|all|outside|inside|horizontalLine", "width"?: pt, "color"?: "RRGGBB", "style"?: "single|double|dotted|dashed|thick|triple|dotDash|wave", "sides"?: Sides} where Sides = {"top"|"left"|"bottom"|"right"|"between": {"style"?, "width"?: pt, "color"?: "RRGGBB"} | null}: exactly these sides (others off), instead of `kind`"#,
         ),
-        CommandSpec::new("para.sort", "Sort", "Home › Paragraph", sort).params(r#"{"descending"?: bool}"#),
-        CommandSpec::new("para.keepNext", "Keep with Next", "Home › Paragraph › Line and Page Breaks", |s, v| tog(s, v, |p| p.keep_next, |p, b| p.keep_next = Some(b))),
-        CommandSpec::new("para.keepLines", "Keep Lines Together", "Home › Paragraph › Line and Page Breaks", |s, v| tog(s, v, |p| p.keep_lines, |p, b| p.keep_lines = Some(b))),
-        CommandSpec::new("para.pageBreakBefore", "Page Break Before", "Home › Paragraph › Line and Page Breaks", |s, v| {
+        CommandSpec::new("paragraph.sort", "Sort", "Home › Paragraph", sort).params(r#"{"descending"?: bool}"#),
+        CommandSpec::new("paragraph.keepNext", "Keep with Next", "Home › Paragraph › Line and Page Breaks", |s, v| tog(s, v, |p| p.keep_next, |p, b| p.keep_next = Some(b))),
+        CommandSpec::new("paragraph.keepLines", "Keep Lines Together", "Home › Paragraph › Line and Page Breaks", |s, v| tog(s, v, |p| p.keep_lines, |p, b| p.keep_lines = Some(b))),
+        CommandSpec::new("paragraph.pageBreakBefore", "Page Break Before", "Home › Paragraph › Line and Page Breaks", |s, v| {
             tog(s, v, |p| p.page_break_before, |p, b| p.page_break_before = Some(b))
         }),
-        CommandSpec::new("para.widowControl", "Widow/Orphan Control", "Home › Paragraph › Line and Page Breaks", |s, v| {
+        CommandSpec::new("paragraph.widowControl", "Widow/Orphan Control", "Home › Paragraph › Line and Page Breaks", |s, v| {
             tog(s, v, |p| p.widow_control, |p, b| p.widow_control = Some(b))
         }),
-        CommandSpec::new("para.asianTypography", "Asian Typography", "Home › Paragraph › Asian Typography", asian_typography).params(
+        CommandSpec::new("paragraph.asianTypography", "Asian Typography", "Home › Paragraph › Asian Typography", asian_typography).params(
             r#"{"kinsoku"?: bool (East Asian line-breaking rules), "wordWrap"?: bool (false: Latin words may break at any character), "overflowPunct"?: bool (hanging punctuation), "topLinePunct"?: bool (compress punctuation at the start of a line), "autoSpaceDE"?: bool (space between Asian and Latin text), "autoSpaceDN"?: bool (space between Asian text and numbers)} — flags left out stay as they are; returns the flags at the caret"#,
         ),
-        CommandSpec::new("para.tabs", "Tabs", "Home › Paragraph › Paragraph", tabs).params(
+        CommandSpec::new("paragraph.tabs", "Tabs", "Home › Paragraph › Paragraph", tabs).params(
             r#"{"tabs"?: [TabStop] (replace the direct stops), "set"?: [TabStop], "clear"?: [pt], "clearAll"?: bool, "default"?: pt} where TabStop = {"pos": pt, "align"?: "left|center|right|decimal|bar", "leader"?: "none|dot|hyphen|underscore|middleDot"}"#,
         ),
-        CommandSpec::new("para.outlineLevel", "Outline Level", "Home › Paragraph › Paragraph", |s, v| {
+        CommandSpec::new("paragraph.outlineLevel", "Outline Level", "Home › Paragraph › Paragraph", |s, v| {
             let l = p::u64(v, "level").map(|x| x.min(9) as u8);
             fmt(s, &|p| p.outline_level = l)
         }),
-        CommandSpec::new("para.set", "Set Paragraph Formatting", "Home › Paragraph › Paragraph", |s, v| {
+        CommandSpec::new("paragraph.set", "Set Paragraph Formatting", "Home › Paragraph › Paragraph", |s, v| {
             let props: ParaProps = serde_json::from_value(v.get("props").cloned().unwrap_or(Value::Null)).map_err(|e| CmdError::Params(e.to_string()))?;
             fmt(s, &|p| p.overlay(&props))
         })
         .params(r#"{"props": ParaProps}"#),
-        CommandSpec::new("para.dialog", "Paragraph Settings", "Home › Paragraph", dialog)
-            .params(r#"{"path"?: [n] (default: the caret's paragraph), "story"?: Story} → {"props": the paragraph's formatting as para.set takes it, "direct": its own (not inherited) settings, "anchor", "focus"}"#)
+        CommandSpec::new("paragraph.dialog", "Paragraph Settings", "Home › Paragraph", dialog)
+            .params(r#"{"path"?: [n] (default: the caret's paragraph), "story"?: Story} → {"props": the paragraph's formatting as paragraph.set takes it, "direct": its own (not inherited) settings, "anchor", "focus"}"#)
             .pure(),
-        CommandSpec::new("styles.create", "Create a Style", "Home › Styles", create_style).params(r#"{"name": string, "basedOn"?: string, "fromSelection"?: bool}"#),
-        CommandSpec::new("styles.modify", "Modify Style", "Home › Styles", modify_style).params(r#"{"style": string, "chr"?: CharProps, "para"?: ParaProps, "name"?: string, "next"?: string}"#),
-        CommandSpec::new("styles.updateToMatch", "Update Style to Match Selection", "Home › Styles", update_to_match).params(r#"{"style"?: string}"#),
-        CommandSpec::new("styles.delete", "Delete Style", "Home › Styles", delete_style).params(r#"{"style": string (name or id; custom styles only)}"#),
-        CommandSpec::new("styles.manage", "Manage Styles", "Home › Styles", |s, v| {
+        CommandSpec::new("style.add", "Create a Style", "Home › Styles", create_style).params(r#"{"name": string, "basedOn"?: string, "fromSelection"?: bool}"#),
+        CommandSpec::new("style.set", "Modify Style", "Home › Styles", modify_style).params(r#"{"style": string, "chr"?: CharProps, "para"?: ParaProps, "name"?: string, "next"?: string}"#),
+        CommandSpec::new("style.updateToMatch", "Update Style to Match Selection", "Home › Styles", update_to_match).params(r#"{"style"?: string}"#),
+        CommandSpec::new("style.delete", "Delete Style", "Home › Styles", delete_style).params(r#"{"style": string (name or id; custom styles only)}"#),
+        CommandSpec::new("style.manage", "Manage Styles", "Home › Styles", |s, v| {
             let sort = p::str(v, "sort").unwrap_or("recommended");
             if !matches!(sort, "recommended" | "alphabetical") {
                 return Err(CmdError::Params(format!("unknown sort `{sort}` (recommended|alphabetical)")));
@@ -158,25 +158,25 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"sort"?: "recommended|alphabetical"} → [{id, name, type: "paragraph|character|linked|table", builtIn, inGallery, hidden, basedOn, priority, format}]"#)
         .pure(),
-        CommandSpec::new("styles.setVisibility", "Show or Hide Style", "Home › Styles", set_visibility)
+        CommandSpec::new("style.setVisibility", "Show or Hide Style", "Home › Styles", set_visibility)
             .params(r#"{"style": string, "gallery"?: bool (Styles gallery, w:qFormat), "hidden"?: bool (hidden from style lists, w:semiHidden)}"#),
-        CommandSpec::new("styles.list", "Styles", "Home › Styles", |s, _| {
+        CommandSpec::new("style.list", "Styles", "Home › Styles", |s, _| {
             Ok(Value::Array(
                 s.doc.styles.styles.iter().map(|st| json!({"id": st.id, "name": st.name, "kind": st.kind, "quick": st.quick, "basedOn": st.based_on})).collect(),
             ))
         })
         .pure(),
-        CommandSpec::new("styles.pane", "Styles Pane", "Home › Styles", |s, _| {
+        CommandSpec::new("style.pane", "Styles Pane", "Home › Styles", |s, _| {
             s.view.styles_pane = !s.view.styles_pane;
             sel_result(s)
         })
         .key("Mod+Alt+Shift+S")
         .pure(),
-        CommandSpec::new("styles.apply", "Apply Styles", "Home › Styles", apply_styles)
+        CommandSpec::new("style.apply", "Apply Styles", "Home › Styles", apply_styles)
             .params(r#"{"style"?: string (name or id)}"#)
             .key("Mod+Shift+S")
             .pure(),
-        CommandSpec::new("styles.addToGallery", "Add to Style Gallery", "Home › Styles", |s, v| {
+        CommandSpec::new("style.addToGallery", "Add to Style Gallery", "Home › Styles", |s, v| {
             let id = style_id(s, p::req_str(v, "style")?)?;
             let on = p::bool(v, "value").unwrap_or(true);
             if let Some(st) = s.doc.styles.get_mut(&id) {
@@ -356,7 +356,7 @@ fn style_id(s: &Session, name: &str) -> Result<String, CmdError> {
     s.doc.styles.find(name).map(|x| x.id.clone()).ok_or_else(|| CmdError::Params(format!("no style `{name}`")))
 }
 
-/// Apply Styles. Pure itself: with a `style` it runs `para.style` as its own command (so undo,
+/// Apply Styles. Pure itself: with a `style` it runs `paragraph.style` as its own command (so undo,
 /// protection, macro recording and Repeat see a real edit); without one it only shows the
 /// styles pane, which is view state and never an edit.
 fn apply_styles(s: &mut Session, v: &Value) -> CmdResult {
@@ -365,7 +365,7 @@ fn apply_styles(s: &mut Session, v: &Value) -> CmdResult {
             s.view.styles_pane = true;
             Ok(json!({"pane": true}))
         }
-        Some(Value::String(name)) if !name.trim().is_empty() => s.run("para.style", &json!({"style": name})),
+        Some(Value::String(name)) if !name.trim().is_empty() => s.run("paragraph.style", &json!({"style": name})),
         Some(Value::String(_)) => Err(CmdError::Params("`style` must not be empty".into())),
         Some(_) => Err(CmdError::Params("`style` must be a string (name or id)".into())),
     }
@@ -893,7 +893,7 @@ pub fn touch_all(s: &mut Session) {
 }
 
 /// Home › Paragraph › Paragraph Settings: the paragraph's formatting as the dialog shows it (the
-/// caret's paragraph, or the one at `path` in `story`), in the form `para.set` takes, with the
+/// caret's paragraph, or the one at `path` in `story`), in the form `paragraph.set` takes, with the
 /// selection. The editor opens its dialog on it.
 fn dialog(s: &mut Session, v: &Value) -> CmdResult {
     let path = match v.get("path") {

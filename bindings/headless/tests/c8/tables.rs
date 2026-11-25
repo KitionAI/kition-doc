@@ -13,9 +13,9 @@
 //! - W3 at a point in the text (a caret at block 2, offset 6, then typing `+`): necessary when
 //!   block 2 is another paragraph or none, or its characters `[0,6)` or the mark of character 5
 //!   differ.
-//! - W4 structural (`para.insert` after block 2): necessary when block 2 is another paragraph or
+//! - W4 structural (`paragraph.insert` after block 2): necessary when block 2 is another paragraph or
 //!   none, or its paragraph properties differ (the new paragraph takes them).
-//! - W5 replace by index (`para.text` of block 2): necessary when block 2 is another paragraph or
+//! - W5 replace by index (`paragraph.text` of block 2): necessary when block 2 is another paragraph or
 //!   none, or any of its characters differ (the write replaces them all).
 //!
 //! A write is then **applied**, **refused necessary**, **refused false** (refused, not
@@ -68,14 +68,14 @@ fn change(kind: usize) -> Vec<(&'static str, Value)> {
         1 => type_at(2, 0, "Z"),
         2 => type_at(2, 7, "Z"),
         3 => type_at(2, TEXTS[2].len(), "Z"),
-        4 => vec![("para.insert", json!({ "before": 2, "text": "Inserted" }))],
-        5 => vec![("para.insert", json!({ "after": 3, "text": "After" }))],
+        4 => vec![("paragraph.insert", json!({ "before": 2, "text": "Inserted" }))],
+        5 => vec![("paragraph.insert", json!({ "after": 3, "text": "After" }))],
         6 => vec![sel((1, TEXTS[1].len()), (2, TEXTS[2].len())), ("text.delete", json!({}))],
         7 => vec![sel((4, 0), (4, 5)), ("format.bold", json!({}))],
         8 => vec![sel((2, 6), (2, 10)), ("format.bold", json!({}))],
         9 => vec![sel((0, 0), (1, 0)), ("text.delete", json!({}))],
         10 => vec![sel((2, 0), (2, 2)), ("format.italic", json!({}))],
-        _ => vec![sel((2, 0), (2, 0)), ("para.alignCenter", json!({}))],
+        _ => vec![sel((2, 0), (2, 0)), ("format.alignCenter", json!({}))],
     }
 }
 
@@ -95,7 +95,7 @@ fn paragraphs(doc: &mut DocDocument) -> Vec<Para> {
     let blocks = doc.inspect().unwrap()["blocks"].clone();
     let mut out = Vec::new();
     for (i, block) in blocks.as_array().unwrap().iter().enumerate() {
-        let answer = doc.execute("document.paragraph", json!({ "path": [i] })).unwrap();
+        let answer = doc.execute("file.paragraph", json!({ "path": [i] })).unwrap();
         let p = &answer["paragraph"];
         let text = p["text"].as_str().unwrap_or_default().to_owned();
         let mut marks = Vec::new();
@@ -138,8 +138,8 @@ fn write(form: usize, id: &Value) -> Value {
         0 => json!([by_id(id, s, e), bold()]),
         1 => json!([by_index(2, s, e), bold()]),
         2 => json!([by_index(2, s, s), { "command": "text.insert", "params": { "text": "+" } }]),
-        3 => json!([{ "command": "para.insert", "params": { "after": 2, "text": "Mine" } }]),
-        _ => json!([{ "command": "para.text", "params": { "index": 2, "text": "Replaced" } }]),
+        3 => json!([{ "command": "paragraph.insert", "params": { "after": 2, "text": "Mine" } }]),
+        _ => json!([{ "command": "paragraph.text", "params": { "index": 2, "text": "Replaced" } }]),
     }
 }
 

@@ -19,11 +19,11 @@ fn comment_id(s: &Session, v: &Value) -> Result<Option<u32>, CmdError> {
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("review.newComment", "New Comment", "Review › Comments", new_comment).key("Mod+Alt+M").params(r#"{"text": string}"#),
-        CommandSpec::new("review.reply", "Reply", "Review › Comments", reply).params(r#"{"id": n, "text": string}"#),
-        CommandSpec::new("review.editComment", "Edit Comment", "Review › Comments", edit_comment).params(r#"{"id": n, "text": string}"#),
-        CommandSpec::new("review.deleteComment", "Delete", "Review › Comments", delete_comment).params(r#"{"id"?: n, "all"?: bool}"#),
-        CommandSpec::new("review.resolveComment", "Resolve", "Review › Comments", |s, v| {
+        CommandSpec::new("comment.new", "New Comment", "Review › Comments", new_comment).key("Mod+Alt+M").params(r#"{"text": string}"#),
+        CommandSpec::new("comment.replyCurrent", "Reply", "Review › Comments", reply).params(r#"{"id": n, "text": string}"#),
+        CommandSpec::new("comment.edit", "Edit Comment", "Review › Comments", edit_comment).params(r#"{"id": n, "text": string}"#),
+        CommandSpec::new("comment.deleteCurrent", "Delete", "Review › Comments", delete_comment).params(r#"{"id"?: n, "all"?: bool}"#),
+        CommandSpec::new("comment.resolveCurrent", "Resolve", "Review › Comments", |s, v| {
             let id = comment_id(s, v)?.or_else(|| comment_at_caret(s)).ok_or_else(|| CmdError::Params("`id` required".into()))?;
             // A reply's thread is resolved: the flag is the thread's first comment's (C8-doc-4).
             let mut id = id;
@@ -37,9 +37,9 @@ pub fn specs() -> Vec<CommandSpec> {
             c.resolved = p::bool(v, "value").unwrap_or(!c.resolved);
             sel_result(s)
         }),
-        CommandSpec::new("review.nextComment", "Next", "Review › Comments", |s, _| nav_comment(s, 1)).pure(),
-        CommandSpec::new("review.previousComment", "Previous", "Review › Comments", |s, _| nav_comment(s, -1)).pure(),
-        CommandSpec::new("review.comments", "Show Comments", "Review › Comments", list_comments).pure(),
+        CommandSpec::new("comment.next", "Next", "Review › Comments", |s, _| nav_comment(s, 1)).pure(),
+        CommandSpec::new("comment.previous", "Previous", "Review › Comments", |s, _| nav_comment(s, -1)).pure(),
+        CommandSpec::new("comment.pane", "Show Comments", "Review › Comments", list_comments).pure(),
         // Comment threads (Kition platform rule M23), as kit-editor's comments panel shows them.
         CommandSpec::new("comment.threads", "Comment Threads", "Comments", threads)
             .params(r#"{} → [{id, anchor: {object, field?, range?, quote?, place?: {page, x, y, height}}, resolved, comments: [{id, author, name, body, created}]}]"#)
@@ -52,36 +52,36 @@ pub fn specs() -> Vec<CommandSpec> {
         CommandSpec::new("comment.delete", "Delete Comment", "Comments", delete_from_thread)
             .params(r#"{"thread": string, "comment"?: string (a reply; omitted or the first comment: the whole thread)}"#),
         CommandSpec::new("comment.goto", "Go to Comment", "Comments", goto_thread).params(r#"{"thread": string}"#).pure(),
-        CommandSpec::new("review.trackChanges", "Track Changes", "Review › Tracking", |s, v| {
+        CommandSpec::new("change.track", "Track Changes", "Review › Tracking", |s, v| {
             s.doc.settings.track_changes = p::bool(v, "value").unwrap_or(!s.doc.settings.track_changes);
             Ok(json!({"value": s.doc.settings.track_changes}))
         })
         .params(r#"{"value"?: bool (omit to toggle)}"#)
         .key("Mod+Shift+E"),
-        CommandSpec::new("review.acceptAll", "Accept All Changes", "Review › Changes", |s, _| resolve_all(s, true)),
-        CommandSpec::new("review.rejectAll", "Reject All Changes", "Review › Changes", |s, _| resolve_all(s, false)),
-        CommandSpec::new("review.accept", "Accept", "Review › Changes", |s, _| resolve_sel(s, true)),
-        CommandSpec::new("review.reject", "Reject", "Review › Changes", |s, _| resolve_sel(s, false)),
-        CommandSpec::new("review.nextChange", "Next Change", "Review › Changes", |s, _| nav_change(s, 1)).pure(),
-        CommandSpec::new("review.previousChange", "Previous Change", "Review › Changes", |s, _| nav_change(s, -1)).pure(),
-        CommandSpec::new("review.markup", "Display for Review", "Review › Tracking", |s, v| {
+        CommandSpec::new("change.acceptAll", "Accept All Changes", "Review › Changes", |s, _| resolve_all(s, true)),
+        CommandSpec::new("change.rejectAll", "Reject All Changes", "Review › Changes", |s, _| resolve_all(s, false)),
+        CommandSpec::new("change.accept", "Accept", "Review › Changes", |s, _| resolve_sel(s, true)),
+        CommandSpec::new("change.reject", "Reject", "Review › Changes", |s, _| resolve_sel(s, false)),
+        CommandSpec::new("change.next", "Next Change", "Review › Changes", |s, _| nav_change(s, 1)).pure(),
+        CommandSpec::new("change.previous", "Previous Change", "Review › Changes", |s, _| nav_change(s, -1)).pure(),
+        CommandSpec::new("change.markup", "Display for Review", "Review › Tracking", |s, v| {
             s.view.show_markup = p::str(v, "value").map(|m| m != "noMarkup" && m != "original").unwrap_or(!s.view.show_markup);
             // Without markup, deletions leave the layout.
             s.relayout();
             Ok(json!({"showMarkup": s.view.show_markup}))
         })
         .pure(),
-        CommandSpec::new("review.trackingOptions", "Track Changes Options", "Review › Tracking", tracking_options)
+        CommandSpec::new("change.options", "Track Changes Options", "Review › Tracking", tracking_options)
             .params(
                 r#"{"comments"?: bool, "ink"?: bool, "insertionsDeletions"?: bool, "formatting"?: bool, "balloons"?: "revisions|inline|commentsAndFormatting", "insertMark"?: "underline|doubleUnderline|bold|italic|strikethrough|colorOnly|none", "insertColor"?: "byAuthor" | "RRGGBB", "deleteMark"?: "strikethrough|doubleStrikethrough|hidden|caret|hash|underline|colorOnly", "deleteColor"?: "byAuthor" | "RRGGBB", "changedLines"?: "outside|left|right|none", "changedLinesColor"?: "auto" | "RRGGBB", "trackFormatting"?: bool} → the options (omit all to read them)"#,
             )
             .pure(),
-        CommandSpec::new("review.wordCount", "Word Count", "Review › Proofing", word_count).params(r#"{"includeTextBoxes"?: bool}"#).pure(),
-        CommandSpec::new("review.changes", "Reviewing Pane", "Review › Tracking", list_changes).pure(),
-        CommandSpec::new("review.spelling", "Spelling & Grammar", "Review › Proofing", next_issue).key("F7").pure(),
-        CommandSpec::new("review.issues", "Proofing Issues", "Review › Proofing", all_issues).pure(),
-        CommandSpec::new("review.suggestions", "Spelling Suggestions", "Review › Proofing", suggestions).params(r#"{"pos"?: Pos}"#).pure(),
-        CommandSpec::new("review.addToDictionary", "Add to Dictionary", "Review › Proofing", |s, v| {
+        CommandSpec::new("file.wordCount", "Word Count", "Review › Proofing", word_count).params(r#"{"includeTextBoxes"?: bool}"#).pure(),
+        CommandSpec::new("change.list", "Reviewing Pane", "Review › Tracking", list_changes).pure(),
+        CommandSpec::new("spelling.check", "Spelling & Grammar", "Review › Proofing", next_issue).key("F7").pure(),
+        CommandSpec::new("spelling.issues", "Proofing Issues", "Review › Proofing", all_issues).pure(),
+        CommandSpec::new("spelling.suggestions", "Spelling Suggestions", "Review › Proofing", suggestions).params(r#"{"pos"?: Pos}"#).pure(),
+        CommandSpec::new("spelling.addToDictionary", "Add to Dictionary", "Review › Proofing", |s, v| {
             let w = match p::str(v, "word") {
                 Some(w) => w.to_string(),
                 None => issue_at(s, &s.sel.focus.clone())
@@ -97,7 +97,7 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"word"?: string}"#)
         .pure(),
-        CommandSpec::new("review.ignoreAll", "Ignore All", "Review › Proofing", |s, v| {
+        CommandSpec::new("spelling.ignoreAll", "Ignore All", "Review › Proofing", |s, v| {
             let w = match p::str(v, "word") {
                 Some(w) => w.to_string(),
                 None => issue_at(s, &s.sel.focus.clone())
@@ -109,7 +109,7 @@ pub fn specs() -> Vec<CommandSpec> {
             Ok(json!({"ignored": w}))
         })
         .pure(),
-        CommandSpec::new("review.applySuggestion", "Change", "Review › Proofing", |s, v| {
+        CommandSpec::new("spelling.applySuggestion", "Change", "Review › Proofing", |s, v| {
             let text = p::req_str(v, "text")?.to_string();
             let at = s.sel.focus.clone();
             if let Some((a, b, _)) = issue_at(s, &at) {
@@ -119,12 +119,12 @@ pub fn specs() -> Vec<CommandSpec> {
             sel_result(s)
         })
         .params(r#"{"text": string}"#),
-        CommandSpec::new("review.proofing", "Check Spelling as You Type", "File › Options › Proofing", |s, v| {
+        CommandSpec::new("spelling.proofing", "Check Spelling as You Type", "File › Options › Proofing", |s, v| {
             s.view.proofing = p::bool(v, "value").unwrap_or(!s.view.proofing);
             Ok(json!({"value": s.view.proofing}))
         })
         .pure(),
-        CommandSpec::new("review.thesaurus", "Thesaurus", "Review › Proofing", thesaurus).key("Shift+F7").pure(),
+        CommandSpec::new("spelling.thesaurus", "Thesaurus", "Review › Proofing", thesaurus).key("Shift+F7").pure(),
     ]
 }
 
@@ -837,7 +837,7 @@ fn tracking_options(s: &mut Session, v: &Value) -> CmdResult {
     Ok(tracking_json(&s.prefs.markup))
 }
 
-/// The Track Changes Options as `review.trackingOptions` takes them.
+/// The Track Changes Options as `change.options` takes them.
 pub fn tracking_json(m: &kition_doc_layout::display::MarkupOptions) -> Value {
     let hex = |c: Option<kition_doc_doc::Rgb>, auto: &str| c.map(|c| c.hex()).unwrap_or_else(|| auto.to_string());
     json!({
@@ -1152,14 +1152,14 @@ mod tests {
     #[test]
     fn a_comment_number_past_32_bits_names_no_comment() {
         let mut s = Session::new(Document::new());
-        s.run("document.setText", &json!({"text": "words to talk about"})).unwrap();
+        s.run("file.setText", &json!({"text": "words to talk about"})).unwrap();
         s.run("select.range", &json!({"anchor": {"block": 0, "off": 0}, "focus": {"block": 0, "off": 5}})).unwrap();
-        s.run("review.newComment", &json!({"text": "first"})).unwrap();
+        s.run("comment.new", &json!({"text": "first"})).unwrap();
         let first = *s.doc.comments.keys().next().unwrap();
         let past = u64::from(first) + (1u64 << 32);
-        assert!(s.run("review.deleteComment", &json!({"id": past})).is_err());
-        assert!(s.run("review.reply", &json!({"id": past, "text": "x"})).is_err());
-        assert!(s.run("review.resolveComment", &json!({"id": past})).is_err());
+        assert!(s.run("comment.deleteCurrent", &json!({"id": past})).is_err());
+        assert!(s.run("comment.replyCurrent", &json!({"id": past, "text": "x"})).is_err());
+        assert!(s.run("comment.resolveCurrent", &json!({"id": past})).is_err());
         assert_eq!(s.doc.comments.len(), 1);
         assert!(!s.doc.comments[&first].resolved);
     }
@@ -1170,22 +1170,22 @@ mod tests {
     #[test]
     fn a_comment_by_the_caret_is_the_one_the_caret_is_in() {
         let mut s = Session::new(Document::new());
-        s.run("document.setText", &json!({"text": "words to talk about"})).unwrap();
+        s.run("file.setText", &json!({"text": "words to talk about"})).unwrap();
         s.run("select.range", &json!({"anchor": {"block": 0, "off": 0}, "focus": {"block": 0, "off": 5}})).unwrap();
-        s.run("review.newComment", &json!({"text": "first"})).unwrap();
+        s.run("comment.new", &json!({"text": "first"})).unwrap();
         // The caret in "about", outside the comment on "words".
         s.run("select.range", &json!({"anchor": {"block": 0, "off": 18}, "focus": {"block": 0, "off": 18}})).unwrap();
-        assert!(s.run("review.deleteComment", &json!({})).is_err());
-        assert!(s.run("review.resolveComment", &json!({})).is_err());
+        assert!(s.run("comment.deleteCurrent", &json!({})).is_err());
+        assert!(s.run("comment.resolveCurrent", &json!({})).is_err());
         assert_eq!(s.doc.comments.len(), 1);
         assert!(!s.doc.comments.values().any(|c| c.resolved));
         // The commented word selected whole (the focus at its end), and the caret inside it.
         let focus = s.doc.para_at(&s.sel.focus).map(|p| p.text.find("words").map_or(0, |i| i + 5)).unwrap_or(0);
         s.run("select.range", &json!({"anchor": {"block": 0, "off": 0}, "focus": {"block": 0, "off": focus}})).unwrap();
-        s.run("review.resolveComment", &json!({})).unwrap();
+        s.run("comment.resolveCurrent", &json!({})).unwrap();
         assert!(s.doc.comments.values().all(|c| c.resolved));
         s.run("select.range", &json!({"anchor": {"block": 0, "off": 3}, "focus": {"block": 0, "off": 3}})).unwrap();
-        s.run("review.deleteComment", &json!({})).unwrap();
+        s.run("comment.deleteCurrent", &json!({})).unwrap();
         assert!(s.doc.comments.is_empty());
     }
 
@@ -1194,13 +1194,13 @@ mod tests {
     #[test]
     fn resolving_a_reply_resolves_its_thread() {
         let mut s = Session::new(Document::new());
-        s.run("document.setText", &json!({"text": "words to talk about"})).unwrap();
+        s.run("file.setText", &json!({"text": "words to talk about"})).unwrap();
         s.run("select.range", &json!({"anchor": {"block": 0, "off": 0}, "focus": {"block": 0, "off": 5}})).unwrap();
-        s.run("review.newComment", &json!({"text": "first"})).unwrap();
+        s.run("comment.new", &json!({"text": "first"})).unwrap();
         let first = *s.doc.comments.keys().next().unwrap();
-        s.run("review.reply", &json!({"id": first, "text": "reply"})).unwrap();
+        s.run("comment.replyCurrent", &json!({"id": first, "text": "reply"})).unwrap();
         let reply = *s.doc.comments.iter().find(|(_, c)| c.parent == Some(first)).unwrap().0;
-        s.run("review.resolveComment", &json!({"id": reply})).unwrap();
+        s.run("comment.resolveCurrent", &json!({"id": reply})).unwrap();
         assert!(s.doc.comments[&first].resolved);
         assert!(!s.doc.comments[&reply].resolved);
     }
@@ -1212,8 +1212,8 @@ mod tests {
         let mut s = Session::new(Document::new());
         // No proofing squiggles among the lines.
         s.view.proofing = false;
-        s.run("document.setText", &json!({"text": "keep gone"})).unwrap();
-        s.run("review.trackChanges", &json!({"value": true})).unwrap();
+        s.run("file.setText", &json!({"text": "keep gone"})).unwrap();
+        s.run("change.track", &json!({"value": true})).unwrap();
         s.run("caret.docStart", &json!({})).unwrap();
         s.run("text.insert", &json!({"text": "new "})).unwrap();
         s.run("select.range", &json!({"anchor": {"block": 0, "off": 9}, "focus": {"block": 0, "off": 13}})).unwrap();
@@ -1232,7 +1232,7 @@ mod tests {
         // Bold, fixed-colour insertions; hidden deletions; no bars.
         let r = s
             .run(
-                "review.trackingOptions",
+                "change.options",
                 &json!({"insertMark": "bold", "insertColor": "00AA00", "deleteMark": "hidden", "changedLines": "none", "balloons": "inline"}),
             )
             .unwrap();
@@ -1244,8 +1244,8 @@ mod tests {
         assert!(!text.contains("gone"), "the deletion takes no room: {text:?}");
 
         // Unknown choices are refused; reading changes nothing.
-        assert!(s.run("review.trackingOptions", &json!({"deleteMark": "sparkles"})).is_err());
-        assert_eq!(s.run("review.trackingOptions", &json!({})).unwrap()["insertColor"], "00AA00");
+        assert!(s.run("change.options", &json!({"deleteMark": "sparkles"})).is_err());
+        assert_eq!(s.run("change.options", &json!({})).unwrap()["insertColor"], "00AA00");
     }
 
     fn body_para(s: &Session) -> &kition_doc_doc::Paragraph {
@@ -1258,16 +1258,16 @@ mod tests {
         let mut s = Session::new(Document::new());
         s.view.proofing = false;
         s.author = "Ana".into();
-        s.run("document.setText", &json!({"text": "plain words here"})).unwrap();
+        s.run("file.setText", &json!({"text": "plain words here"})).unwrap();
         // Untracked formatting is no revision.
         s.run("select.range", &json!({"anchor": {"block": 0, "off": 12}, "focus": {"block": 0, "off": 16}})).unwrap();
         s.run("format.italic", &json!({})).unwrap();
         assert!(body_para(&s).runs.iter().all(|r| r.props.fmt_change.is_none()));
-        s.run("review.trackChanges", &json!({"value": true})).unwrap();
+        s.run("change.track", &json!({"value": true})).unwrap();
         s.run("select.range", &json!({"anchor": {"block": 0, "off": 6}, "focus": {"block": 0, "off": 11}})).unwrap();
         s.run("format.bold", &json!({})).unwrap();
-        s.run("format.size", &json!({"size": 14})).unwrap();
-        s.run("para.alignCenter", &json!({})).unwrap();
+        s.run("format.fontSize", &json!({"size": 14})).unwrap();
+        s.run("format.alignCenter", &json!({})).unwrap();
         s
     }
 
@@ -1284,7 +1284,7 @@ mod tests {
         assert!(p.props_of_char(0).fmt_change.is_none() && p.props_of_char(13).fmt_change.is_none());
         assert_eq!(p.props.fmt_change.as_deref().map(|c| c.old.align), Some(None));
 
-        let list = s.run("review.changes", &json!({})).unwrap();
+        let list = s.run("change.list", &json!({})).unwrap();
         let desc: Vec<&str> = list.as_array().unwrap().iter().filter(|c| c["kind"] == "format").filter_map(|c| c["description"].as_str()).collect();
         assert_eq!(desc, ["Formatted: Align: center", "Formatted: Bold, Size: 14"], "{list:#}");
 
@@ -1295,7 +1295,7 @@ mod tests {
         // Formatting changed back is no change any more.
         s.run("select.range", &json!({"anchor": {"block": 0, "off": 6}, "focus": {"block": 0, "off": 11}})).unwrap();
         s.run("format.set", &json!({"props": {"bold": false}})).unwrap();
-        s.run("format.size", &json!({"size": 11})).unwrap();
+        s.run("format.fontSize", &json!({"size": 11})).unwrap();
         assert!(body_para(&s).props_of_char(6).fmt_change.is_some(), "explicit Not Bold and 11 pt differ from inherited");
     }
 
@@ -1304,7 +1304,7 @@ mod tests {
     #[test]
     fn formatting_changes_are_accepted_and_rejected() {
         let mut s = formatted_while_tracking();
-        s.run("review.rejectAll", &json!({})).unwrap();
+        s.run("change.rejectAll", &json!({})).unwrap();
         let p = body_para(&s);
         let c = p.props_of_char(6);
         assert_eq!((c.bold, c.size, c.fmt_change.is_none()), (None, None, true));
@@ -1314,13 +1314,13 @@ mod tests {
         s.run("edit.undo", &json!({})).unwrap();
         // Accept at the caret: just the run's change.
         s.run("select.range", &json!({"anchor": {"block": 0, "off": 8}, "focus": {"block": 0, "off": 8}})).unwrap();
-        s.run("review.accept", &json!({})).unwrap();
+        s.run("change.accept", &json!({})).unwrap();
         let p = body_para(&s);
         assert_eq!((p.props_of_char(6).bold, p.props_of_char(6).fmt_change.is_none()), (Some(true), true));
         assert!(p.props.fmt_change.is_some(), "the paragraph's change is still there");
-        s.run("review.acceptAll", &json!({})).unwrap();
+        s.run("change.acceptAll", &json!({})).unwrap();
         let p = body_para(&s);
         assert_eq!((p.props.align, p.props.fmt_change.is_none()), (Some(kition_doc_doc::props::Align::Center), true));
-        assert!(s.run("review.changes", &json!({})).unwrap().as_array().unwrap().is_empty());
+        assert!(s.run("change.list", &json!({})).unwrap().as_array().unwrap().is_empty());
     }
 }

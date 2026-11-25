@@ -11,8 +11,8 @@ const WORDS: &str = "The ferry is eleven metres of painted larch with a diesel e
 /// with `n` paragraphs.
 fn columns(n: usize) -> Session {
     let mut s = Session::new(Document::new());
-    s.run("layout.margins", &json!({ "top": 54, "bottom": 54, "left": 60, "right": 60 })).unwrap();
-    s.run("layout.columns", &json!({ "count": 2, "space": 24 })).unwrap();
+    s.run("page.margins", &json!({ "top": 54, "bottom": 54, "left": 60, "right": 60 })).unwrap();
+    s.run("page.columns", &json!({ "count": 2, "space": 24 })).unwrap();
     for i in 0..n {
         if i > 0 {
             s.run("text.newParagraph", &json!({})).unwrap();

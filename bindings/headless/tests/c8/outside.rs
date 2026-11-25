@@ -28,7 +28,7 @@ pub fn type_at(block: usize, off: usize, text: &str) -> Vec<(&'static str, Value
 /// Whether the saved file's block `block` has bold text.
 pub fn bold_in(f: &Fixture, block: usize) -> bool {
     let mut doc = f.disk();
-    let answer = doc.execute("document.paragraph", json!({ "path": [block] })).unwrap();
+    let answer = doc.execute("file.paragraph", json!({ "path": [block] })).unwrap();
     answer.to_string().contains("\"bold\":true")
 }
 
@@ -111,7 +111,10 @@ async fn a_paragraph_inserted_before_the_index_relocates_and_after_it_applies() 
     for before in [true, false] {
         let f = Fixture::new(Guard::Premise);
         let basis = f.basis().await;
-        f.colleague(&[("para.insert", if before { json!({ "before": 0, "text": "Inserted" }) } else { json!({ "after": 3, "text": "Inserted" }) })]);
+        f.colleague(&[(
+            "paragraph.insert",
+            if before { json!({ "before": 0, "text": "Inserted" }) } else { json!({ "after": 3, "text": "Inserted" }) },
+        )]);
         let result = f.run(Some(basis), json!([by_index(2, 0, 5), bold()])).await;
         if before {
             conflict(&result.unwrap_err(), "relocated");
@@ -130,7 +133,7 @@ async fn a_moved_paragraph_refuses_a_write_by_index_and_takes_one_by_id() {
         let ids = f.blocks().await;
         let basis = f.basis().await;
         // A paragraph put above the target: its index moves, its id does not.
-        f.colleague(&[("para.insert", json!({ "before": 1, "text": "Above" }))]);
+        f.colleague(&[("paragraph.insert", json!({ "before": 1, "text": "Above" }))]);
         let step = if id_form { by_id(&ids[2].0, 0, 5) } else { by_index(2, 0, 5) };
         let result = f.run(Some(basis), json!([step, bold()])).await;
         if id_form {
@@ -149,7 +152,7 @@ async fn a_cell_addressed_by_path_follows_its_table() {
     for moved in [true, false] {
         let mut doc = document();
         doc.execute("select.range", json!({ "anchor": { "block": 4, "off": 0 }, "focus": { "block": 4, "off": 0 } })).unwrap();
-        doc.execute("insert.table", json!({ "rows": 2, "cols": 2 })).unwrap();
+        doc.execute("table.insert", json!({ "rows": 2, "cols": 2 })).unwrap();
         doc.execute(
             "select.range",
             json!({ "anchor": { "story": "body", "path": [4, 0, 1, 0], "off": 0 }, "focus": { "story": "body", "path": [4, 0, 1, 0], "off": 0 } }),
@@ -158,7 +161,7 @@ async fn a_cell_addressed_by_path_follows_its_table() {
         doc.execute("text.insert", json!({ "text": "Cell text" })).unwrap();
         let f = Fixture::with(Guard::Premise, &doc.save(None).unwrap());
         let basis = f.basis().await;
-        f.colleague(&[("para.insert", if moved { json!({ "before": 0, "text": "Above" }) } else { json!({ "after": 5, "text": "Below" }) })]);
+        f.colleague(&[("paragraph.insert", if moved { json!({ "before": 0, "text": "Above" }) } else { json!({ "after": 5, "text": "Below" }) })]);
         let cell = |off: usize| json!({ "story": "body", "path": [4, 0, 1, 0], "off": off });
         let result = f.run(Some(basis), json!([{ "command": "select.range", "params": { "anchor": cell(0), "focus": cell(4) } }, bold()])).await;
         if moved {
@@ -175,8 +178,9 @@ async fn a_cell_addressed_by_path_follows_its_table() {
 async fn a_style_renamed_away_refuses_a_write_by_its_name() {
     let f = Fixture::new(Guard::Premise);
     let basis = f.basis().await;
-    f.colleague(&[("styles.modify", json!({ "style": "Heading1", "name": "Chapter" }))]);
-    let error = f.run(Some(basis), json!([by_index(1, 0, 0), { "command": "para.style", "params": { "style": "Heading1" } }])).await.unwrap_err();
+    f.colleague(&[("style.set", json!({ "style": "Heading1", "name": "Chapter" }))]);
+    let error =
+        f.run(Some(basis), json!([by_index(1, 0, 0), { "command": "paragraph.style", "params": { "style": "Heading1" } }])).await.unwrap_err();
     conflict(&error, "changed");
     f.close().await;
 }
@@ -199,7 +203,7 @@ async fn a_run_with_on_leaves_the_selection_as_it_was() {
     let ids = f.blocks().await;
     let receipt = f.run(None, json!([{ "command": "format.italic", "params": {}, "on": [ids[3].0] }])).await.unwrap();
     assert!(receipt["changes"]["changed"].as_array().unwrap().iter().any(|c| c["id"] == ids[3].0), "{receipt}");
-    let after = f.run(None, json!([{ "command": "document.selection", "params": {} }])).await.unwrap();
+    let after = f.run(None, json!([{ "command": "file.selection", "params": {} }])).await.unwrap();
     assert_eq!(after["completed"][0]["result"]["anchor"]["path"], json!([0]), "{after}");
     f.close().await;
 }

@@ -13,10 +13,10 @@ pub const STYLES: [&str; 4] = ["APA", "MLA", "Chicago", "IEEE"];
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("references.sources", "Manage Sources", "References › Citations & Bibliography", sources)
+        CommandSpec::new("citation.sources", "Manage Sources", "References › Citations & Bibliography", sources)
             .params(r#"{"add"?: Source, "remove"?: tag} → list"#),
-        CommandSpec::new("references.citation", "Insert Citation", "References › Citations & Bibliography", citation).params(r#"{"tag"?: string, "source"?: Source (added if new), "pages"?: string}"#),
-        CommandSpec::new("references.citationStyle", "Style", "References › Citations & Bibliography", |s, v| {
+        CommandSpec::new("citation.insert", "Insert Citation", "References › Citations & Bibliography", citation).params(r#"{"tag"?: string, "source"?: Source (added if new), "pages"?: string}"#),
+        CommandSpec::new("citation.style", "Style", "References › Citations & Bibliography", |s, v| {
             let st = p::str(v, "style").unwrap_or("APA");
             let st = STYLES.iter().find(|x| x.eq_ignore_ascii_case(st)).ok_or_else(|| CmdError::Params(format!("style must be one of {STYLES:?}")))?;
             s.bib_style = st.to_string();
@@ -24,23 +24,23 @@ pub fn specs() -> Vec<CommandSpec> {
             Ok(json!({"style": s.bib_style}))
         })
         .params(r#"{"style": "APA|MLA|Chicago|IEEE"}"#),
-        CommandSpec::new("references.bibliography", "Bibliography", "References › Citations & Bibliography", |s, v| {
+        CommandSpec::new("bibliography.insert", "Bibliography", "References › Citations & Bibliography", |s, v| {
             let title = p::str(v, "title").unwrap_or(if s.bib_style == "MLA" { "Works Cited" } else { "References" }).to_string();
             generated_list(s, "BIBLIOGRAPHY", &title)?;
             sel_result(s)
         })
         .params(r#"{"title"?: string}"#),
-        CommandSpec::new("references.tableOfFigures", "Insert Table of Figures", "References › Captions", |s, v| {
+        CommandSpec::new("tableOfFigures.insert", "Insert Table of Figures", "References › Captions", |s, v| {
             let label = p::str(v, "label").unwrap_or("Figure").to_string();
             generated_list(s, &format!("TOC \\c \"{label}\""), "")?;
             sel_result(s)
         })
         .params(r#"{"label"?: "Figure|Table|Equation"}"#),
-        CommandSpec::new("references.updateFigures", "Update Table", "References › Captions", |s, _| {
+        CommandSpec::new("tableOfFigures.update", "Update Table", "References › Captions", |s, _| {
             update_generated(s)?;
             sel_result(s)
         }),
-        CommandSpec::new("references.markEntry", "Mark Entry", "References › Index", |s, v| {
+        CommandSpec::new("index.markEntry", "Mark Entry", "References › Index", |s, v| {
             let entry = match p::str(v, "entry") {
                 Some(e) => e.to_string(),
                 None => s.selected_text().trim().to_string(),
@@ -53,15 +53,15 @@ pub fn specs() -> Vec<CommandSpec> {
             Ok(json!({"entry": entry}))
         })
         .params(r#"{"entry"?: string}"#),
-        CommandSpec::new("references.index", "Insert Index", "References › Index", |s, _| {
+        CommandSpec::new("index.insert", "Insert Index", "References › Index", |s, _| {
             generated_list(s, "INDEX", "Index")?;
             sel_result(s)
         }),
-        CommandSpec::new("references.updateIndex", "Update Index", "References › Index", |s, _| {
+        CommandSpec::new("index.update", "Update Index", "References › Index", |s, _| {
             update_generated(s)?;
             sel_result(s)
         }),
-        CommandSpec::new("references.markCitation", "Mark Citation", "References › Table of Authorities", |s, v| {
+        CommandSpec::new("tableOfAuthorities.markCitation", "Mark Citation", "References › Table of Authorities", |s, v| {
             let entry = p::str(v, "entry").map(str::to_string).unwrap_or_else(|| s.selected_text().trim().to_string());
             if entry.is_empty() {
                 return Err(CmdError::Params("select a citation or give `entry`".into()));
@@ -71,13 +71,13 @@ pub fn specs() -> Vec<CommandSpec> {
             Ok(json!({"entry": entry}))
         })
         .params(r#"{"entry"?: string}"#),
-        CommandSpec::new("references.tableOfAuthorities", "Insert Table of Authorities", "References › Table of Authorities", |s, _| {
+        CommandSpec::new("tableOfAuthorities.insert", "Insert Table of Authorities", "References › Table of Authorities", |s, _| {
             generated_list(s, "TOA", "Table of Authorities")?;
             sel_result(s)
         }),
-        CommandSpec::new("insert.crossReference", "Cross-reference", "Insert › Links", cross_ref)
+        CommandSpec::new("crossReference.insert", "Cross-reference", "Insert › Links", cross_ref)
             .params(r#"{"to": "heading|bookmark|figure|table", "target": string (text / name / number), "show"?: "text|page|number|aboveBelow"} or {} to list targets"#),
-        CommandSpec::new("references.noteOptions", "Footnote and Endnote", "References › Footnotes", |s, v| {
+        CommandSpec::new("footnote.options", "Footnote and Endnote", "References › Footnotes", |s, v| {
             if let Some(f) = p::str(v, "footnoteFormat") {
                 s.doc.settings.footnote_format = kition_doc_doc::section::NumFormat::from_ooxml(f);
             }
@@ -87,7 +87,7 @@ pub fn specs() -> Vec<CommandSpec> {
             Ok(json!({"footnoteFormat": s.doc.settings.footnote_format, "endnoteFormat": s.doc.settings.endnote_format}))
         })
         .params(r#"{"footnoteFormat"?: "decimal|lowerRoman|upperRoman|lowerLetter|upperLetter", "endnoteFormat"?: …}"#),
-        CommandSpec::new("references.researcher", "Researcher", "References › Research", |s, _| {
+        CommandSpec::new("research.open", "Researcher", "References › Research", |s, _| {
             s.status = "Researcher needs an online service; Kition Doc keeps your documents offline.".into();
             Ok(json!({"available": false}))
         })
@@ -594,16 +594,16 @@ mod tests {
     fn citations_and_bibliography() {
         let mut s = Session::new(kition_doc_doc::Document::new());
         s.run("text.insert", &json!({"text": "Studios matter "})).unwrap();
-        s.run("references.citation", &json!({"source": {"author": "Rivera, Alex; Chen, Mei", "title": "Shared Spaces", "year": "2021", "publisher": "Harbor Books", "city": "Portland"}})).unwrap();
+        s.run("citation.insert", &json!({"source": {"author": "Rivera, Alex; Chen, Mei", "title": "Shared Spaces", "year": "2021", "publisher": "Harbor Books", "city": "Portland"}})).unwrap();
         assert!(s.doc.plain_text(StoryRef::Body).contains("(Rivera & Chen, 2021)"), "{}", s.doc.plain_text(StoryRef::Body));
         s.run("text.newParagraph", &json!({})).unwrap();
-        s.run("references.bibliography", &json!({})).unwrap();
+        s.run("bibliography.insert", &json!({})).unwrap();
         let t = s.doc.plain_text(StoryRef::Body);
         assert!(t.contains("Rivera, A., & Chen, M. (2021). Shared Spaces. Harbor Books."), "{t}");
-        s.run("references.citationStyle", &json!({"style": "MLA"})).unwrap();
+        s.run("citation.style", &json!({"style": "MLA"})).unwrap();
         let t = s.doc.plain_text(StoryRef::Body);
         assert!(t.contains("(Rivera and Chen)"), "{t}");
-        s.run("references.citationStyle", &json!({"style": "IEEE"})).unwrap();
+        s.run("citation.style", &json!({"style": "IEEE"})).unwrap();
         assert!(s.doc.plain_text(StoryRef::Body).contains("[1]"));
     }
 
@@ -611,22 +611,22 @@ mod tests {
     fn index_and_figures() {
         let mut s = Session::new(kition_doc_doc::Document::from_text("Kilns are hot.\nPresses are heavy.\nMore kilns."));
         s.run("select.text", &json!({"text": "Kilns"})).unwrap();
-        s.run("references.markEntry", &json!({})).unwrap();
+        s.run("index.markEntry", &json!({})).unwrap();
         s.run("select.text", &json!({"text": "Presses"})).unwrap();
-        s.run("references.markEntry", &json!({})).unwrap();
+        s.run("index.markEntry", &json!({})).unwrap();
         s.run("caret.docEnd", &json!({})).unwrap();
         s.run("text.newParagraph", &json!({})).unwrap();
-        s.run("references.index", &json!({})).unwrap();
+        s.run("index.insert", &json!({})).unwrap();
         let t = s.doc.plain_text(StoryRef::Body);
         assert!(t.contains("Kilns, 1") && t.contains("Presses, 1"), "{t}");
         s.run("caret.docStart", &json!({})).unwrap();
-        s.run("references.caption", &json!({"label": "Figure", "text": "The kiln"})).unwrap();
+        s.run("caption.insert", &json!({"label": "Figure", "text": "The kiln"})).unwrap();
         s.run("caret.docEnd", &json!({})).unwrap();
-        s.run("references.tableOfFigures", &json!({})).unwrap();
+        s.run("tableOfFigures.insert", &json!({})).unwrap();
         assert!(s.doc.plain_text(StoryRef::Body).contains("Figure 1: The kiln\t1"));
-        let list = s.run("insert.crossReference", &json!({"to": "figure"})).unwrap();
+        let list = s.run("crossReference.insert", &json!({"to": "figure"})).unwrap();
         assert_eq!(list.as_array().unwrap().len(), 1);
-        s.run("insert.crossReference", &json!({"to": "figure", "target": "Figure 1", "show": "number"})).unwrap();
+        s.run("crossReference.insert", &json!({"to": "figure", "target": "Figure 1", "show": "number"})).unwrap();
         assert!(s.doc.plain_text(StoryRef::Body).contains("Figure 1"));
         // The number-only reference marks just "Figure 1" of the caption.
         let (name, _) = s.doc.bookmarks().into_iter().find(|(n, _)| n.starts_with("_Ref")).unwrap();
@@ -651,9 +651,9 @@ mod tests {
     fn cross_references_point_at_real_bookmarks() {
         let mut s = Session::new(kition_doc_doc::Document::from_text("Kilns\nSee here."));
         s.run("caret.docStart", &json!({})).unwrap();
-        s.run("styles.apply", &json!({"style": "Heading 1"})).unwrap();
+        s.run("style.apply", &json!({"style": "Heading 1"})).unwrap();
         s.run("caret.docEnd", &json!({})).unwrap();
-        s.run("insert.crossReference", &json!({"to": "heading", "target": "Kilns"})).unwrap();
+        s.run("crossReference.insert", &json!({"to": "heading", "target": "Kilns"})).unwrap();
         // The heading gets a hidden bookmark, and the REF field names it (not a literal `_Ref`).
         let marks = s.doc.bookmarks();
         assert_eq!(marks.len(), 1, "{marks:?}");
@@ -662,13 +662,13 @@ mod tests {
         assert_eq!(marks[0].1.path, s.doc.para_paths(StoryRef::Body)[0]);
         assert_eq!(fields(&s), vec![(format!("REF {name} \\h"), "Kilns".to_string())]);
         // A second reference to the same heading reuses the bookmark.
-        s.run("insert.crossReference", &json!({"to": "heading", "target": "Kilns", "show": "page"})).unwrap();
+        s.run("crossReference.insert", &json!({"to": "heading", "target": "Kilns", "show": "page"})).unwrap();
         assert_eq!(s.doc.bookmarks().len(), 1);
         assert_eq!(fields(&s)[1], (format!("PAGEREF {name} \\h"), "1".to_string()));
         // Update Field follows the heading's new text.
         s.run("select.text", &json!({"text": "ilns"})).unwrap();
         s.run("text.insert", &json!({"text": "ILNS"})).unwrap();
-        s.run("references.updateFields", &json!({})).unwrap();
+        s.run("field.updateAll", &json!({})).unwrap();
         assert_eq!(fields(&s)[0].1, "KILNS");
         assert!(s.doc.plain_text(StoryRef::Body).ends_with("See here.KILNS1"), "{}", s.doc.plain_text(StoryRef::Body));
     }
@@ -677,9 +677,9 @@ mod tests {
     fn cross_reference_to_a_bookmark_shows_its_text() {
         let mut s = Session::new(kition_doc_doc::Document::from_text("Kilns are hot.\nSee "));
         s.run("select.text", &json!({"text": "Kilns"})).unwrap();
-        s.run("insert.bookmark", &json!({"name": "Spot"})).unwrap();
+        s.run("bookmark.insert", &json!({"name": "Spot"})).unwrap();
         s.run("caret.docEnd", &json!({})).unwrap();
-        s.run("insert.crossReference", &json!({"to": "bookmark", "target": "Spot"})).unwrap();
+        s.run("crossReference.insert", &json!({"to": "bookmark", "target": "Spot"})).unwrap();
         assert_eq!(s.doc.bookmarks().len(), 1, "no extra bookmark for a named one");
         assert_eq!(fields(&s), vec![("REF Spot \\h".to_string(), "Kilns".to_string())]);
     }
@@ -687,9 +687,9 @@ mod tests {
     #[test]
     fn cross_reference_inside_its_own_target_paragraph() {
         let mut s = Session::new(kition_doc_doc::Document::from_text("Kilns"));
-        s.run("styles.apply", &json!({"style": "Heading 1"})).unwrap();
+        s.run("style.apply", &json!({"style": "Heading 1"})).unwrap();
         s.run("caret.docEnd", &json!({})).unwrap();
-        s.run("insert.crossReference", &json!({"to": "heading", "target": "Kilns"})).unwrap();
+        s.run("crossReference.insert", &json!({"to": "heading", "target": "Kilns"})).unwrap();
         assert_eq!(s.doc.plain_text(StoryRef::Body), "KilnsKilns");
         // The field sits after the bookmark, so it doesn't mark itself.
         let name = s.doc.bookmarks()[0].0.clone();

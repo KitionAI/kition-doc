@@ -48,10 +48,10 @@ async fn a_character_command_by_id_applies_after_an_unrelated_insertion_above() 
     let f = Fixture::new(Guard::Premise);
     let ids = f.blocks().await;
     let basis = f.basis().await;
-    f.colleague(&[("para.insert", json!({ "before": 0, "text": "Above" }))]);
+    f.colleague(&[("paragraph.insert", json!({ "before": 0, "text": "Above" }))]);
     f.run(Some(basis), json!([{ "command": "format.italic", "params": {}, "on": [ids[2].0] }])).await.unwrap();
     assert_eq!(f.texts(), ["Above", TEXTS[0], TEXTS[1], TEXTS[2], TEXTS[3], TEXTS[4]]);
-    let target = f.disk().execute("document.paragraph", json!({ "path": [3] })).unwrap();
+    let target = f.disk().execute("file.paragraph", json!({ "path": [3] })).unwrap();
     assert!(target["paragraph"]["runs"].as_array().unwrap().iter().all(|run| run["props"]["italic"] == true), "{target}");
     f.close().await;
 }
@@ -90,7 +90,7 @@ async fn an_outside_reread_keeps_agent_undo_and_the_outside_edit() {
     f.run(None, json!([outside::by_id(&ids[0].0, TEXTS[0].len(), TEXTS[0].len()), { "command": "text.insert", "params": { "text": " Agent" } }]))
         .await
         .unwrap();
-    f.colleague(&[("para.text", json!({ "index": 3, "text": "Colleague" }))]);
+    f.colleague(&[("paragraph.text", json!({ "index": 3, "text": "Colleague" }))]);
     let basis = f.basis().await;
     f.run(Some(basis), json!([{ "command": "edit.undo", "params": {} }])).await.unwrap();
     assert_eq!(f.texts(), [TEXTS[0], TEXTS[1], TEXTS[2], "Colleague", TEXTS[4]]);
@@ -135,7 +135,7 @@ async fn raw_text_assignments_merge_unrelated_edits_and_refuse_same_field_edits(
         let f = Fixture::new(Guard::Premise);
         let ids = f.blocks().await;
         let basis = f.basis().await;
-        f.colleague(&[("para.text", json!({ "index": if same { 2 } else { 3 }, "text": "Colleague" }))]);
+        f.colleague(&[("paragraph.text", json!({ "index": if same { 2 } else { 3 }, "text": "Colleague" }))]);
         let before = std::fs::read(f.root.join(FILE)).unwrap();
         let answer =
             f.call("batch", json!({ "basis": basis, "ops": [{ "op": "text.set", "target": ids[2].0, "field": "text", "text": "Agent" }] })).await;
@@ -193,7 +193,7 @@ async fn formatting_by_id_ignores_split_anchors_but_preserves_same_field_protect
         } else {
             answer.unwrap();
             assert_eq!(f.texts(), [TEXTS[0], TEXTS[1], "Gamma fi", "ve six", TEXTS[3], TEXTS[4]]);
-            let paragraph = f.disk().execute("document.paragraph", json!({ "path": [2] })).unwrap();
+            let paragraph = f.disk().execute("file.paragraph", json!({ "path": [2] })).unwrap();
             assert!(paragraph["paragraph"]["runs"].as_array().unwrap().iter().all(|run| run["props"]["italic"] != true));
         }
         f.close().await;

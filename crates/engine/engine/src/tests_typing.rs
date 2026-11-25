@@ -309,18 +309,18 @@ fn tracked_enter_and_backspace_track_the_paragraph_mark() {
     // With Track Changes on, Enter inserts a tracked paragraph mark that Reject All
     // takes out again; Backspace over your own Enter removes it outright.
     let mut s = typed("one");
-    run(&mut s, "review.trackChanges", json!({"value": true}));
+    run(&mut s, "change.track", json!({"value": true}));
     typ(&mut s, "\ntwo");
     assert_eq!(texts(&s), ["one", "two"]);
     typ(&mut s, "\u{8}\u{8}\u{8}\u{8}");
     assert_eq!(texts(&s), ["one"]);
     typ(&mut s, "\n");
     assert_eq!(texts(&s), ["one", ""]);
-    run(&mut s, "review.rejectAll", json!({}));
+    run(&mut s, "change.rejectAll", json!({}));
     assert_eq!(texts(&s), ["one"]);
     // A break that was already there isn't removed: Backspace marks it deleted and moves before it.
     let mut s = typed("one\ntwo");
-    run(&mut s, "review.trackChanges", json!({"value": true}));
+    run(&mut s, "change.track", json!({"value": true}));
     run(&mut s, "caret.set", json!({"pos": {"block": 1, "off": 0}}));
     typ(&mut s, "\u{8}");
     assert_eq!(texts(&s), ["one", "two"]);
@@ -340,7 +340,7 @@ fn inserted_border_characters_stay_text() {
 
     let mut b = s();
     typ(&mut b, "Above\n###");
-    run(&mut b, "select.all", json!({}));
+    run(&mut b, "edit.selectAll", json!({}));
     run(&mut b, "format.bold", json!({}));
     run(&mut b, "caret.docEnd", json!({}));
     run(&mut b, "text.newParagraph", json!({}));
@@ -361,7 +361,7 @@ fn inserted_border_characters_stay_text() {
 fn enter_after_a_drop_cap_paragraph_starts_a_plain_one() {
     let mut s = s();
     typ(&mut s, "Once upon a time");
-    run(&mut s, "insert.dropCap", json!({"lines": 3}));
+    run(&mut s, "dropCap.set", json!({"lines": 3}));
     typ(&mut s, "\nNext");
     let caps: Vec<Option<u8>> = s.doc.body.iter().filter_map(|b| b.as_para()).map(|p| p.props.drop_cap).collect();
     assert_eq!(caps, [Some(3), None]);
@@ -377,10 +377,10 @@ fn enter_after_a_drop_cap_paragraph_starts_a_plain_one() {
 fn caret_formatting_picked_in_a_footer_stays_there() {
     let mut s = s();
     typ(&mut s, "Body");
-    run(&mut s, "insert.editFooter", json!({}));
+    run(&mut s, "footer.edit", json!({}));
     run(&mut s, "format.bold", json!({"value": true}));
     typ(&mut s, "Foot");
-    run(&mut s, "insert.closeHeader", json!({}));
+    run(&mut s, "header.close", json!({}));
     assert_eq!(s.sel.focus, Pos { story: StoryRef::Body, path: kition_doc_doc::Path::top(0), off: 4 }, "back where the caret was");
     typ(&mut s, "!");
     assert_ne!(s.doc.para(StoryRef::Body, &kition_doc_doc::Path::top(0)).map(|p| p.props_of_char(4).bold), Some(Some(true)));

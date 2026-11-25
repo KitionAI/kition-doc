@@ -531,7 +531,7 @@ mod tests {
     #[test]
     fn a_pen_draws_a_stroke_and_the_eraser_takes_it_back_with_the_pointer() {
         let mut doc = DocDocument::create("Doc.docx", 0, 0).unwrap();
-        doc.execute("document.setText", json!({ "text": "A line of text to draw over.\nAnother line." })).unwrap();
+        doc.execute("file.setText", json!({ "text": "A line of text to draw over.\nAnother line." })).unwrap();
         let inks = |doc: &mut DocDocument| -> Vec<DrawingObject> {
             let d = doc.execute("drawing.describe", json!({})).unwrap();
             serde_json::from_value::<Vec<DrawingObject>>(d["objects"].clone())
@@ -540,7 +540,7 @@ mod tests {
                 .filter(|o| o.kind == kition_office_core::model::ObjectKind::Ink)
                 .collect()
         };
-        doc.execute("draw.pen", json!({ "color": "C00000", "width": 3 })).unwrap();
+        doc.execute("ink.pen", json!({ "color": "C00000", "width": 3 })).unwrap();
         doc.pointer(&ev(PointerAction::Down, on_page(&doc, 120.0, 140.0))).unwrap();
         for i in 1..=10 {
             let r = doc.pointer(&ev(PointerAction::Drag, on_page(&doc, 120.0 + f64::from(i) * 10.0, 140.0))).unwrap();
@@ -560,7 +560,7 @@ mod tests {
         doc.pointer(&ev(PointerAction::Up, on_page(&doc, 200.0, 200.0))).unwrap();
         assert_eq!(inks(&mut doc).len(), 1);
         // The eraser's drag across the stroke takes it, in one step.
-        doc.execute("draw.eraser", json!({})).unwrap();
+        doc.execute("ink.eraser", json!({})).unwrap();
         doc.pointer(&ev(PointerAction::Down, on_page(&doc, 170.0, 120.0))).unwrap();
         doc.pointer(&ev(PointerAction::Drag, on_page(&doc, 170.0, 160.0))).unwrap();
         doc.pointer(&ev(PointerAction::Up, on_page(&doc, 170.0, 160.0))).unwrap();
@@ -568,7 +568,7 @@ mod tests {
         doc.execute("edit.undo", json!({})).unwrap();
         assert_eq!(inks(&mut doc).len(), 1, "undo brings it back");
         // Back to selecting: the pointer selects again instead of drawing.
-        doc.execute("draw.select", json!({})).unwrap();
+        doc.execute("ink.select", json!({})).unwrap();
         doc.pointer(&ev(PointerAction::Down, on_page(&doc, 120.0, 260.0))).unwrap();
         doc.pointer(&ev(PointerAction::Up, on_page(&doc, 160.0, 260.0))).unwrap();
         assert_eq!(inks(&mut doc).len(), 1);
@@ -632,7 +632,7 @@ mod tests {
         doc.execute("text.insert", json!({ "text": "Text under the shapes. " })).unwrap();
         let count = |doc: &mut DocDocument| doc.session.borrow().doc.shapes().len();
         // An ellipse drawn from (300, 200) to (400, 260).
-        doc.execute("draw.shape", json!({ "preset": "ellipse" })).unwrap();
+        doc.execute("ink.shape", json!({ "preset": "ellipse" })).unwrap();
         doc.pointer(&ev(PointerAction::Down, on_page(&doc, 300.0, 200.0))).unwrap();
         let r = doc.pointer(&ev(PointerAction::Drag, on_page(&doc, 400.0, 260.0))).unwrap();
         assert!(r.overlays.iter().any(|o| matches!(o, kition_kit::tools::ToolOverlay::Path { width, .. } if *width == 1.5)), "the outline previews");
@@ -654,7 +654,7 @@ mod tests {
         let from = kition_office_core::connect::sites(&shape(&mut doc, &ellipse)).into_iter().max_by(|a, b| a.y.total_cmp(&b.y)).unwrap();
         let to = kition_office_core::connect::sites(&shape(&mut doc, &rect)).into_iter().min_by(|a, b| a.y.total_cmp(&b.y)).unwrap();
         let before = count(&mut doc);
-        doc.execute("draw.shape", json!({ "preset": "line" })).unwrap();
+        doc.execute("ink.shape", json!({ "preset": "line" })).unwrap();
         doc.pointer(&ev(PointerAction::Down, on_page(&doc, from.x + 2.0, from.y))).unwrap();
         doc.pointer(&ev(PointerAction::Drag, on_page(&doc, to.x, to.y - 3.0))).unwrap();
         doc.pointer(&ev(PointerAction::Up, on_page(&doc, to.x, to.y - 3.0))).unwrap();
@@ -667,10 +667,10 @@ mod tests {
         doc.execute("edit.undo", json!({})).unwrap();
         assert_eq!(count(&mut doc), before);
         // Escape puts down a chosen shape.
-        doc.execute("draw.shape", json!({ "preset": "rect" })).unwrap();
+        doc.execute("ink.shape", json!({ "preset": "rect" })).unwrap();
         doc.key("Escape", ToolMods::default(), 1.0).unwrap();
         assert_eq!(doc.session.borrow().view.draw.shape, None);
-        assert!(doc.execute("draw.shape", json!({ "preset": "notAShape" })).is_err());
+        assert!(doc.execute("ink.shape", json!({ "preset": "notAShape" })).is_err());
     }
 
     #[test]

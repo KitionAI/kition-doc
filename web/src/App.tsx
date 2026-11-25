@@ -39,7 +39,7 @@ import { pagePanBounds } from './pageView'
 
 const NO_PAGES: RasterRect[] = []
 /** Word's New Comment: in a host that keeps comment threads, the host's new thread instead. */
-const NEW_COMMENT = 'review.newComment'
+const NEW_COMMENT = 'comment.new'
 
 /** kit-editor's `CommentsPanel` labels, translated as `comment.<label>`. */
 const COMMENT_LABELS = ['title', 'empty', 'newComment', 'placeholder', 'replyPlaceholder', 'comment', 'reply', 'cancel', 'resolve', 'reopen', 'delete', 'resolved', 'readOnlyHistory', 'you'] as const

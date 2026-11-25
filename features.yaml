@@ -72,7 +72,7 @@ features:
     dimension: [fidelity, function]
     priority: P1
     status: partial
-    commands: [picture.corrections, picture.color, picture.transparency]
+    commands: [image.corrections, image.color, image.transparency]
     paths: [crates/engine/doc/src/graphic.rs, crates/formats/docx/src/read/story.rs, crates/formats/docx/src/write/story.rs, crates/render/render/src/lib.rs, crates/formats/pdf/src/lib.rs]
     gap: Other blip effects (recolour, duotone, artistic effects) and VML picture gain and black level are not applied; brightness and contrast follow WPS's printed pictures, but how brightness combines with more contrast is not reference-checked.
     cases: [regressions/issue-picture-adjust-read, regressions/issue-picture-adjust-draw, regressions/issue-picture-adjust-pixels, regressions/issue-picture-adjust-curve]
@@ -154,7 +154,7 @@ features:
     dimension: [fidelity, function]
     priority: P1
     status: partial
-    commands: [layout.lineNumbers]
+    commands: [page.lineNumbers]
     paths: [crates/engine/layout/src/lib.rs, crates/engine/engine/tests/line_numbers.rs]
     gap: Numbering of empty paragraphs other than section-break marks and table rows is not reference-checked.
     cases: [regressions/issue-line-number-format]
@@ -474,7 +474,7 @@ features:
     dimension: [ai]
     priority: P0
     status: has
-    commands: [format.state, list.get, styles.inspect, view.state, equation.get, document.inspect, document.text, document.paragraph, document.selection, document.layout, drawing.describe, draw.state, readAloud.status]
+    commands: [format.state, list.get, style.inspect, view.state, equation.get, file.removeHiddenContent, file.text, file.paragraph, file.selection, file.layout, drawing.describe, ink.state, readAloud.status]
     requirements: [AX13]
     cases: [doc.agent.observe/title-line]
     since: "2026-11-17"
@@ -565,7 +565,7 @@ features:
     dimension: [function, security]
     priority: P1
     status: partial
-    commands: [file.encrypt, file.properties, file.info, file.options, file.setAuthor, file.accessibility, file.inspect, file.protect, file.compatibility, file.share]
+    commands: [file.encrypt, file.properties, file.info, file.options, file.setAuthor, file.accessibility, file.removeHiddenContent, file.protect, file.compatibility, file.share]
     paths: [crates/engine/engine/src/cmd/file.rs, crates/engine/engine/src/cmd/tools.rs, bindings/wasm/src/lib.rs]
     target: "Word 16.113.4 (Mac)"
     gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
@@ -575,7 +575,7 @@ features:
     dimension: [function]
     priority: P0
     status: has
-    commands: [text.insert, text.newParagraph, text.lineBreak, text.pageBreak, text.columnBreak, text.tab, text.backTab, text.backspace, text.delete, text.deleteWordBack, text.deleteWordForward, text.nbsp, text.nbHyphen, text.optionalHyphen, document.setText, para.insert, para.text]
+    commands: [text.insert, text.newParagraph, text.lineBreak, text.pageBreak, text.columnBreak, text.tab, text.backTab, text.backspace, text.delete, text.deleteWordBack, text.deleteWordForward, text.nbsp, text.nbHyphen, text.optionalHyphen, file.setText, paragraph.insert, paragraph.text]
     paths: [crates/engine/engine/src/cmd/text.rs, crates/engine/engine/src/cmd/file.rs, crates/engine/engine/src/tests_typing.rs, crates/engine/engine/src/cmd/column.rs]
     target: "Word 16.113.4 (Mac)"
     gap: Save and reopen as .docx is proven by command for typing, tabs, line breaks, new paragraphs and page breaks; the feature's other commands are covered by engine tests only.
@@ -597,7 +597,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [select.all, select.range, select.word, select.sentence, select.paragraph, select.line, select.text, select.collapse, select.column, select.addObject, select.objects, select.similar, select.extend]
+    commands: [edit.selectAll, select.range, select.word, select.sentence, select.paragraph, select.line, select.text, select.collapse, select.column, select.addObject, select.objects, select.similar, select.extend]
     paths: [crates/engine/engine/src/cmd/caret.rs, crates/engine/engine/src/cmd/tools.rs, crates/engine/engine/src/cmd/objects.rs, web/src/ribbon/HomeTab.tsx]
     target: "Word 16.113.4 (Mac)"
     gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
@@ -627,7 +627,7 @@ features:
     dimension: [function, fidelity]
     priority: P0
     status: has
-    commands: [format.bold, format.italic, format.underline, format.doubleUnderline, format.wordUnderline, format.strikethrough, format.border, format.doubleStrikethrough, format.subscript, format.superscript, format.allCaps, format.smallCaps, format.hidden, format.outline, format.shadow, format.emboss, format.engrave, format.font, format.size, format.growFont, format.shrinkFont, format.growFont1, format.shrinkFont1, format.color, format.highlight, format.shading, format.changeCase, format.clear, format.resetChar, format.spacing, format.scale, format.position, format.charStyle, format.set, format.fontDialog]
+    commands: [format.bold, format.italic, format.underline, format.doubleUnderline, format.wordUnderline, format.strikethrough, format.border, format.doubleStrikethrough, format.subscript, format.superscript, format.allCaps, format.smallCaps, format.hidden, format.outline, format.shadow, format.emboss, format.engrave, format.fontName, format.fontSize, format.increaseFontSize, format.decreaseFontSize, format.increaseFontSizeByOne, format.decreaseFontSizeByOne, format.color, format.highlight, format.shading, format.changeCase, format.clear, format.resetChar, format.spacing, format.scale, format.position, format.charStyle, format.set, format.fontDialog]
     paths: [crates/engine/engine/src/cmd/format.rs, web/src/ribbon/HomeTab.tsx, crates/engine/engine/src/cmd/review.rs, crates/engine/engine/src/tests_bidi.rs]
     target: "Word 16.113.4 (Mac)"
     gap: Save and reopen as .docx is proven by command for bold, italic, underline, strikethrough, size, font, highlight, superscript and colour; the feature's other commands are covered by engine tests only.
@@ -638,7 +638,7 @@ features:
     dimension: [function, fidelity]
     priority: P0
     status: has
-    commands: [para.alignLeft, para.alignCenter, para.alignRight, para.justify, para.distribute, para.align, para.rtl, para.ltr, para.indent, para.outdent, para.hangingIndent, para.removeHanging, para.indents, para.lineSpacing, para.single, para.double, para.oneAndHalf, para.spacing, para.addSpaceBefore, para.removeSpaceAfter, para.shading, para.borders, para.sort, para.keepNext, para.keepLines, para.pageBreakBefore, para.widowControl, para.asianTypography, para.tabs, para.outlineLevel, para.set, para.dialog]
+    commands: [format.alignLeft, format.alignCenter, format.alignRight, format.justify, paragraph.distribute, paragraph.align, paragraph.rtl, paragraph.ltr, paragraph.indent, paragraph.outdent, paragraph.hangingIndent, paragraph.removeHanging, paragraph.indents, paragraph.lineSpacing, paragraph.single, paragraph.double, paragraph.oneAndHalf, paragraph.spacing, paragraph.addSpaceBefore, paragraph.removeSpaceAfter, paragraph.shading, paragraph.borders, paragraph.sort, paragraph.keepNext, paragraph.keepLines, paragraph.pageBreakBefore, paragraph.widowControl, paragraph.asianTypography, paragraph.tabs, paragraph.outlineLevel, paragraph.set, paragraph.dialog]
     paths: [crates/engine/engine/src/cmd/para.rs, web/src/ribbon/HomeTab.tsx, crates/engine/engine/src/tests_bidi.rs, crates/engine/engine/src/cmd/review.rs]
     target: "Word 16.113.4 (Mac)"
     gap: Save and reopen as .docx is proven by command for alignment, indent and line spacing; the feature's other commands are covered by engine tests only.
@@ -649,7 +649,7 @@ features:
     dimension: [function, fidelity]
     priority: P0
     status: has
-    commands: [para.bullets, para.numbering, para.multilevel, para.listLevel, para.restartNumbering, list.define, para.setNumberingValue, para.defineBullet, para.defineNumber]
+    commands: [paragraph.bullets, paragraph.numbering, paragraph.multilevel, paragraph.listLevel, paragraph.restartNumbering, list.define, paragraph.setNumberingValue, paragraph.defineBullet, paragraph.defineNumber]
     paths: [crates/engine/engine/src/cmd/para.rs, web/src/ribbon/HomeTab.tsx, crates/engine/engine/src/cmd/tools.rs, crates/engine/engine/src/cmd/lists.rs, crates/engine/layout/src/lib.rs]
     target: "Word 16.113.4 (Mac)"
     gap: Save and reopen as .docx is proven by command for bullets, numbering and list levels; the feature's other commands are covered by engine tests only.
@@ -660,7 +660,7 @@ features:
     dimension: [function, fidelity]
     priority: P0
     status: has
-    commands: [para.style, para.normal, para.heading1, para.heading2, para.heading3, styles.create, styles.modify, styles.updateToMatch, styles.delete, styles.manage, styles.setVisibility, styles.list, styles.pane, styles.apply, styles.addToGallery, styles.inspector, styles.inspectorClear]
+    commands: [paragraph.style, paragraph.normal, paragraph.heading1, paragraph.heading2, paragraph.heading3, style.add, style.set, style.updateToMatch, style.delete, style.manage, style.setVisibility, style.list, style.pane, style.apply, style.addToGallery, style.inspector, style.inspectorClear]
     paths: [crates/engine/engine/src/cmd/para.rs, crates/engine/engine/src/cmd/inspector.rs, crates/engine/engine/src/cmd/citations.rs]
     target: "Word 16.113.4 (Mac)"
     gap: Save and reopen as .docx is proven by command for applying Heading 1, Heading 2 and a named style (Quote); the feature's other commands are covered by engine tests only.
@@ -681,7 +681,7 @@ features:
     dimension: [function, fidelity]
     priority: P0
     status: has
-    commands: [table.viewGridlines, table.insertRowAbove, table.insertRowBelow, table.insertColumnLeft, table.insertColumnRight, table.deleteRow, table.deleteColumn, table.deleteTable, table.deleteCells, table.merge, table.split, table.splitTable, table.style, table.look, table.shading, table.borders, table.cellAlign, table.textDirection, table.autofit, table.distributeColumns, table.distributeRows, table.columnWidth, table.rowHeight, table.repeatHeader, table.sort, table.toText, table.formula, table.selectTable, table.selectRow, table.selectCell, table.properties, table.fromText, table.quick, table.newStyle, table.modifyStyle, table.deleteStyle, table.draw, table.eraser, table.cellMargins, table.borderPainter]
+    commands: [table.viewGridlines, table.insertRowAbove, table.insertRowBelow, table.insertColumnLeft, table.insertColumnRight, table.deleteRow, table.deleteColumn, table.deleteTable, table.deleteCells, table.merge, table.split, table.splitTable, table.style, table.look, table.shading, table.borders, table.cellAlign, table.textDirection, table.autofit, table.distributeColumns, table.distributeRows, table.columnWidth, table.rowHeight, table.repeatHeader, table.sort, table.toText, table.formula, table.selectTable, table.selectRow, table.selectCell, table.properties, table.fromText, table.quick, table.newStyle, table.setStyle, table.deleteStyle, table.draw, table.eraser, table.cellMargins, table.borderPainter]
     paths: [crates/engine/engine/src/cmd/table.rs, crates/engine/engine/src/cmd/table_style.rs, crates/engine/engine/src/cmd/tools.rs, crates/engine/engine/src/cmd/table_draw.rs, crates/engine/engine/src/cmd/table_formula.rs, crates/engine/layout/src/table.rs]
     target: "Word 16.113.4 (Mac)"
     gap: Save and reopen as .docx is proven by command for inserting a table, typing in cells, inserting rows and columns, and cell formatting; the feature's other commands are covered by engine tests only.
@@ -692,7 +692,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [insert.pageBreak, insert.blankPage, insert.coverPage, insert.table, insert.picture, insert.shape, insert.textBox, insert.link, insert.removeLink, insert.bookmark, insert.dateTime, insert.symbol, insert.field, insert.dropCap, insert.horizontalLine, insert.artText, insert.textFromFile, insert.equation, insert.crossReference, insert.chart, insert.quickParts, insert.autoText, insert.docProperty, insert.signatureLine, insert.object, insert.spreadsheet]
+    commands: [page.insertBreak, page.insertBlank, page.insertCover, table.insert, image.insert, shape.insert, textBox.insert, link.insert, link.remove, bookmark.insert, field.insertDateTime, symbol.insert, field.insert, dropCap.set, horizontalLine.insert, artText.insert, text.insertFromFile, equation.insert, crossReference.insert, chart.insert, quickPart.insert, autoText.insert, field.insertDocProperty, signatureLine.insert, object.insert, spreadsheet.insert]
     paths: [crates/engine/engine/src/cmd/insert.rs, web/src/ribbon/InsertTab.tsx, crates/engine/engine/src/cmd/tools.rs, crates/engine/engine/src/cmd/drawing.rs]
     target: "Word 16.113.4 (Mac)"
     gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
@@ -703,7 +703,7 @@ features:
     dimension: [function, fidelity]
     priority: P0
     status: has
-    commands: [insert.header, insert.footer, insert.pageNumber, insert.editHeader, insert.editFooter, insert.closeHeader, insert.removeHeader, insert.removeFooter, hf.next, hf.previous, hf.position]
+    commands: [header.insert, footer.insert, pageNumber.insert, header.edit, footer.edit, header.close, header.remove, footer.remove, headerFooter.next, headerFooter.previous, headerFooter.position]
     paths: [crates/engine/engine/src/cmd/insert.rs, web/src/ribbon/InsertTab.tsx, crates/engine/engine/src/cmd/tools.rs, bindings/wasm/src/lib.rs]
     target: "Word 16.113.4 (Mac)"
     gap: Save and reopen as .docx is proven by command for header text and a page-number footer; the feature's other commands are covered by engine tests only.
@@ -724,10 +724,10 @@ features:
     dimension: [function, fidelity]
     priority: P0
     status: has
-    commands: [layout.margins, layout.orientation, layout.size, layout.columns, layout.break, layout.hyphenation, layout.pageSetup, layout.verticalAlign, layout.differentFirstPage, layout.differentOddEven, layout.pageNumberFormat, layout.section, layout.linkToPrevious]
+    commands: [page.margins, page.orientation, page.size, page.columns, page.break, page.hyphenation, page.pageSetup, page.verticalAlign, page.differentFirstPage, page.differentOddEven, page.pageNumberFormat, page.section, page.linkToPrevious]
     paths: [crates/engine/engine/src/cmd/page.rs, web/src/ribbon/LayoutTab.tsx, crates/engine/engine/src/cmd/tools.rs, crates/engine/layout/src/lookahead.rs, crates/engine/engine/tests/page_setup_commands.rs]
     target: "Word 16.113.4 (Mac)"
-    gap: Save and reopen as .docx is proven by command for page size, orientation, margins and columns; the feature's other commands are covered by engine tests only. layout.hyphenation sets the document's automatic hyphenation, which is saved but, as in WPS for Mac, doesn't break words.
+    gap: Save and reopen as .docx is proven by command for page size, orientation, margins and columns; the feature's other commands are covered by engine tests only. page.hyphenation sets the document's automatic hyphenation, which is saved but, as in WPS for Mac, doesn't break words.
     cases: [doc.layout.page-setup/save-reopen, regressions/issue-empty-section-margins, regressions/issue-no-automatic-hyphenation, regressions/issue-8]
     since: "2026-11-17"
   - id: doc.review.comments
@@ -735,7 +735,7 @@ features:
     dimension: [function, collab]
     priority: P1
     status: partial
-    commands: [review.newComment, review.reply, review.editComment, review.deleteComment, review.resolveComment, review.nextComment, review.previousComment, review.comments, comment.threads, comment.add, comment.reply, comment.resolve, comment.delete, comment.goto]
+    commands: [comment.new, comment.replyCurrent, comment.edit, comment.deleteCurrent, comment.resolveCurrent, comment.next, comment.previous, comment.pane, comment.threads, comment.add, comment.reply, comment.resolve, comment.delete, comment.goto]
     paths: [crates/engine/engine/src/cmd/review.rs, crates/engine/engine/src/session.rs, crates/engine/engine/src/cmd/tools.rs, web/src/ribbon/InsertTab.tsx]
     target: "Word 16.113.4 (Mac)"
     gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
@@ -756,7 +756,7 @@ features:
     dimension: [function, collab]
     priority: P1
     status: partial
-    commands: [review.trackChanges, review.acceptAll, review.rejectAll, review.accept, review.reject, review.nextChange, review.previousChange, review.markup, review.trackingOptions, review.changes, review.compare, review.combine, review.showMarkup]
+    commands: [change.track, change.acceptAll, change.rejectAll, change.accept, change.reject, change.next, change.previous, change.markup, change.options, change.list, file.compare, file.combine, change.showMarkup]
     paths: [crates/engine/engine/src/cmd/review.rs, crates/engine/engine/src/cmd/fmt_revisions.rs, crates/engine/engine/src/cmd/tools.rs, bindings/wasm/src/files.rs]
     target: "Word 16.113.4 (Mac)"
     gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
@@ -766,7 +766,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [review.wordCount, review.spelling, review.issues, review.suggestions, review.addToDictionary, review.ignoreAll, review.applySuggestion, review.proofing, review.thesaurus, review.hideInk, review.restrict, review.language, review.editor, review.readAloud, readAloud.playPause, readAloud.next, readAloud.previous, readAloud.stop, readAloud.speed, readAloud.skipCitations]
+    commands: [file.wordCount, spelling.check, spelling.issues, spelling.suggestions, spelling.addToDictionary, spelling.ignoreAll, spelling.applySuggestion, spelling.proofing, spelling.thesaurus, ink.hide, file.restrictEditing, spelling.language, spelling.editor, readAloud.open, readAloud.playPause, readAloud.next, readAloud.previous, readAloud.stop, readAloud.speed, readAloud.skipCitations]
     paths: [crates/engine/engine/src/cmd/review.rs, crates/engine/engine/src/cmd/speech.rs, crates/engine/engine/src/cmd/tools.rs, crates/engine/engine/src/cmd/draw.rs]
     target: "Word 16.113.4 (Mac)"
     gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
@@ -776,7 +776,7 @@ features:
     dimension: [function, fidelity]
     priority: P1
     status: partial
-    commands: [design.theme, design.themeFonts, design.themeColors, design.styleSet, design.paragraphSpacing, design.watermark, design.pageColor, design.pageBorders, design.setDefault, design.themes, design.effects]
+    commands: [theme.set, theme.fonts, theme.colors, theme.styleSet, theme.paragraphSpacing, page.watermark, page.color, page.borders, theme.setDefault, theme.list, theme.effects]
     paths: [crates/engine/engine/src/cmd/design.rs, crates/engine/engine/src/cmd/tools.rs]
     target: "Word 16.113.4 (Mac)"
     gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
@@ -786,7 +786,7 @@ features:
     dimension: [function, fidelity]
     priority: P1
     status: partial
-    commands: [references.toc, references.updateToc, references.removeToc, references.addText, references.footnote, references.endnote, references.nextFootnote, references.notes, references.caption, references.updateFields, references.noteOptions, caret.pastCitation]
+    commands: [toc.insert, toc.update, toc.remove, toc.addText, footnote.insert, endnote.insert, footnote.next, footnote.show, caption.insert, field.updateAll, footnote.options, caret.pastCitation]
     paths: [crates/engine/engine/src/cmd/references.rs, crates/engine/engine/src/cmd/citations.rs, bindings/wasm/src/check.rs, crates/engine/engine/src/cmd/speech.rs, crates/engine/engine/src/cmd/table_formula.rs, crates/engine/engine/src/print.rs, crates/engine/layout/src/lib.rs]
     target: "Word 16.113.4 (Mac)"
     gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
@@ -797,7 +797,7 @@ features:
     dimension: [function]
     priority: P2
     status: partial
-    commands: [references.sources, references.citation, references.citationStyle, references.bibliography, references.tableOfFigures, references.updateFigures, references.markEntry, references.index, references.updateIndex, references.markCitation, references.tableOfAuthorities, references.researcher]
+    commands: [citation.sources, citation.insert, citation.style, bibliography.insert, tableOfFigures.insert, tableOfFigures.update, index.markEntry, index.insert, index.update, tableOfAuthorities.markCitation, tableOfAuthorities.insert, research.open]
     paths: [crates/engine/engine/src/cmd/citations.rs]
     target: "Word 16.113.4 (Mac)"
     gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
@@ -807,7 +807,7 @@ features:
     dimension: [function]
     priority: P2
     status: partial
-    commands: [mailings.start, mailings.recipients, mailings.editRecipients, mailings.insertField, mailings.addressBlock, mailings.greetingLine, mailings.rules, mailings.matchFields, mailings.highlightFields, mailings.preview, mailings.next, mailings.previous, mailings.findRecipient, mailings.checkErrors, mailings.finish, mailings.envelopes, mailings.labels]
+    commands: [mailMerge.start, mailMerge.recipients, mailMerge.editRecipients, mailMerge.insertField, mailMerge.addressBlock, mailMerge.greetingLine, mailMerge.rules, mailMerge.matchFields, mailMerge.highlightFields, mailMerge.preview, mailMerge.next, mailMerge.previous, mailMerge.findRecipient, mailMerge.checkErrors, mailMerge.finish, mailMerge.envelopes, mailMerge.labels]
     paths: [crates/engine/engine/src/cmd/mailings.rs, bindings/wasm/src/files.rs]
     target: "Word 16.113.4 (Mac)"
     gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
@@ -817,7 +817,7 @@ features:
     dimension: [function, fidelity]
     priority: P1
     status: partial
-    commands: [picture.size, picture.crop, picture.altText, picture.effects, picture.removeBackground, picture.compress, picture.reset, picture.change, picture.style, picture.border, shape.fill, shape.outline, shape.effects, shape.change]
+    commands: [image.size, image.crop, image.altText, image.effects, image.removeBackground, image.compress, image.reset, image.change, image.style, image.border, shape.fill, shape.outline, shape.effects, shape.change]
     paths: [crates/engine/engine/src/cmd/objects.rs, bindings/wasm/src/check.rs, bindings/wasm/src/files.rs]
     target: "Word 16.113.4 (Mac)"
     gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
@@ -848,7 +848,7 @@ features:
     dimension: [function]
     priority: P2
     status: partial
-    commands: [draw.select, draw.shape, draw.eraser, draw.pen, draw.pencil, draw.highlighter, draw.stroke, draw.erase]
+    commands: [ink.select, ink.shape, ink.eraser, ink.pen, ink.pencil, ink.highlighter, ink.stroke, ink.erase]
     paths: [crates/engine/engine/src/cmd/draw.rs, bindings/wasm/src/objects.rs, crates/engine/engine/src/cmd/ink.rs]
     target: "Word 16.113.4 (Mac)"
     gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.
@@ -858,7 +858,7 @@ features:
     dimension: [function]
     priority: P2
     status: partial
-    commands: [tools.recordMacro, tools.macros, tools.autocorrect]
+    commands: [macro.record, macro.list, autocorrect.options]
     paths: [crates/engine/engine/src/cmd/tools.rs, crates/engine/engine/src/session.rs]
     target: "Word 16.113.4 (Mac)"
     gap: Engine tests run these commands, but no case shows them working in the editor and surviving save and reopen.

@@ -72,7 +72,7 @@ fn a_hosted_session_writes_reads_and_starts_nothing_by_path() {
     let at = |name: &str| dir.join(name).to_string_lossy().into_owned();
     let mut s = hosted();
     assert!(s.host_files_only());
-    s.run("mailings.recipients", &json!({"csv": "name\nAda\n"})).unwrap();
+    s.run("mailMerge.recipients", &json!({"csv": "name\nAda\n"})).unwrap();
     for (command, params) in [
         ("file.save", json!({})),
         ("file.save", json!({"path": at("made.docx")})),
@@ -80,19 +80,19 @@ fn a_hosted_session_writes_reads_and_starts_nothing_by_path() {
         ("file.exportPdf", json!({"path": at("made.pdf")})),
         ("file.exportPng", json!({"path": at("made.png")})),
         ("file.saveTemplate", json!({"path": at("made")})),
-        ("mailings.finish", json!({"path": at("merged.docx")})),
+        ("mailMerge.finish", json!({"path": at("merged.docx")})),
         ("file.open", json!({"path": at("page.html")})),
         ("file.open", json!({"path": at("secret.txt")})),
         ("file.newFromTemplate", json!({"path": at("secret.txt")})),
-        ("insert.textFromFile", json!({"path": at("secret.txt")})),
-        ("insert.textFromFile", json!({"path": "../secret.txt"})),
-        ("insert.textFromFile", json!({"path": format!("file://{}", at("secret.txt"))})),
-        ("insert.object", json!({"path": at("secret.txt")})),
-        ("review.compare", json!({"path": at("secret.txt")})),
-        ("review.combine", json!({"path": at("secret.txt")})),
-        ("mailings.recipients", json!({"path": at("secret.csv")})),
-        ("insert.picture", json!({"path": at("secret.png")})),
-        ("insert.picture", json!({"path": "http://127.0.0.1:9/secret.png"})),
+        ("text.insertFromFile", json!({"path": at("secret.txt")})),
+        ("text.insertFromFile", json!({"path": "../secret.txt"})),
+        ("text.insertFromFile", json!({"path": format!("file://{}", at("secret.txt"))})),
+        ("object.insert", json!({"path": at("secret.txt")})),
+        ("file.compare", json!({"path": at("secret.txt")})),
+        ("file.combine", json!({"path": at("secret.txt")})),
+        ("mailMerge.recipients", json!({"path": at("secret.csv")})),
+        ("image.insert", json!({"path": at("secret.png")})),
+        ("image.insert", json!({"path": "http://127.0.0.1:9/secret.png"})),
     ] {
         assert!(s.run(command, &params).is_err(), "{command} {params}");
     }
@@ -103,14 +103,14 @@ fn a_hosted_session_writes_reads_and_starts_nothing_by_path() {
     assert!(s.merge.rows.iter().flatten().all(|cell| !cell.contains(SECRET)), "no data source outside the workspace was read");
 
     // What the host lends from the workspace is read through it.
-    s.run("insert.textFromFile", &json!({"path": "notes/inside.txt"})).unwrap();
+    s.run("text.insertFromFile", &json!({"path": "notes/inside.txt"})).unwrap();
     assert!(s.doc.plain_text(StoryRef::Body).contains(LENT_TEXT));
-    s.run("insert.picture", &json!({"path": "inside.png"})).unwrap();
+    s.run("image.insert", &json!({"path": "inside.png"})).unwrap();
     assert_eq!(s.doc.media.len(), 1);
 
     // Read Aloud's speech program is not started.
     s.read_aloud.backend = crate::speech::Backend::System;
-    assert!(s.run("review.readAloud", &json!({})).is_err());
+    assert!(s.run("readAloud.open", &json!({})).is_err());
     assert!(s.run("readAloud.playPause", &json!({})).is_err());
     assert_eq!(s.read_aloud.state(), crate::speech::State::Stopped);
     std::fs::remove_dir_all(&dir).unwrap();
@@ -118,7 +118,7 @@ fn a_hosted_session_writes_reads_and_starts_nothing_by_path() {
 
 /// The kit's gate in this test: the commands that name files.
 fn gate(command: &str) -> Result<(), String> {
-    if command.starts_with("file.") || command == "insert.textFromFile" { Err(format!("{command}: not for agents")) } else { Ok(()) }
+    if command.starts_with("file.") || command == "text.insertFromFile" { Err(format!("{command}: not for agents")) } else { Ok(()) }
 }
 
 #[test]
@@ -132,10 +132,10 @@ fn every_step_an_agent_runs_passes_the_gate() {
     let wrapped = json!({"define": {"name": "m", "steps": [save]}, "run": "m"});
     // Directly, in a macro, nested in a macro's macro, and the repeat of a person's command.
     assert!(s.execute_as("file.save", &json!({"path": copy}), &agent).is_err());
-    assert!(s.execute_as("tools.macros", &wrapped, &agent).is_err());
-    let nested = json!({"define": {"name": "outer", "steps": [{"command": "tools.macros", "params": wrapped}]}, "run": "outer"});
-    let _ = s.execute_as("tools.macros", &nested, &agent);
-    s.run("insert.textFromFile", &json!({"path": dir.join("secret.txt").to_string_lossy()})).unwrap();
+    assert!(s.execute_as("macro.list", &wrapped, &agent).is_err());
+    let nested = json!({"define": {"name": "outer", "steps": [{"command": "macro.list", "params": wrapped}]}, "run": "outer"});
+    let _ = s.execute_as("macro.list", &nested, &agent);
+    s.run("text.insertFromFile", &json!({"path": dir.join("secret.txt").to_string_lossy()})).unwrap();
     assert!(s.execute_as("edit.repeat", &json!({}), &agent).is_err(), "a person's command repeated by an agent is gated");
     for kind in [OriginKind::Extension, OriginKind::System, OriginKind::Import] {
         let origin = Origin::new(kind, "test");
@@ -143,7 +143,7 @@ fn every_step_an_agent_runs_passes_the_gate() {
     }
     assert_eq!(files(&dir), ["page.html", "secret.csv", "secret.png", "secret.txt"]);
     // A person runs what the gate keeps from agents (here, with no host, on the file system).
-    s.execute_as("tools.macros", &json!({"run": "m"}), &Origin::person("person:local")).unwrap();
+    s.execute_as("macro.list", &json!({"run": "m"}), &Origin::person("person:local")).unwrap();
     assert!(Path::new(&copy).is_file());
     std::fs::remove_dir_all(&dir).unwrap();
 }

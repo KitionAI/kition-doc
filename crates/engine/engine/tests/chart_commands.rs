@@ -26,7 +26,7 @@ fn insert_chart_takes_its_data() {
     let mut s = session();
     let id = s
         .run(
-            "insert.chart",
+            "chart.insert",
             &json!({
                 "type": "pie",
                 "title": "Spending",
@@ -57,14 +57,14 @@ fn insert_chart_takes_its_data() {
 #[test]
 fn the_paragraph_after_an_inserted_chart_keeps_the_chart() {
     for (command, params) in
-        [("insert.chart", json!({ "type": "column" })), ("drawing.insert", json!({ "kind": "chart", "chart": { "kind": "bar" } }))]
+        [("chart.insert", json!({ "type": "column" })), ("drawing.insert", json!({ "kind": "chart", "chart": { "kind": "bar" } }))]
     {
         let mut s = session();
         s.run(command, &params).unwrap();
         s.run("text.newParagraph", &json!({})).unwrap();
         s.run("text.insert", &json!({ "text": "After the chart." })).unwrap();
         assert_eq!(charts(&s.doc).len(), 1, "{command}: the next paragraph deleted the chart");
-        let text = s.run("document.text", &json!({})).unwrap().to_string();
+        let text = s.run("file.text", &json!({})).unwrap().to_string();
         assert!(text.contains("After the chart."), "{command}: {text}");
     }
 }
@@ -72,8 +72,8 @@ fn the_paragraph_after_an_inserted_chart_keeps_the_chart() {
 #[test]
 fn a_chart_takes_alt_text_that_is_saved() {
     let mut s = session();
-    s.run("insert.chart", &json!({ "type": "doughnut" })).unwrap();
-    s.run("picture.altText", &json!({ "text": "Doughnut chart of spending: food 46%, rent 18%" })).unwrap();
+    s.run("chart.insert", &json!({ "type": "doughnut" })).unwrap();
+    s.run("image.altText", &json!({ "text": "Doughnut chart of spending: food 46%, rent 18%" })).unwrap();
     let alt = |doc: &Document| match charts(doc).first() {
         Some(InlineObject::Graphic { alt, .. }) => alt.clone(),
         _ => String::new(),

@@ -705,7 +705,7 @@ fn notes_round_trip() {
     assert_eq!(r.settings.endnote_format, NumFormat::UpperRoman);
 }
 
-/// `references.footnote` starts the note's own text with a reference to the note, so the editor shows
+/// `footnote.insert` starts the note's own text with a reference to the note, so the editor shows
 /// its number. In the file that is the `w:footnoteRef` mark; a `w:footnoteReference` there would make
 /// the note cite itself, which LibreOffice refuses to open.
 #[test]

@@ -49,7 +49,7 @@ pub fn check(doc: &Document, layout: Option<&DocLayout>) -> Vec<Diagnostic> {
                 Severity::Info,
                 format!("{tracked} paragraphs hold tracked insertions or deletions that are not accepted or rejected yet."),
             )
-            .fix("review.acceptAll", None),
+            .fix("change.acceptAll", None),
         );
     }
     found.finish()
@@ -196,7 +196,7 @@ impl Walk<'_> {
                         format!("A link points to the bookmark \"{name}\", which the document does not have."),
                     )
                     .on(target)
-                    .fix("insert.removeLink", None),
+                    .fix("link.remove", None),
                 );
             }
             let visible = p.text.get(range).is_some_and(|text| text.chars().any(|c| c != OBJ && !c.is_whitespace()));
@@ -248,7 +248,7 @@ impl Walk<'_> {
                             format!("A field shows an error: \"{}\" ({}).", result.trim(), instr.trim()),
                         )
                         .on(target)
-                        .fix("references.updateFields", None),
+                        .fix("field.updateAll", None),
                     );
                 }
             }
@@ -282,7 +282,7 @@ impl Walk<'_> {
                 format!("A field refers to the bookmark \"{name}\", which the document does not have: {}", instr.trim()),
             )
             .on(target)
-            .fix("references.updateFields", None),
+            .fix("field.updateAll", None),
         );
     }
 
@@ -291,7 +291,7 @@ impl Walk<'_> {
         self.found.push(
             Diagnostic::new("doc.missing-alt-text", Severity::Info, "A picture or chart has no alternative text: screen readers cannot describe it.")
                 .on(target)
-                .fix("picture.altText", None),
+                .fix("image.altText", None),
         );
     }
 
@@ -430,7 +430,7 @@ mod tests {
         let found = found(&doc);
         assert_eq!(found.iter().map(|d| d.code.as_str()).collect::<Vec<_>>(), ["doc.missing-media", "doc.missing-alt-text"]);
         assert_eq!(found[0].target.path.as_deref(), Some("body:0"));
-        assert_eq!(found[1].fix.as_ref().map(|f| f.command.as_str()), Some("picture.altText"));
+        assert_eq!(found[1].fix.as_ref().map(|f| f.command.as_str()), Some("image.altText"));
     }
 
     #[test]
@@ -467,7 +467,7 @@ mod tests {
         assert_eq!(found.len(), 1);
         assert_eq!(found[0].code, "doc.field-error");
         assert_eq!(found[0].severity, Severity::Error);
-        assert_eq!(found[0].fix.as_ref().map(|f| f.command.as_str()), Some("references.updateFields"));
+        assert_eq!(found[0].fix.as_ref().map(|f| f.command.as_str()), Some("field.updateAll"));
     }
 
     #[test]
@@ -522,7 +522,7 @@ mod tests {
         doc.body = vec![Arc::new(Block::Para(p))];
         let found = found(&doc);
         assert_eq!(found.iter().map(|d| d.code.as_str()).collect::<Vec<_>>(), ["doc.tracked-changes"]);
-        assert_eq!(found[0].fix.as_ref().map(|f| f.command.as_str()), Some("review.acceptAll"));
+        assert_eq!(found[0].fix.as_ref().map(|f| f.command.as_str()), Some("change.acceptAll"));
     }
 
     #[test]

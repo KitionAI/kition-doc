@@ -24,7 +24,7 @@ fn params(value: Value) -> Map<String, Value> {
 
 /// The document's blocks as an agent reads them: text, runs and the objects in each paragraph.
 fn blocks(kit: &mut Headless<DocDocument>, id: &str) -> Value {
-    let inspected = kit.execute(id, "document.inspect", params(json!({ "text": true })), Origin::Agent).unwrap();
+    let inspected = kit.execute(id, "file.inspect", params(json!({ "text": true })), Origin::Agent).unwrap();
     let result = inspected.result.unwrap_or_default();
     result.get("blocks").cloned().unwrap_or(result)
 }
@@ -46,7 +46,7 @@ fn a_document_opens_from_its_exported_replica_with_its_media() {
         DocDocument::open("basic.docx", &std::fs::read(Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../conformance/basic.docx"))).unwrap())
             .unwrap();
     document.execute("text.insert", json!({ "text": "Before the picture. " })).unwrap();
-    document.execute("insert.picture", json!({ "data": PICTURE, "width": 72, "alt": "Four dots" })).unwrap();
+    document.execute("image.insert", json!({ "data": PICTURE, "width": 72, "alt": "Four dots" })).unwrap();
     std::fs::write(root.join("basic.docx"), document.save(None).unwrap()).unwrap();
 
     let mut kit = Headless::<DocDocument>::with_replica_port(KitInfo::from_manifest(MANIFEST, &[], kition_doc_kit::context::EDITOR_STATE).unwrap());

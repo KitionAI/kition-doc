@@ -43,7 +43,7 @@ pub fn specs() -> Vec<CommandSpec> {
         CommandSpec::new("caret.set", "Set Caret", "Navigation", set)
             .params(r#"{"pos": Pos, "extend"?: bool} | {"page": n, "x": pt, "y": pt}"#)
             .pure(),
-        CommandSpec::new("select.all", "Select All", "Home › Editing › Select", select_all).key("Mod+A").pure(),
+        CommandSpec::new("edit.selectAll", "Select All", "Home › Editing › Select", select_all).key("Mod+A").pure(),
         CommandSpec::new("select.range", "Select Range", "Navigation", select_range).params(r#"{"anchor": Pos, "focus": Pos}"#).pure(),
         CommandSpec::new("select.word", "Select Word", "Navigation", select_word).pure(),
         CommandSpec::new("select.sentence", "Select Sentence", "Navigation", select_sentence).pure(),

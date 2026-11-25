@@ -84,7 +84,7 @@ pub fn specs() -> Vec<CommandSpec> {
             .params(r#"{"text": string, "with": string, "matchCase"?: bool, "wholeWord"?: bool, "regex"?: bool}"#),
         CommandSpec::new("edit.goto", "Go To", "Home › Editing › Find", goto)
             .key("Mod+Alt+G / F5")
-            .params(r#"{"page"?: n (from 1), "bookmark"?: string, "paragraph"?: n (document.inspect block index from 0)}"#)
+            .params(r#"{"page"?: n (from 1), "bookmark"?: string, "paragraph"?: n (file.inspect block index from 0)}"#)
             .pure(),
         CommandSpec::new("edit.formatPainter", "Format Painter", "Home › Clipboard", painter).params(r#"{"sticky"?: bool}"#).pure(),
         CommandSpec::new("edit.copyFormat", "Copy Formatting", "Home › Clipboard", |s, _| {
@@ -476,7 +476,7 @@ fn goto(s: &mut Session, v: &Value) -> CmdResult {
         s.sel = Selection::caret(bm.1);
         return sel_result(s);
     }
-    // The index `document.inspect` gives a body block (from 0), so an agent goes where it looked.
+    // The index `file.inspect` gives a body block (from 0), so an agent goes where it looked.
     if let Some(n) = p::u64(v, "paragraph") {
         let blocks = s.doc.body.len();
         let path = u32::try_from(n)

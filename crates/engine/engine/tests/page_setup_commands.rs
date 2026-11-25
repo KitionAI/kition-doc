@@ -1,5 +1,5 @@
 //! Page setup through the commands an agent uses: a partial
-//! `layout.pageSetup` changes only what it names, `layout.size` keeps a landscape size,
+//! `page.pageSetup` changes only what it names, `page.size` keeps a landscape size,
 //! vertical alignment is drawn, and keep with next holds at the foot of a page and a column.
 
 use kition_doc_engine::{
@@ -45,8 +45,8 @@ fn where_is(s: &mut Session, text: &str) -> (usize, f32) {
 #[test]
 fn a_partial_page_setup_changes_only_the_fields_it_names() {
     let mut s = session();
-    run(&mut s, "layout.size", json!({ "name": "A4" }));
-    let set = run(&mut s, "layout.pageSetup", json!({ "section": { "marginLeft": 90, "valign": "center" } }));
+    run(&mut s, "page.size", json!({ "name": "A4" }));
+    let set = run(&mut s, "page.pageSetup", json!({ "section": { "marginLeft": 90, "valign": "center" } }));
     assert_eq!(set["marginLeft"], 90.0);
     assert_eq!(set["valign"], "center");
     // Still A4 (595.3 x 841.9 pt), with the other margins as they were.
@@ -54,19 +54,19 @@ fn a_partial_page_setup_changes_only_the_fields_it_names() {
     assert!((set["pageH"].as_f64().unwrap() - 841.9).abs() < 0.5, "{set}");
     assert_eq!(set["marginRight"], 72.0);
     // A field it does not know is refused, not dropped.
-    assert!(s.run("layout.pageSetup", &json!({ "section": { "pageWidth": 400 } })).is_err());
+    assert!(s.run("page.pageSetup", &json!({ "section": { "pageWidth": 400 } })).is_err());
 }
 
 #[test]
 fn a_size_wider_than_tall_is_landscape() {
     let mut s = session();
-    let set = run(&mut s, "layout.size", json!({ "width": 504, "height": 360 }));
+    let set = run(&mut s, "page.size", json!({ "width": 504, "height": 360 }));
     assert_eq!((set["pageW"].as_f64(), set["pageH"].as_f64(), set["landscape"].as_bool()), (Some(504.0), Some(360.0), Some(true)));
-    let set = run(&mut s, "layout.size", json!({ "width": 360, "height": 504 }));
+    let set = run(&mut s, "page.size", json!({ "width": 360, "height": 504 }));
     assert_eq!((set["pageW"].as_f64(), set["pageH"].as_f64(), set["landscape"].as_bool()), (Some(360.0), Some(504.0), Some(false)));
     // A named paper keeps the orientation the section has.
-    run(&mut s, "layout.orientation", json!({ "value": "landscape" }));
-    let set = run(&mut s, "layout.size", json!({ "name": "A5" }));
+    run(&mut s, "page.orientation", json!({ "value": "landscape" }));
+    let set = run(&mut s, "page.size", json!({ "name": "A5" }));
     assert!(set["landscape"].as_bool().unwrap() && set["pageW"].as_f64() > set["pageH"].as_f64(), "{set}");
 }
 
@@ -75,12 +75,12 @@ fn vertical_alignment_centres_the_page_even_when_another_section_follows() {
     let mut s = session();
     type_paragraphs(&mut s, &["Title page"]);
     let top = where_is(&mut s, "Title page").1;
-    run(&mut s, "layout.verticalAlign", json!({ "value": "center" }));
+    run(&mut s, "page.verticalAlign", json!({ "value": "center" }));
     let centred = where_is(&mut s, "Title page").1;
     assert!(centred > top + 250.0, "centred on the page: {top} -> {centred}");
     // A next-page section after it keeps the title page centred.
-    run(&mut s, "layout.break", json!({ "kind": "nextPage" }));
-    run(&mut s, "layout.verticalAlign", json!({ "value": "top" }));
+    run(&mut s, "page.break", json!({ "kind": "nextPage" }));
+    run(&mut s, "page.verticalAlign", json!({ "value": "top" }));
     run(&mut s, "text.insert", json!({ "text": "Contents" }));
     let (page, y) = where_is(&mut s, "Title page");
     assert_eq!(page, 0);
@@ -88,21 +88,21 @@ fn vertical_alignment_centres_the_page_even_when_another_section_follows() {
     let (page, y) = where_is(&mut s, "Contents");
     assert_eq!(page, 1);
     assert!((y - top).abs() < 1.0, "the next section is top-aligned: {y} vs {top}");
-    assert!(s.run("layout.verticalAlign", &json!({ "value": "middle" })).is_err(), "an unknown alignment is refused");
+    assert!(s.run("page.verticalAlign", &json!({ "value": "middle" })).is_err(), "an unknown alignment is refused");
 }
 
 /// A heading kept with a body paragraph under widow control: at the foot of a page (or column)
 /// where the heading and only one line of the body fit, the heading moves on with the body.
 fn kept_heading(columns: bool) -> (Session, usize) {
     let mut s = session();
-    run(&mut s, "layout.size", json!({ "width": 300, "height": 300 }));
-    run(&mut s, "layout.margins", json!({ "top": 20, "bottom": 20, "left": 20, "right": 20 }));
+    run(&mut s, "page.size", json!({ "width": 300, "height": 300 }));
+    run(&mut s, "page.margins", json!({ "top": 20, "bottom": 20, "left": 20, "right": 20 }));
     if columns {
-        run(&mut s, "layout.columns", json!({ "count": 2, "space": 12 }));
+        run(&mut s, "page.columns", json!({ "count": 2, "space": 12 }));
     }
     run(
         &mut s,
-        "styles.modify",
+        "style.set",
         json!({ "style": "Normal", "para": { "spaceBefore": 0, "spaceAfter": 0, "lineSpacing": { "rule": "exactly", "value": 20 } } }),
     );
     // 11 filler lines of 20 pt (220 pt of the 260 pt column), then the heading (20 pt): one
@@ -111,10 +111,10 @@ fn kept_heading(columns: bool) -> (Session, usize) {
     let filler: Vec<&str> = filler.iter().map(String::as_str).collect();
     type_paragraphs(&mut s, &filler);
     run(&mut s, "text.newParagraph", json!({}));
-    run(&mut s, "para.set", json!({ "props": { "keepNext": true } }));
+    run(&mut s, "paragraph.set", json!({ "props": { "keepNext": true } }));
     run(&mut s, "text.insert", json!({ "text": "Heading" }));
     run(&mut s, "text.newParagraph", json!({}));
-    run(&mut s, "para.set", json!({ "props": { "keepNext": false, "widowControl": true } }));
+    run(&mut s, "paragraph.set", json!({ "props": { "keepNext": false, "widowControl": true } }));
     run(&mut s, "text.insert", json!({ "text": "Body one" }));
     run(&mut s, "text.lineBreak", json!({}));
     run(&mut s, "text.insert", json!({ "text": "Body two" }));

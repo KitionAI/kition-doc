@@ -47,7 +47,7 @@ fn a_reread_follows_the_selected_paragraph_and_preserves_pending_formatting() {
     doc.execute("format.bold", json!({ "value": true })).unwrap();
     let pending = doc.editor_state()["pending"].clone();
     let mut peer = DocDocument::open("reread.docx", &doc.save(None).unwrap()).unwrap();
-    peer.execute("para.insert", json!({ "before": 0, "text": "Outside" })).unwrap();
+    peer.execute("paragraph.insert", json!({ "before": 0, "text": "Outside" })).unwrap();
     reconcile(&mut doc, &peer);
     let state = doc.editor_state();
     assert_eq!(state["positions"]["anchor"]["path"], json!([2]));
@@ -75,7 +75,7 @@ fn a_reread_retains_new_picture_bytes() {
     picture.write_to(&mut bytes, image::ImageFormat::Png).unwrap();
     let data = bytes.into_inner();
     select(&mut peer, 2, 0);
-    peer.execute("insert.picture", json!({ "data": base64::engine::general_purpose::STANDARD.encode(&data), "width": 40 })).unwrap();
+    peer.execute("image.insert", json!({ "data": base64::engine::general_purpose::STANDARD.encode(&data), "width": 40 })).unwrap();
     reconcile(&mut doc, &peer);
     let saved = doc.save(None).unwrap();
     let mut archive = zip::ZipArchive::new(std::io::Cursor::new(saved)).unwrap();

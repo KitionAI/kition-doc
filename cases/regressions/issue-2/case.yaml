@@ -1,7 +1,7 @@
 format: 1
 id: regressions/issue-2
 feature: doc.drawing.objects
-intent: A chart inserted with insert.chart takes its data (type, title, categories, series, legend, size) as drawing.chart describes it, leaves the caret after itself so the next paragraph follows it instead of replacing it, and takes alternative text with picture.altText (the doc.missing-alt-text fix) that is saved with it.
+intent: A chart inserted with chart.insert takes its data (type, title, categories, series, legend, size) as drawing.chart describes it, leaves the caret after itself so the next paragraph follows it instead of replacing it, and takes alternative text with image.altText (the doc.missing-alt-text fix) that is saved with it.
 layer: gate
 source:
   kind: issue

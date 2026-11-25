@@ -19,10 +19,10 @@ const ID_ALLOW: &[(&str, &str)] = &[
     // C8-doc-6): the handler resolves either (`review.rs` `comment_param`), and `under` holds the
     // comment and its thread by their tool ids (`family.rs` `comment_premises`). Not marked as an
     // object: the session number, which every existing caller passes, is no tool id.
-    ("review.reply", "id"),
-    ("review.editComment", "id"),
-    ("review.deleteComment", "id"),
-    ("review.resolveComment", "id"),
+    ("comment.replyCurrent", "id"),
+    ("comment.edit", "id"),
+    ("comment.deleteCurrent", "id"),
+    ("comment.resolveCurrent", "id"),
     ("comment.reply", "id"),
     // A list's numbering id (`w:numId`) in this session: lists are entries of the root's `lists`
     // map keyed by UUID, with no tool id (reported gap: redefining a list in place holds nothing).
@@ -48,25 +48,25 @@ const NAME_ALLOW: &[(&str, &str, &str)] = &[
     ),
     ("*", "basedOn", "a style, as `style`"),
     ("*", "next", "a style, as `style`"),
-    ("styles.create", "name", "the new style's name"),
-    ("styles.modify", "name", "the style's new name"),
+    ("style.add", "name", "the new style's name"),
+    ("style.set", "name", "the style's new name"),
     ("table.newStyle", "name", "the new table style's name"),
-    ("table.modifyStyle", "name", "the table style's new name"),
+    ("table.setStyle", "name", "the table style's new name"),
     ("comment.add", "name", "the author's display name, written into the new comment"),
     ("comment.reply", "name", "the author's display name, written into the reply"),
     ("file.setAuthor", "name", "the author of new tracked changes: a session setting"),
-    ("format.font", "name", "a font family name, no object"),
+    ("format.fontName", "name", "a font family name, no object"),
     ("format.fontDialog", "name", "a font family name, no object"),
-    ("insert.symbol", "font", "the symbol's font family name, no object"),
-    ("design.theme", "name", "a built-in theme of the gallery, no object of the document"),
-    ("design.themeColors", "name", "a built-in colour set of the gallery"),
-    ("design.effects", "name", "a built-in effects set of the gallery"),
-    ("design.styleSet", "name", "a built-in style set of the gallery"),
-    ("layout.size", "name", "a paper size name (Letter, A4)"),
+    ("symbol.insert", "font", "the symbol's font family name, no object"),
+    ("theme.set", "name", "a built-in theme of the gallery, no object of the document"),
+    ("theme.colors", "name", "a built-in colour set of the gallery"),
+    ("theme.effects", "name", "a built-in effects set of the gallery"),
+    ("theme.styleSet", "name", "a built-in style set of the gallery"),
+    ("page.size", "name", "a paper size name (Letter, A4)"),
     ("list.define", "name", "the new list's name"),
-    ("insert.bookmark", "name", "the new bookmark's name, made at the selection"),
-    ("insert.docProperty", "name", "a document property by its name (Title, Author): a member of the root's `core` register"),
-    ("tools.recordMacro", "name", "a macro of this session, never in the document"),
+    ("bookmark.insert", "name", "the new bookmark's name, made at the selection"),
+    ("field.insertDocProperty", "name", "a document property by its name (Title, Author): a member of the root's `core` register"),
+    ("macro.record", "name", "a macro of this session, never in the document"),
     ("edit.goto", "bookmark", "moves the caret only (no edit): navigation an agent's later step reads through the selection"),
     ("comment.goto", "bookmark", "moves the caret only (no edit)"),
     ("comment.goto", "thread", "moves the caret only (no edit)"),
@@ -91,14 +91,14 @@ const NAME_ALLOW: &[(&str, &str, &str)] = &[
         "a comment's session number (`c<n>`) or its tool id (`comment:<id>`, `thread:<id>`): `under` holds it by its tool id (C8-doc-6)",
     ),
     (
-        "insert.crossReference",
+        "crossReference.insert",
         "target",
         "a heading's text, a bookmark or a caption number the new field refers to; the field is written at the caret and reads its target when updated",
     ),
-    ("references.citation", "tag", "a source's tag in the root's `sources` register, no object"),
-    ("mailings.insertField", "field", "a merge field of the mail merge data source, outside the document"),
-    ("mailings.rules", "field", "a merge field of the mail merge data source, outside the document"),
-    ("references.citation", "source", "a new bibliography source's values, no reference"),
+    ("citation.insert", "tag", "a source's tag in the root's `sources` register, no object"),
+    ("mailMerge.insertField", "field", "a merge field of the mail merge data source, outside the document"),
+    ("mailMerge.rules", "field", "a merge field of the mail merge data source, outside the document"),
+    ("citation.insert", "source", "a new bibliography source's values, no reference"),
 ];
 
 #[test]
@@ -160,5 +160,5 @@ fn drawing_object_parameters_are_typed() {
     assert_eq!(get("drawing.text").objects, &["id"]);
     // Positions are places, never ids.
     assert_eq!(get("select.range").places, &["anchor", "focus"]);
-    assert_eq!(get("para.text").places, &["index"]);
+    assert_eq!(get("paragraph.text").places, &["index"]);
 }

@@ -58,7 +58,7 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .key("F4")
         .pure(),
-        CommandSpec::new("tools.recordMacro", "Record Macro", "View › Macros", |s, v| match s.recording.take() {
+        CommandSpec::new("macro.record", "Record Macro", "View › Macros", |s, v| match s.recording.take() {
             Some((name, steps)) => {
                 let n = steps.len();
                 s.macros.insert(name.clone(), steps);
@@ -72,10 +72,10 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"name"?: string} (call again to stop)"#)
         .pure(),
-        CommandSpec::new("tools.macros", "Macros", "View › Macros", macros)
+        CommandSpec::new("macro.list", "Macros", "View › Macros", macros)
             .params(r#"{"run"?: name, "define"?: {"name": string, "steps": [{"command", "params"}]}, "delete"?: name}"#)
             .pure(),
-        CommandSpec::new("tools.autocorrect", "AutoCorrect Options", "File › Options › Proofing", |s, v| {
+        CommandSpec::new("autocorrect.options", "AutoCorrect Options", "File › Options › Proofing", |s, v| {
             if let Some(b) = p::bool(v, "enabled") {
                 s.autocorrect_on = b;
             }
@@ -89,12 +89,12 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"enabled"?: bool, "add"?: {"from": string, "to": string}}"#)
         .pure(),
-        CommandSpec::new("review.compare", "Compare", "Review › Compare", compare).params(r#"{"path"?: string, "text"?: string (revised version)}"#),
-        CommandSpec::new("review.combine", "Combine", "Review › Compare", compare).params(r#"{"path"?: string}"#),
+        CommandSpec::new("file.compare", "Compare", "Review › Compare", compare).params(r#"{"path"?: string, "text"?: string (revised version)}"#),
+        CommandSpec::new("file.combine", "Combine", "Review › Compare", compare).params(r#"{"path"?: string}"#),
         CommandSpec::new("file.accessibility", "Check Accessibility", "Review › Accessibility", accessibility).pure(),
-        CommandSpec::new("file.inspect", "Inspect Document", "File › Info", inspect_doc)
+        CommandSpec::new("file.removeHiddenContent", "Inspect Document", "File › Info", inspect_doc)
             .params(r#"{"remove"?: ["comments", "revisions", "properties", "hidden", "headers"]}"#),
-        CommandSpec::new("review.restrict", "Restrict Editing", "Review › Protect", |s, v| {
+        CommandSpec::new("file.restrictEditing", "Restrict Editing", "Review › Protect", |s, v| {
             let mode = p::str(v, "mode").unwrap_or("readOnly").to_string();
             s.doc.settings.protection = if mode == "none" { None } else { Some(mode.clone()) };
             if mode == "trackedChanges" {
@@ -105,7 +105,7 @@ pub fn specs() -> Vec<CommandSpec> {
         .params(r#"{"mode": "none|readOnly|comments|trackedChanges|forms"}"#),
         CommandSpec::new("file.protect", "Protect Document", "File › Info", |s, v| {
             let mode = p::str(v, "mode").unwrap_or("readOnly");
-            s.run("review.restrict", &json!({"mode": mode}))
+            s.run("file.restrictEditing", &json!({"mode": mode}))
         })
         .params(r#"{"mode": "none|readOnly|comments|trackedChanges"}"#),
         CommandSpec::new("file.versions", "Version History", "File › Info", |s, v| {
@@ -171,10 +171,10 @@ pub fn specs() -> Vec<CommandSpec> {
             Ok(json!({"hint": "Save or export a copy (PDF, Word document) to share it."}))
         })
         .pure(),
-        CommandSpec::new("insert.quickParts", "Quick Parts", "Insert › Text", quick_parts)
+        CommandSpec::new("quickPart.insert", "Quick Parts", "Insert › Text", quick_parts)
             .params(r#"{"save"?: name (from the selection), "insert"?: name, "delete"?: name} → list"#),
-        CommandSpec::new("insert.autoText", "AutoText", "Insert › Text › Quick Parts", quick_parts).params(r#"{"save"?: name, "insert"?: name}"#),
-        CommandSpec::new("insert.docProperty", "Document Property", "Insert › Text › Quick Parts", |s, v| {
+        CommandSpec::new("autoText.insert", "AutoText", "Insert › Text › Quick Parts", quick_parts).params(r#"{"save"?: name, "insert"?: name}"#),
+        CommandSpec::new("field.insertDocProperty", "Document Property", "Insert › Text › Quick Parts", |s, v| {
             let name = p::str(v, "name").unwrap_or("Title").to_string();
             let c = &s.doc.core;
             let val = match name.to_lowercase().as_str() {
@@ -202,7 +202,7 @@ pub fn specs() -> Vec<CommandSpec> {
             sel_result(s)
         })
         .params(r#"{"name": "Title|Author|Subject|Keywords|Comments|Category"}"#),
-        CommandSpec::new("insert.signatureLine", "Signature Line", "Insert › Text", |s, v| {
+        CommandSpec::new("signatureLine.insert", "Signature Line", "Insert › Text", |s, v| {
             let signer = p::str(v, "signer").unwrap_or("").to_string();
             let title = p::str(v, "title").unwrap_or("").to_string();
             let at = delete_selection(s)?;
@@ -222,16 +222,16 @@ pub fn specs() -> Vec<CommandSpec> {
             sel_result(s)
         })
         .params(r#"{"signer"?: string, "title"?: string}"#),
-        CommandSpec::new("insert.object", "Object", "Insert › Text", |s, v| {
+        CommandSpec::new("object.insert", "Object", "Insert › Text", |s, v| {
             let path = p::req_str(v, "path")?;
-            s.run("insert.textFromFile", &json!({"path": path}))
+            s.run("text.insertFromFile", &json!({"path": path}))
         })
         .params(r#"{"path": string}"#),
-        CommandSpec::new("insert.spreadsheet", "Spreadsheet Table", "Insert › Tables", |s, v| {
+        CommandSpec::new("spreadsheet.insert", "Spreadsheet Table", "Insert › Tables", |s, v| {
             let csv = p::str(v, "csv").unwrap_or("A,B,C\n1,2,3\n4,5,6");
             let rows = super::mailings::parse_csv(csv);
             let cols = rows.iter().map(Vec::len).max().unwrap_or(1).clamp(1, 63);
-            s.run("insert.table", &json!({"rows": rows.len().max(1), "cols": cols, "style": "GridTable1Light"}))?;
+            s.run("table.insert", &json!({"rows": rows.len().max(1), "cols": cols, "style": "GridTable1Light"}))?;
             let Some((tp, _, _)) = s.sel.focus.path.cell() else { return sel_result(s) };
             let t = s.doc.table_mut(s.sel.focus.story, &tp)?;
             for (r, row) in rows.iter().enumerate() {
@@ -244,7 +244,7 @@ pub fn specs() -> Vec<CommandSpec> {
             sel_result(s)
         })
         .params(r#"{"csv"?: string}"#),
-        CommandSpec::new("layout.linkToPrevious", "Link to Previous", "Header & Footer › Navigation", |s, v| {
+        CommandSpec::new("page.linkToPrevious", "Link to Previous", "Header & Footer › Navigation", |s, v| {
             let header = p::bool(v, "footer").map(|f| !f).unwrap_or(true);
             let block = s.sel.focus.path.0.first().copied().unwrap_or(0) as usize;
             let sect = s.doc.section_mut(block);
@@ -256,9 +256,9 @@ pub fn specs() -> Vec<CommandSpec> {
             Ok(json!({"linked": true}))
         })
         .params(r#"{"footer"?: bool}"#),
-        CommandSpec::new("hf.next", "Next Section", "Header & Footer › Navigation", |s, _| hf_nav(s, 1)).pure(),
-        CommandSpec::new("hf.previous", "Previous Section", "Header & Footer › Navigation", |s, _| hf_nav(s, -1)).pure(),
-        CommandSpec::new("hf.position", "Header/Footer Position", "Header & Footer › Position", |s, v| {
+        CommandSpec::new("headerFooter.next", "Next Section", "Header & Footer › Navigation", |s, _| hf_nav(s, 1)).pure(),
+        CommandSpec::new("headerFooter.previous", "Previous Section", "Header & Footer › Navigation", |s, _| hf_nav(s, -1)).pure(),
+        CommandSpec::new("headerFooter.position", "Header/Footer Position", "Header & Footer › Position", |s, v| {
             let (h, f) = (p::f32(v, "header"), p::f32(v, "footer"));
             let block = s.sel.focus.path.0.first().copied().unwrap_or(0) as usize;
             let sect = s.doc.section_mut(block);
@@ -294,7 +294,7 @@ pub fn specs() -> Vec<CommandSpec> {
                 &json!({"kind": p::str(v, "kind").unwrap_or("all"), "width": p::f32(v, "width").unwrap_or(0.5), "color": p::str(v, "color")}),
             )
         }),
-        CommandSpec::new("para.setNumberingValue", "Set Numbering Value", "Home › Paragraph › Numbering", |s, v| {
+        CommandSpec::new("paragraph.setNumberingValue", "Set Numbering Value", "Home › Paragraph › Numbering", |s, v| {
             let value = p::u64(v, "value").unwrap_or(1).clamp(0, 100_000) as u32;
             let f = s.sel.focus.clone();
             let n = s
@@ -319,11 +319,11 @@ pub fn specs() -> Vec<CommandSpec> {
             sel_result(s)
         })
         .params(r#"{"value": n}"#),
-        CommandSpec::new("para.defineBullet", "Define New Bullet", "Home › Paragraph › Bullets", |s, v| {
-            s.run("para.bullets", &json!({"kind": p::str(v, "char").unwrap_or("★")}))
+        CommandSpec::new("paragraph.defineBullet", "Define New Bullet", "Home › Paragraph › Bullets", |s, v| {
+            s.run("paragraph.bullets", &json!({"kind": p::str(v, "char").unwrap_or("★")}))
         })
         .params(r#"{"char": string}"#),
-        CommandSpec::new("para.defineNumber", "Define New Number Format", "Home › Paragraph › Numbering", |s, v| {
+        CommandSpec::new("paragraph.defineNumber", "Define New Number Format", "Home › Paragraph › Numbering", |s, v| {
             let fmt = kition_doc_doc::section::NumFormat::from_ooxml(p::str(v, "format").unwrap_or("decimal"));
             let text = p::str(v, "text").unwrap_or("%1.").to_string();
             let start = p::u64(v, "start").unwrap_or(1).min(100_000) as u32;
@@ -342,7 +342,7 @@ pub fn specs() -> Vec<CommandSpec> {
             })
         })
         .params(r#"{"format": "decimal|upperRoman|lowerLetter…", "text"?: "%1.", "start"?: n}"#),
-        CommandSpec::new("review.language", "Language", "Review › Language", |s, v| {
+        CommandSpec::new("spelling.language", "Language", "Review › Language", |s, v| {
             let lang = p::str(v, "lang").unwrap_or("en-US").to_string();
             let no_proof = p::bool(v, "noProof");
             super::format::apply(s, &|c| {
@@ -353,13 +353,13 @@ pub fn specs() -> Vec<CommandSpec> {
             })
         })
         .params(r#"{"lang": "en-US|en-GB|fr-FR|…", "noProof"?: bool}"#),
-        CommandSpec::new("review.showMarkup", "Show Markup", "Review › Tracking", |s, v| {
+        CommandSpec::new("change.showMarkup", "Show Markup", "Review › Tracking", |s, v| {
             s.view.show_markup = p::bool(v, "value").unwrap_or(!s.view.show_markup);
             s.relayout();
             Ok(json!({"value": s.view.show_markup}))
         })
         .pure(),
-        CommandSpec::new("review.editor", "Editor", "Home › Editor", |s, v| s.run("review.spelling", v)).pure(),
+        CommandSpec::new("spelling.editor", "Editor", "Home › Editor", |s, v| s.run("spelling.check", v)).pure(),
         CommandSpec::new("select.similar", "Select Text with Similar Formatting", "Home › Editing › Select", select_similar).pure(),
         CommandSpec::new("select.extend", "Extend Selection", "Editing › Selection", |s, _| {
             // F8 grows the selection: word → sentence → paragraph → document.
@@ -370,13 +370,13 @@ pub fn specs() -> Vec<CommandSpec> {
             } else if a.path == b.path && (a.off > 0 || b.off < para_len) {
                 if s.doc.para_at(&a).map(|x| x.sentence_at(a.off)) == Some((a.off, b.off)) { "select.paragraph" } else { "select.sentence" }
             } else {
-                "select.all"
+                "edit.selectAll"
             };
             s.run(id, &json!({}))
         })
         .key("F8")
         .pure(),
-        CommandSpec::new("design.effects", "Effects", "Design › Document Formatting", |s, v| {
+        CommandSpec::new("theme.effects", "Effects", "Design › Document Formatting", |s, v| {
             s.doc.settings.theme_name =
                 format!("{} ({})", s.doc.settings.theme_name.split(" (").next().unwrap_or("Classic"), p::str(v, "name").unwrap_or("Subtle"));
             sel_result(s)
@@ -420,7 +420,7 @@ fn macros(s: &mut Session, v: &Value) -> CmdResult {
     if let Some(n) = p::str(v, "run") {
         let steps = s.macros.get(n).cloned().ok_or_else(|| CmdError::Params(format!("no macro `{n}`")))?;
         for (id, params) in steps.iter().take(10_000) {
-            if id == "tools.macros" {
+            if id == "macro.list" {
                 continue;
             }
             s.run(id, params)?;
@@ -750,7 +750,9 @@ fn accessibility(s: &mut Session, _: &Value) -> CmdResult {
             if let InlineObject::Image { alt, .. } = o
                 && alt.trim().is_empty()
             {
-                issues.push(json!({"kind": "error", "issue": "Missing alternative text", "where": path.0, "fix": "Select the picture and run picture.altText"}));
+                issues.push(
+                    json!({"kind": "error", "issue": "Missing alternative text", "where": path.0, "fix": "Select the picture and run image.altText"}),
+                );
             }
             // Charts and diagrams can't be given alt text yet (see objects.rs), so only report them.
             if let InlineObject::Graphic { alt, .. } = o
@@ -805,10 +807,10 @@ fn inspect_doc(s: &mut Session, v: &Value) -> CmdResult {
     for r in &remove {
         match r.as_str() {
             "comments" => {
-                s.run("review.deleteComment", &json!({"all": true}))?;
+                s.run("comment.deleteCurrent", &json!({"all": true}))?;
             }
             "revisions" => {
-                s.run("review.acceptAll", &json!({}))?;
+                s.run("change.acceptAll", &json!({}))?;
             }
             "properties" => {
                 let title = s.doc.core.title.clone();
@@ -829,8 +831,8 @@ fn inspect_doc(s: &mut Session, v: &Value) -> CmdResult {
                 }
             }
             "headers" => {
-                s.run("insert.removeHeader", &json!({}))?;
-                s.run("insert.removeFooter", &json!({}))?;
+                s.run("header.remove", &json!({}))?;
+                s.run("footer.remove", &json!({}))?;
             }
             _ => {}
         }
@@ -911,20 +913,20 @@ mod tests {
     #[test]
     fn compare_marks_changes() {
         let mut s = Session::new(Document::from_text("The cat sat.\nKeep this.\nOld line."));
-        let r = s.run("review.compare", &json!({"text": "The dog sat.\nKeep this.\nNew line here."})).unwrap();
+        let r = s.run("file.compare", &json!({"text": "The dog sat.\nKeep this.\nNew line here."})).unwrap();
         assert!(r["changes"].as_u64().unwrap() >= 2);
-        s.run("review.acceptAll", &json!({})).unwrap();
+        s.run("change.acceptAll", &json!({})).unwrap();
         assert_eq!(s.doc.plain_text(StoryRef::Body), "The dog sat.\nKeep this.\nNew line here.");
     }
 
     #[test]
     fn macros_record_and_run() {
         let mut s = Session::new(Document::new());
-        s.run("tools.recordMacro", &json!({"name": "hi"})).unwrap();
+        s.run("macro.record", &json!({"name": "hi"})).unwrap();
         s.run("text.insert", &json!({"text": "Hi "})).unwrap();
         s.run("format.bold", &json!({})).unwrap();
-        s.run("tools.recordMacro", &json!({})).unwrap();
-        s.run("tools.macros", &json!({"run": "hi"})).unwrap();
+        s.run("macro.record", &json!({})).unwrap();
+        s.run("macro.list", &json!({"run": "hi"})).unwrap();
         assert_eq!(s.doc.plain_text(StoryRef::Body), "Hi Hi ");
         s.run("edit.repeat", &json!({})).unwrap();
     }
@@ -942,9 +944,9 @@ mod tests {
     #[test]
     fn protection_blocks_edits() {
         let mut s = Session::new(Document::from_text("locked"));
-        s.run("review.restrict", &json!({"mode": "readOnly"})).unwrap();
+        s.run("file.restrictEditing", &json!({"mode": "readOnly"})).unwrap();
         assert!(s.run("text.insert", &json!({"text": "x"})).is_err());
-        s.run("review.restrict", &json!({"mode": "none"})).unwrap();
+        s.run("file.restrictEditing", &json!({"mode": "none"})).unwrap();
         assert!(s.run("text.insert", &json!({"text": "x"})).is_ok());
     }
 
@@ -954,9 +956,9 @@ mod tests {
         let r = s.run("file.accessibility", &json!({})).unwrap();
         assert!(r["issues"].is_array());
         s.run("select.text", &json!({"text": "Membership"})).unwrap();
-        s.run("insert.quickParts", &json!({"save": "m"})).unwrap();
+        s.run("quickPart.insert", &json!({"save": "m"})).unwrap();
         s.run("caret.docEnd", &json!({})).unwrap();
-        s.run("insert.quickParts", &json!({"insert": "m"})).unwrap();
+        s.run("quickPart.insert", &json!({"insert": "m"})).unwrap();
         assert!(s.doc.plain_text(StoryRef::Body).ends_with("Membership"));
     }
 }

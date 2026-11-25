@@ -13,7 +13,7 @@ use crate::{CmdError, CmdResult, CommandSpec, Session, p};
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("review.readAloud", "Read Aloud", "Review › Speech", read_aloud)
+        CommandSpec::new("readAloud.open", "Read Aloud", "Review › Speech", read_aloud)
             .key("Mod+Alt+Space")
             .params(r#"{"skipCitations"?: bool}"#)
             .pure(),
@@ -216,7 +216,7 @@ mod tests {
     fn read_aloud_commands_drive_the_player() {
         let mut s = Session::new(doc());
         s.sel = crate::Selection::caret(Pos::body(0, 0));
-        let r = s.run("review.readAloud", &json!({})).unwrap();
+        let r = s.run("readAloud.open", &json!({})).unwrap();
         assert_eq!(r["state"], "playing");
         assert_eq!(r["count"], 3);
         assert_eq!(r["current"]["text"], "Cats purr.");
@@ -225,7 +225,7 @@ mod tests {
         assert_eq!(s.run("readAloud.speed", &json!({"value": 1.5})).unwrap()["rate"], 1.5);
         assert!(s.run("readAloud.speed", &json!({})).is_err());
         // Pressing Read Aloud again pauses, then carries on.
-        assert_eq!(s.run("review.readAloud", &json!({})).unwrap()["state"], "paused");
+        assert_eq!(s.run("readAloud.open", &json!({})).unwrap()["state"], "paused");
         assert_eq!(s.run("readAloud.playPause", &json!({})).unwrap()["state"], "playing");
         // Turning skipping off mid-reading keeps the place.
         s.run("readAloud.next", &json!({})).unwrap();
@@ -242,7 +242,7 @@ mod tests {
     fn read_aloud_reads_the_selection_only() {
         let mut s = Session::new(Document::from_text("One. Two. Three."));
         s.sel = crate::Selection { anchor: Pos::body(0, 5), focus: Pos::body(0, 9) };
-        let r = s.run("review.readAloud", &json!({})).unwrap();
+        let r = s.run("readAloud.open", &json!({})).unwrap();
         assert_eq!(r["count"], 1);
         assert_eq!(r["current"]["text"], "Two.");
     }
@@ -251,9 +251,9 @@ mod tests {
     fn read_aloud_at_the_end_starts_from_the_top() {
         let mut s = Session::new(Document::from_text("One. Two."));
         s.sel = crate::Selection::caret(Pos::body(0, 9));
-        assert_eq!(s.run("review.readAloud", &json!({})).unwrap()["current"]["text"], "One.");
+        assert_eq!(s.run("readAloud.open", &json!({})).unwrap()["current"]["text"], "One.");
         let mut s = Session::new(Document::from_text(""));
-        assert!(s.run("review.readAloud", &json!({})).is_err());
+        assert!(s.run("readAloud.open", &json!({})).is_err());
     }
 
     #[test]

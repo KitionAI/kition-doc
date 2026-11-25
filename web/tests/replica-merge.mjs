@@ -35,9 +35,9 @@ async function openPage(query) {
   return page
 }
 const run = (page, steps) => page.evaluate(async (steps) => (await window.devHost.connection().ai.run(steps, false)).completed.map((step) => step.result), steps)
-const bodyText = async (page) => (await run(page, [{ command: 'document.inspect', params: {} }]))[0].blocks.map((block) => block.text).join('\n')
+const bodyText = async (page) => (await run(page, [{ command: 'file.inspect', params: {} }]))[0].blocks.map((block) => block.text).join('\n')
 /** The object ids of the body's paragraphs, as the replica names them (`presence.caret` of the whole body). */
-const paragraphIds = async (page) => (await run(page, [{ command: 'select.all', params: {} }, { command: 'presence.caret', params: {} }]))[1].selection
+const paragraphIds = async (page) => (await run(page, [{ command: 'edit.selectAll', params: {} }, { command: 'presence.caret', params: {} }]))[1].selection
 const version = (page) => page.evaluate((path) => window.devHost.files.get(path).version, PATH)
 async function save(page) {
   const before = await version(page)

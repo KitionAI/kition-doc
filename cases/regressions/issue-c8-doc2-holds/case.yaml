@@ -2,7 +2,7 @@ format: 1
 id: regressions/issue-c8-doc2-holds
 feature: doc.agent.guard
 intent: >-
-  What a write rests on, each with a colleague change that must refuse it and an unrelated one that must not: para.insert holds what Enter reads (AutoCorrect of the last word, emptiness, the end's formatting, its style's next); a step on the call's selection holds it as a place; a step with on holds formats (character commands) or paragraph properties (paragraph commands); a cell path holds its row's cells up to it; a style by name holds that style only.
+  What a write rests on, each with a colleague change that must refuse it and an unrelated one that must not: paragraph.insert holds what Enter reads (AutoCorrect of the last word, emptiness, the end's formatting, its style's next); a step on the call's selection holds it as a place; a step with on holds formats (character commands) or paragraph properties (paragraph commands); a cell path holds its row's cells up to it; a style by name holds that style only.
 layer: gate
 tags: [headless, guard]
 source:

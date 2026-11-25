@@ -33,7 +33,7 @@ fn new_session() -> Session {
         run(&mut s, "text.insert", json!({ "text": t }));
     }
     run(&mut s, "text.newParagraph", json!({}));
-    run(&mut s, "insert.table", json!({"rows": 2, "cols": 2}));
+    run(&mut s, "table.insert", json!({"rows": 2, "cols": 2}));
     run(&mut s, "caret.docStart", json!({}));
     s
 }
@@ -135,13 +135,13 @@ fn each_edit_replicates_and_reproduces_in_a_peer() {
             run(s, "edit.replaceAll", json!({"text": "paragraph", "with": "para"}));
         }),
         ("accept all tracked changes", |s| {
-            run(s, "review.trackChanges", json!({"value": true}));
+            run(s, "change.track", json!({"value": true}));
             caret_at(s, 1, 0);
             run(s, "text.insert", json!({"text": "tracked "}));
             select(s, (2, 0), (2, 5));
             run(s, "text.delete", json!({}));
-            run(s, "review.trackChanges", json!({"value": false}));
-            run(s, "review.acceptAll", json!({}));
+            run(s, "change.track", json!({"value": false}));
+            run(s, "change.acceptAll", json!({}));
         }),
         ("table row insert", |s| {
             let t = table_index(s);
@@ -150,18 +150,18 @@ fn each_edit_replicates_and_reproduces_in_a_peer() {
             run(s, "table.insertRowBelow", json!({}));
         }),
         ("style modify", |s| {
-            run(s, "styles.modify", json!({"style": "Normal", "chr": {"bold": true}}));
+            run(s, "style.set", json!({"style": "Normal", "chr": {"bold": true}}));
         }),
         ("header edit", |s| {
-            run(s, "insert.header", json!({"text": "A header"}));
+            run(s, "header.insert", json!({"text": "A header"}));
         }),
         ("image insert", |s| {
             caret_at(s, 2, 0);
-            run(s, "insert.picture", json!({ "data": png(), "alt": "red" }));
+            run(s, "image.insert", json!({ "data": png(), "alt": "red" }));
         }),
         ("new list", |s| {
             caret_at(s, 1, 0);
-            run(s, "para.numbering", json!({}));
+            run(s, "paragraph.numbering", json!({}));
         }),
         ("file.versions restore", |s| {
             run(s, "file.versions", json!({"save": "v1"}));
@@ -245,7 +245,7 @@ fn selection_only_commands_write_nothing() {
     for (id, params) in [
         ("caret.docEnd", json!({})),
         ("caret.left", json!({})),
-        ("select.all", json!({})),
+        ("edit.selectAll", json!({})),
         ("caret.docStart", json!({})),
         ("select.word", json!({})),
         ("view.zoom", json!({"value": 1.5})),
@@ -453,8 +453,8 @@ fn random_command(s: &mut Session, rng: &mut Rng, picture: &str) -> String {
             ("edit.replaceAll", json!({ "text": text, "with": with }))
         }
         12 => (["format.bold", "format.italic"][rng.below(2)], json!({})),
-        13 => (["para.bullets", "para.numbering"][rng.below(2)], json!({})),
-        14 => ("insert.table", json!({"rows": 1 + rng.below(2), "cols": 1 + rng.below(2)})),
+        13 => (["paragraph.bullets", "paragraph.numbering"][rng.below(2)], json!({})),
+        14 => ("table.insert", json!({"rows": 1 + rng.below(2), "cols": 1 + rng.below(2)})),
         15 => {
             if let Some(t) = s.doc.body.iter().position(|b| matches!(**b, Block::Table(_))) {
                 let at = serde_json::to_value(Pos::new(StoryRef::Body, Path(vec![t as u32, 0, 0, 0]), 0)).unwrap();
@@ -464,13 +464,13 @@ fn random_command(s: &mut Session, rng: &mut Rng, picture: &str) -> String {
                 ("caret.docStart", json!({}))
             }
         }
-        16 => ("styles.modify", json!({"style": "Normal", "chr": {"italic": rng.below(2) == 0}})),
-        17 => ("insert.header", json!({ "text": format!("Header {}", rng.below(100)) })),
-        18 => ("insert.picture", json!({ "data": picture, "alt": "p" })),
+        16 => ("style.set", json!({"style": "Normal", "chr": {"italic": rng.below(2) == 0}})),
+        17 => ("header.insert", json!({ "text": format!("Header {}", rng.below(100)) })),
+        18 => ("image.insert", json!({ "data": picture, "alt": "p" })),
         19 => match rng.below(3) {
-            0 => ("review.trackChanges", json!({ "value": rng.below(2) == 0 })),
-            1 => ("review.acceptAll", json!({})),
-            _ => ("review.rejectAll", json!({})),
+            0 => ("change.track", json!({ "value": rng.below(2) == 0 })),
+            1 => ("change.acceptAll", json!({})),
+            _ => ("change.rejectAll", json!({})),
         },
         20 => match rng.below(2) {
             0 => ("file.versions", json!({"save": "v"})),
@@ -574,7 +574,7 @@ fn an_undo_past_the_replicas_step_limit_is_exact_and_keeps_the_replica() {
     caret_at(&mut s, 0, 0);
     let mut states = vec![canonical(&s.doc)];
     for i in 1..=120u16 {
-        run(&mut s, "para.indents", json!({ "left": f64::from(i) }));
+        run(&mut s, "paragraph.indents", json!({ "left": f64::from(i) }));
         states.push(canonical(&s.doc));
     }
     assert_eq!(indent(&s, 0), Some(120.0));
@@ -594,7 +594,7 @@ fn an_undo_past_the_replicas_step_limit_is_exact_and_keeps_the_replica() {
     }
     assert!(!s.can_redo());
     // An edit after it all is written on the same replica.
-    run(&mut s, "para.indents", json!({ "left": 7.0 }));
+    run(&mut s, "paragraph.indents", json!({ "left": 7.0 }));
     assert_holds(&s, "an edit after the redos");
     assert_eq!(s.kdm_resets(), 0);
 }
@@ -607,9 +607,9 @@ fn an_undo_past_the_replicas_step_limit_is_exact_and_keeps_the_replica() {
 fn an_undo_that_passes_over_a_step_takes_the_one_below_with_it() {
     let mut s = new_session();
     caret_at(&mut s, 0, 0);
-    run(&mut s, "para.indents", json!({ "left": 12.0 }));
+    run(&mut s, "paragraph.indents", json!({ "left": 12.0 }));
     caret_at(&mut s, 3, 0);
-    run(&mut s, "para.indents", json!({ "left": 24.0 }));
+    run(&mut s, "paragraph.indents", json!({ "left": 24.0 }));
     assert_eq!((indent(&s, 0), indent(&s, 3)), (Some(12.0), Some(24.0)));
     // The agent deletes paragraph 3, the one the person's last step indented.
     let agent = Origin::agent("test");

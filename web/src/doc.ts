@@ -81,11 +81,11 @@ export type StyleEntry = { id: string; name: string; kind: string; quick: boolea
 export const CONTEXT_TABS: Array<{ id: string; menu: string; when: (enabled: (id: string) => boolean, info: DocInfo) => boolean; extra?: string[]; label?: string; primary?: readonly string[] }> = [
   { id: 'tableDesign', menu: 'Table Design', when: (enabled) => enabled('table.style'), primary: ['table.style', 'table.shading', 'table.borders', 'table.look'] },
   { id: 'tableLayout', menu: 'Table Layout', when: (enabled) => enabled('table.insertRowBelow'), primary: ['table.insertRowAbove', 'table.insertRowBelow', 'table.insertColumnLeft', 'table.insertColumnRight', 'table.deleteRow', 'table.deleteColumn', 'table.merge', 'table.split', 'table.cellAlign'] },
-  { id: 'pictureFormat', menu: 'Picture Format', when: (enabled) => enabled('picture.size') && !enabled('shape.fill') && !enabled('arrange.ungroup'), primary: ['picture.crop', 'picture.size', 'picture.corrections', 'picture.color', 'picture.effects', 'picture.style', 'picture.border', 'picture.altText'] },
+  { id: 'pictureFormat', menu: 'Picture Format', when: (enabled) => enabled('image.size') && !enabled('shape.fill') && !enabled('arrange.ungroup'), primary: ['image.crop', 'image.size', 'image.corrections', 'image.color', 'image.effects', 'image.style', 'image.border', 'image.altText'] },
   // A shape, or a group (Arrange › Ungroup applies), takes Shape Format.
   { id: 'shapeFormat', menu: 'Shape Format', when: (enabled) => enabled('shape.fill') || enabled('arrange.ungroup'), primary: ['shape.fill', 'shape.outline', 'shape.effects', 'shape.change'] },
   { id: 'chartDesign', menu: 'Chart Design', label: 'chartDesign', when: (_, info) => info.chart != null },
-  { id: 'headerFooter', menu: 'Header & Footer', when: (_, info) => info.story === 'headerFooter', primary: ['insert.closeHeader', 'layout.differentFirstPage', 'layout.differentOddEven', 'layout.linkToPrevious', 'hf.previous', 'hf.next'] },
+  { id: 'headerFooter', menu: 'Header & Footer', when: (_, info) => info.story === 'headerFooter', primary: ['header.close', 'page.differentFirstPage', 'page.differentOddEven', 'page.linkToPrevious', 'headerFooter.previous', 'headerFooter.next'] },
   { id: 'equation', menu: 'Equation', when: (_, info) => info.equation, primary: ['equation.insertStructure', 'equation.insertSymbol', 'equation.display', 'equation.inputFormat', 'equation.normalText', 'equation.convert', 'equation.exit'] },
 ]
 
@@ -102,11 +102,11 @@ export const EXPORT_COMMANDS = ['file.export', 'file.exportPdf', 'file.exportPng
 /** The engine commands each generated tab shows in Single line's row (Office's Simplified Ribbon), by menu. */
 export const DOC_PRIMARY: Record<string, readonly string[]> = {
   File: ['file.info', 'file.properties', 'file.encrypt'],
-  Design: ['design.theme', 'design.styleSet', 'design.themeColors', 'design.themeFonts', 'design.paragraphSpacing', 'design.watermark', 'design.pageColor', 'design.pageBorders'],
-  Layout: ['para.indents', 'para.spacing', 'arrange.position', 'arrange.wrap', 'arrange.align'],
-  References: ['references.toc', 'references.updateToc', 'references.footnote', 'references.endnote', 'references.caption', 'references.citation', 'references.bibliography', 'references.index'],
-  Mailings: ['mailings.start', 'mailings.recipients', 'mailings.insertField', 'mailings.addressBlock', 'mailings.greetingLine', 'mailings.preview', 'mailings.finish'],
-  Review: ['review.spelling', 'review.wordCount', 'review.newComment', 'review.deleteComment', 'review.previousComment', 'review.nextComment', 'review.trackChanges', 'review.accept', 'review.reject'],
+  Design: ['theme.set', 'theme.styleSet', 'theme.colors', 'theme.fonts', 'theme.paragraphSpacing', 'page.watermark', 'page.color', 'page.borders'],
+  Layout: ['paragraph.indents', 'paragraph.spacing', 'arrange.position', 'arrange.wrap', 'arrange.align'],
+  References: ['toc.insert', 'toc.update', 'footnote.insert', 'endnote.insert', 'caption.insert', 'citation.insert', 'bibliography.insert', 'index.insert'],
+  Mailings: ['mailMerge.start', 'mailMerge.recipients', 'mailMerge.insertField', 'mailMerge.addressBlock', 'mailMerge.greetingLine', 'mailMerge.preview', 'mailMerge.finish'],
+  Review: ['spelling.check', 'file.wordCount', 'comment.new', 'comment.deleteCurrent', 'comment.previous', 'comment.next', 'change.track', 'change.accept', 'change.reject'],
 }
 
 export const FONTS = ['Aptos', 'Aptos Display', 'Calibri', 'Cambria', 'Arial', 'Helvetica', 'Times New Roman', 'Georgia', 'Garamond', 'Verdana', 'Courier New', 'Consolas']

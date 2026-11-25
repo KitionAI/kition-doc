@@ -5,10 +5,10 @@ use super::outside::{bold, bold_in, by_index, type_at};
 use super::*;
 
 fn insert_after(i: usize) -> Value {
-    json!([{ "command": "para.insert", "params": { "after": i, "text": "New" } }])
+    json!([{ "command": "paragraph.insert", "params": { "after": i, "text": "New" } }])
 }
 
-/// Item 2: `para.insert after` reads its paragraph's last word (Enter's AutoCorrect): another
+/// Item 2: `paragraph.insert after` reads its paragraph's last word (Enter's AutoCorrect): another
 /// program's `teh` typed at its end would be corrected by the agent's write, unseen.
 #[tokio::test]
 async fn para_insert_holds_what_autocorrect_reads_at_the_end() {
@@ -33,12 +33,12 @@ async fn para_insert_holds_what_autocorrect_reads_at_the_end() {
 async fn para_insert_holds_its_styles_next_and_not_another_style() {
     let f = Fixture::new(Guard::Premise);
     let basis = f.basis().await;
-    f.colleague(&[("styles.modify", json!({ "style": "Normal", "next": "Heading1" }))]);
+    f.colleague(&[("style.set", json!({ "style": "Normal", "next": "Heading1" }))]);
     conflict(&f.run(Some(basis), insert_after(2)).await.unwrap_err(), "changed");
     f.close().await;
     let f = Fixture::new(Guard::Premise);
     let basis = f.basis().await;
-    f.colleague(&[("styles.modify", json!({ "style": "Heading2", "next": "Heading3" }))]);
+    f.colleague(&[("style.set", json!({ "style": "Heading2", "next": "Heading3" }))]);
     f.run(Some(basis), insert_after(2)).await.unwrap();
     f.close().await;
 }
@@ -50,7 +50,7 @@ async fn a_step_on_the_calls_selection_holds_it_as_a_place() {
     let typed = json!([{ "command": "text.insert", "params": { "text": "X" } }]);
     let f = Fixture::new(Guard::Premise);
     let basis = f.basis().await;
-    f.colleague(&[("para.insert", json!({ "before": 0, "text": "Above" }))]);
+    f.colleague(&[("paragraph.insert", json!({ "before": 0, "text": "Above" }))]);
     conflict(&f.run(Some(basis), typed.clone()).await.unwrap_err(), "relocated");
     assert_eq!(f.texts()[0], "Above", "a refused write changes nothing");
     f.close().await;
@@ -68,7 +68,7 @@ async fn a_step_on_the_calls_selection_holds_it_as_a_place() {
 async fn a_step_after_a_selection_rests_on_that_selection() {
     let f = Fixture::new(Guard::Premise);
     let basis = f.basis().await;
-    f.colleague(&[("para.insert", json!({ "before": 0, "text": "Above" }))]);
+    f.colleague(&[("paragraph.insert", json!({ "before": 0, "text": "Above" }))]);
     let ids = f.blocks().await;
     // Block 3 at basis is `Delta`, block 4 now; by id it is the same paragraph.
     f.run(Some(basis), json!([super::outside::by_id(&ids[4].0, 0, 5), bold()])).await.unwrap();
@@ -99,7 +99,7 @@ async fn on_with_a_character_command_holds_the_formats_not_the_characters() {
 /// Item 6: a paragraph command with `on` rests on the paragraph's properties.
 #[tokio::test]
 async fn on_with_a_paragraph_command_holds_its_properties_not_its_text() {
-    let centre = |id: &Value| json!([{ "command": "para.alignCenter", "params": {}, "on": [id] }]);
+    let centre = |id: &Value| json!([{ "command": "format.alignCenter", "params": {}, "on": [id] }]);
     let f = Fixture::new(Guard::Premise);
     let ids = f.blocks().await;
     let basis = f.basis().await;
@@ -109,7 +109,10 @@ async fn on_with_a_paragraph_command_holds_its_properties_not_its_text() {
     let f = Fixture::new(Guard::Premise);
     let ids = f.blocks().await;
     let basis = f.basis().await;
-    f.colleague(&[("select.range", json!({ "anchor": { "block": 2, "off": 0 }, "focus": { "block": 2, "off": 0 } })), ("para.indent", json!({}))]);
+    f.colleague(&[
+        ("select.range", json!({ "anchor": { "block": 2, "off": 0 }, "focus": { "block": 2, "off": 0 } })),
+        ("paragraph.indent", json!({})),
+    ]);
     conflict(&f.run(Some(basis), centre(&ids[2].0)).await.unwrap_err(), "changed");
     f.close().await;
 }
@@ -118,7 +121,7 @@ async fn on_with_a_paragraph_command_holds_its_properties_not_its_text() {
 pub fn table_document() -> Vec<u8> {
     let mut doc = document();
     doc.execute("select.range", json!({ "anchor": { "block": 4, "off": 0 }, "focus": { "block": 4, "off": 0 } })).unwrap();
-    doc.execute("insert.table", json!({ "rows": 2, "cols": 2 })).unwrap();
+    doc.execute("table.insert", json!({ "rows": 2, "cols": 2 })).unwrap();
     for (r, c) in [(0, 0), (0, 1), (1, 0), (1, 1)] {
         let at = json!({ "story": "body", "path": [4, r, c, 0], "off": 0 });
         doc.execute("select.range", json!({ "anchor": at, "focus": at })).unwrap();
@@ -154,15 +157,15 @@ async fn a_cell_path_holds_its_rows_cells_up_to_it_not_their_text() {
 /// Item 6: a write naming a style rests on that style, not on every style.
 #[tokio::test]
 async fn a_style_by_name_holds_that_style_only() {
-    let write = json!([by_index(1, 0, 0), { "command": "para.style", "params": { "style": "Heading1" } }]);
+    let write = json!([by_index(1, 0, 0), { "command": "paragraph.style", "params": { "style": "Heading1" } }]);
     let f = Fixture::new(Guard::Premise);
     let basis = f.basis().await;
-    f.colleague(&[("styles.modify", json!({ "style": "Heading2", "next": "Heading3" }))]);
+    f.colleague(&[("style.set", json!({ "style": "Heading2", "next": "Heading3" }))]);
     f.run(Some(basis), write.clone()).await.unwrap();
     f.close().await;
     let f = Fixture::new(Guard::Premise);
     let basis = f.basis().await;
-    f.colleague(&[("styles.modify", json!({ "style": "Heading1", "next": "Heading3" }))]);
+    f.colleague(&[("style.set", json!({ "style": "Heading1", "next": "Heading3" }))]);
     conflict(&f.run(Some(basis), write).await.unwrap_err(), "changed");
     f.close().await;
 }
@@ -170,7 +173,7 @@ async fn a_style_by_name_holds_that_style_only() {
 /// The part number a story's first paragraph reading `text` has in `doc`, as positions name it.
 fn part_reading(doc: &mut DocDocument, text: &str) -> Option<u64> {
     (1..20u64).find(|k| {
-        doc.execute("document.paragraph", json!({ "path": [0], "story": { "part": k } }))
+        doc.execute("file.paragraph", json!({ "path": [0], "story": { "part": k } }))
             .is_ok_and(|answer| answer["paragraph"]["text"].as_str().is_some_and(|t| t.contains(text)))
     })
 }
@@ -181,9 +184,9 @@ fn part_reading(doc: &mut DocDocument, text: &str) -> Option<u64> {
 #[tokio::test]
 async fn a_story_by_part_number_is_refused_when_the_number_names_another() {
     let mut doc = document();
-    doc.execute("insert.footer", json!({ "text": "Footer words" })).unwrap();
+    doc.execute("footer.insert", json!({ "text": "Footer words" })).unwrap();
     doc.execute("select.range", json!({ "anchor": { "block": 0, "off": 0 }, "focus": { "block": 0, "off": 0 } })).unwrap();
-    doc.execute("insert.textBox", json!({ "text": "Box words" })).unwrap();
+    doc.execute("textBox.insert", json!({ "text": "Box words" })).unwrap();
     let bytes = doc.save(None).unwrap();
     let part = part_reading(&mut DocDocument::open(FILE, &bytes).unwrap(), "Box words").unwrap();
     // An agent names a part's position by its number with `caret.set` (its `story` takes one).
@@ -286,7 +289,7 @@ async fn an_agents_write_carries_the_save_stamp_in_its_receipt() {
 async fn a_write_holds_whether_changes_are_tracked() {
     let f = Fixture::new(Guard::Premise);
     let basis = f.basis().await;
-    f.colleague(&[("review.trackChanges", json!({ "value": true }))]);
+    f.colleague(&[("change.track", json!({ "value": true }))]);
     conflict(&f.run(Some(basis), json!([by_index(1, 0, 4), bold()])).await.unwrap_err(), "changed");
     f.close().await;
     let f = Fixture::new(Guard::Premise);
@@ -320,10 +323,10 @@ async fn a_table_command_holds_its_table() {
 /// the document's content, not on its properties (title, author).
 #[tokio::test]
 async fn a_theme_change_holds_the_styles() {
-    let write = json!([{ "command": "design.themeFonts", "params": { "heading": "Georgia" } }]);
+    let write = json!([{ "command": "theme.fonts", "params": { "heading": "Georgia" } }]);
     let f = Fixture::new(Guard::Premise);
     let basis = f.basis().await;
-    f.colleague(&[("styles.modify", json!({ "style": "Heading1", "next": "Heading3" }))]);
+    f.colleague(&[("style.set", json!({ "style": "Heading1", "next": "Heading3" }))]);
     assert_eq!(f.run(Some(basis), write.clone()).await.unwrap_err()["error"]["code"], "conflict");
     f.close().await;
     let f = Fixture::new(Guard::Premise);

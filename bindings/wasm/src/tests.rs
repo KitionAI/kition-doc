@@ -6,7 +6,7 @@ fn page_margin_guides_follow_layout_without_entering_document_pixels() {
     let mut doc = DocDocument::create("Margins.docx", 0, 0).unwrap();
     let color = [200, 196, 190, 255];
     for params in [json!({ "preset": "normal" }), json!({ "top": 50, "bottom": 60, "left": 80, "right": 40 })] {
-        doc.execute("layout.margins", params).unwrap();
+        doc.execute("page.margins", params).unwrap();
         let before = doc.revision();
         let layout = doc.layout();
         let area = DocDocument::areas(&layout)[0];
@@ -111,7 +111,7 @@ fn inspect_says_when_escape_has_something_to_cancel() {
     assert_eq!(escape(&doc), Some(true), "a selection");
     doc.key("Escape", ToolMods::default(), 1.0).unwrap();
     assert_eq!(escape(&doc), Some(false), "Escape collapsed the selection");
-    doc.execute("draw.shape", json!({ "preset": "rect" })).unwrap();
+    doc.execute("ink.shape", json!({ "preset": "rect" })).unwrap();
     assert_eq!(escape(&doc), Some(true), "a shape chosen to draw");
     doc.key("Escape", ToolMods::default(), 1.0).unwrap();
     assert_eq!(escape(&doc), Some(false), "Escape put the shape down");
@@ -152,7 +152,7 @@ fn paints_the_backdrop_and_reports_where_the_caret_is() {
     let inspected = doc.inspect().unwrap();
     assert_eq!(inspected["story"], json!("body"));
     assert_eq!(inspected["equation"], json!(false));
-    doc.execute("insert.editHeader", json!({})).unwrap();
+    doc.execute("header.edit", json!({})).unwrap();
     assert_eq!(doc.inspect().unwrap()["story"], json!("headerFooter"));
 }
 
@@ -177,10 +177,10 @@ fn takes_a_font_for_text_its_own_faces_do_not_cover() {
 fn the_catalog_flags_as_mutating_exactly_what_changes_the_document() {
     let doc = DocDocument::create("Flags.docx", 0, 0).unwrap();
     let mutates = |id: &str| doc.commands().into_iter().find(|command| command.id == id).unwrap_or_else(|| panic!("no {id}")).mutates;
-    for id in ["text.insert", "edit.paste", "edit.undo", "edit.redo", "file.new", "file.open", "file.save", "insert.editHeader"] {
+    for id in ["text.insert", "edit.paste", "edit.undo", "edit.redo", "file.new", "file.open", "file.save", "header.edit"] {
         assert!(mutates(id), "{id} changes the document");
     }
-    for id in ["select.all", "edit.copy", "file.exportPdf", "file.print", "document.inspect"] {
+    for id in ["edit.selectAll", "edit.copy", "file.exportPdf", "file.print", "file.inspect"] {
         assert!(!mutates(id), "{id} does not change the document");
     }
 }
@@ -195,7 +195,7 @@ fn commands_flagged_as_not_mutating_never_commit_to_the_replica() {
         .filter(|command| !command.mutates && !command.id.starts_with("file.") && !command.params.as_deref().unwrap_or_default().contains("path"))
     {
         let mut doc = DocDocument::open("Letter.docx", &bytes).unwrap();
-        doc.execute("select.all", json!({})).unwrap();
+        doc.execute("edit.selectAll", json!({})).unwrap();
         let before = doc.version().unwrap();
         let _ = doc.execute(&command.id, json!({}));
         assert_eq!(doc.version().unwrap(), before, "{} committed to the replica", command.id);
@@ -207,9 +207,9 @@ fn commands_flagged_as_not_mutating_never_commit_to_the_replica() {
 #[test]
 fn renders_pages_as_printed_unless_the_editor_asks_for_its_editing_look() {
     let mut doc = DocDocument::create("Look.docx", 0, 0).unwrap();
-    doc.execute("insert.editHeader", json!({})).unwrap();
+    doc.execute("header.edit", json!({})).unwrap();
     doc.execute("text.insert", json!({ "text": "HEADER HEADER HEADER" })).unwrap();
-    doc.execute("insert.closeHeader", json!({})).unwrap();
+    doc.execute("header.close", json!({})).unwrap();
     doc.execute("caret.docStart", json!({})).unwrap();
     doc.execute("text.insert", json!({ "text": "Thiss sentense has mispelled wurds." })).unwrap();
     let layout = doc.layout();

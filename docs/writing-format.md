@@ -32,31 +32,31 @@ Commands by namespace (the part of the id before the first dot):
 | `arrange` | 12 | 11 | 12 | `arrange.rotate`, `arrange.rotation`, `arrange.wrap` |
 | `caret` | 16 | 0 | 16 | `caret.left`, `caret.right`, `caret.up` |
 | `comment` | 6 | 4 | 6 | `comment.threads`, `comment.add`, `comment.reply` |
-| `design` | 11 | 9 | 11 | `design.theme`, `design.themeFonts`, `design.themeColors` |
-| `document` | 6 | 1 | 6 | `document.inspect`, `document.text`, `document.paragraph` |
-| `draw` | 9 | 2 | 9 | `draw.select`, `draw.shape`, `draw.eraser` |
+| `design` | 11 | 9 | 11 | `theme.set`, `theme.fonts`, `theme.colors` |
+| `document` | 6 | 1 | 6 | `file.inspect`, `file.text`, `file.paragraph` |
+| `draw` | 9 | 2 | 9 | `ink.select`, `ink.shape`, `ink.eraser` |
 | `drawing` | 14 | 13 | 14 | `drawing.describe`, `drawing.insert`, `drawing.delete` |
 | `edit` | 25 | 12 | 25 | `edit.undo`, `edit.redo`, `edit.cut` |
 | `equation` | 20 | 12 | 20 | `equation.edit`, `equation.exit`, `equation.type` |
 | `file` | 23 | 12 | 23 | `file.new`, `file.open`, `file.save` |
 | `format` | 35 | 33 | 35 | `format.bold`, `format.italic`, `format.underline` |
-| `hf` | 3 | 1 | 3 | `hf.next`, `hf.previous`, `hf.position` |
-| `insert` | 34 | 33 | 34 | `insert.pageBreak`, `insert.blankPage`, `insert.coverPage` |
-| `layout` | 14 | 13 | 14 | `layout.margins`, `layout.orientation`, `layout.size` |
+| `hf` | 3 | 1 | 3 | `headerFooter.next`, `headerFooter.previous`, `headerFooter.position` |
+| `insert` | 34 | 33 | 34 | `page.insertBreak`, `page.insertBlank`, `page.insertCover` |
+| `layout` | 14 | 13 | 14 | `page.margins`, `page.orientation`, `page.size` |
 | `list` | 2 | 1 | 2 | `list.define`, `list.get` |
-| `mailings` | 17 | 11 | 17 | `mailings.start`, `mailings.recipients`, `mailings.editRecipients` |
-| `para` | 47 | 46 | 47 | `para.alignLeft`, `para.alignCenter`, `para.alignRight` |
-| `picture` | 13 | 13 | 13 | `picture.size`, `picture.crop`, `picture.altText` |
+| `mailings` | 17 | 11 | 17 | `mailMerge.start`, `mailMerge.recipients`, `mailMerge.editRecipients` |
+| `para` | 47 | 46 | 47 | `format.alignLeft`, `format.alignCenter`, `format.alignRight` |
+| `picture` | 13 | 13 | 13 | `image.size`, `image.crop`, `image.altText` |
 | `presence` | 2 | 0 | 2 | `presence.caret`, `presence.locate` |
 | `readAloud` | 7 | 0 | 7 | `readAloud.playPause`, `readAloud.next`, `readAloud.previous` |
-| `references` | 23 | 20 | 23 | `references.toc`, `references.updateToc`, `references.removeToc` |
-| `review` | 35 | 15 | 35 | `review.newComment`, `review.reply`, `review.editComment` |
-| `select` | 13 | 0 | 13 | `select.all`, `select.range`, `select.word` |
+| `references` | 23 | 20 | 23 | `toc.insert`, `toc.update`, `toc.remove` |
+| `review` | 35 | 15 | 35 | `comment.new`, `comment.replyCurrent`, `comment.edit` |
+| `select` | 13 | 0 | 13 | `edit.selectAll`, `select.range`, `select.word` |
 | `shape` | 4 | 4 | 4 | `shape.fill`, `shape.outline`, `shape.effects` |
-| `styles` | 13 | 7 | 13 | `styles.create`, `styles.modify`, `styles.updateToMatch` |
+| `styles` | 13 | 7 | 13 | `style.add`, `style.set`, `style.updateToMatch` |
 | `table` | 40 | 36 | 40 | `table.viewGridlines`, `table.insertRowAbove`, `table.insertRowBelow` |
 | `text` | 14 | 14 | 14 | `text.insert`, `text.newParagraph`, `text.lineBreak` |
-| `tools` | 3 | 0 | 3 | `tools.recordMacro`, `tools.macros`, `tools.autocorrect` |
+| `tools` | 3 | 0 | 3 | `macro.record`, `macro.list`, `autocorrect.options` |
 | `view` | 26 | 0 | 26 | `view.marks`, `view.printLayout`, `view.webLayout` |
 
 ### The document
@@ -137,39 +137,39 @@ schema says which.
 
 | Parameter | Values | Used by |
 | --- | --- | --- |
-| `align` | `left`, `center`, `right` | `insert.pageNumber`, `table.properties` |
+| `align` | `left`, `center`, `right` | `pageNumber.insert`, `table.properties` |
 | `direction` | `right`, `left`, `flipVertical`, `flipHorizontal` | `arrange.rotate` |
-| `effect` | `blur`, `sharpen`, `invert`, `posterize`, `pixelate` | `picture.effects` |
-| `footnoteFormat` | `decimal`, `lowerRoman`, `upperRoman`, `lowerLetter`, `upperLetter` | `references.noteOptions` |
+| `effect` | `blur`, `sharpen`, `invert`, `posterize`, `pixelate` | `image.effects` |
+| `footnoteFormat` | `decimal`, `lowerRoman`, `upperRoman`, `lowerLetter`, `upperLetter` | `footnote.options` |
 | `format` | `unicode`, `latex` | `equation.inputFormat` |
-| `format` | `decimal`, `lowerRoman`, `upperRoman`, `lowerLetter`, `upperLetter` | `layout.pageNumberFormat` |
-| `kind` | `numbered`, `numberedParen`, `upperLetter`, `lowerLetter`, `lowerRoman`, `outline` | `para.numbering` |
-| `kind` | `legal`, `outline` | `para.multilevel` |
-| `kind` | `bottom`, `top`, `left`, `right`, `none`, `all`, `outside`, `inside`, `horizontalLine` | `para.borders` |
-| `kind` | `rectangle`, `roundedRectangle`, `ellipse`, `triangle`, `diamond`, `line`, `arrow`, `star`, `heart` | `insert.shape` |
-| `kind` | `page`, `column`, `textWrapping`, `nextPage`, `continuous`, `evenPage`, `oddPage` | `layout.break` |
+| `format` | `decimal`, `lowerRoman`, `upperRoman`, `lowerLetter`, `upperLetter` | `page.pageNumberFormat` |
+| `kind` | `numbered`, `numberedParen`, `upperLetter`, `lowerLetter`, `lowerRoman`, `outline` | `paragraph.numbering` |
+| `kind` | `legal`, `outline` | `paragraph.multilevel` |
+| `kind` | `bottom`, `top`, `left`, `right`, `none`, `all`, `outside`, `inside`, `horizontalLine` | `paragraph.borders` |
+| `kind` | `rectangle`, `roundedRectangle`, `ellipse`, `triangle`, `diamond`, `line`, `arrow`, `star`, `heart` | `shape.insert` |
+| `kind` | `page`, `column`, `textWrapping`, `nextPage`, `continuous`, `evenPage`, `oddPage` | `page.break` |
 | `kind` | `all`, `outside`, `inside`, `none`, `top`, `bottom`, `left`, `right` | `table.borders` |
 | `kind` | `calendar`, `tabular`, `matrix` | `table.quick` |
-| `kind` | `box`, `none` | `design.pageBorders` |
-| `kind` | `letters`, `emails`, `envelopes`, `labels`, `directory`, `normal` | `mailings.start` |
+| `kind` | `box`, `none` | `page.borders` |
+| `kind` | `letters`, `emails`, `envelopes`, `labels`, `directory`, `normal` | `mailMerge.start` |
 | `kind` | `shape`, `textBox`, `chart` | `drawing.insert` |
 | `mode` | `sentence`, `lower`, `upper`, `title`, `toggle` | `format.changeCase` |
 | `mode` | `contents`, `window`, `fixed` | `table.autofit` |
-| `mode` | `grayscale`, `sepia`, `washout`, `blackAndWhite`, `saturation`, `tint` | `picture.color` |
-| `mode` | `none`, `readOnly`, `comments`, `trackedChanges`, `forms` | `review.restrict` |
+| `mode` | `grayscale`, `sepia`, `washout`, `blackAndWhite`, `saturation`, `tint` | `image.color` |
+| `mode` | `none`, `readOnly`, `comments`, `trackedChanges`, `forms` | `file.restrictEditing` |
 | `mode` | `none`, `readOnly`, `comments`, `trackedChanges` | `file.protect` |
-| `preset` | `blank`, `blankThree`, `title` | `insert.header` |
-| `preset` | `blank`, `blankThree`, `pageNumber` | `insert.footer` |
-| `preset` | `normal`, `narrow`, `moderate`, `wide`, `mirrored`, `office2003` | `layout.margins` |
-| `preset` | `left`, `right` | `layout.columns` |
+| `preset` | `blank`, `blankThree`, `title` | `header.insert` |
+| `preset` | `blank`, `blankThree`, `pageNumber` | `footer.insert` |
+| `preset` | `normal`, `narrow`, `moderate`, `wide`, `mirrored`, `office2003` | `page.margins` |
+| `preset` | `left`, `right` | `page.columns` |
 | `preset` | `topLeft`, `topCenter`, `topRight`, `middleLeft`, `middleCenter`, `middleRight`, `bottomLeft`, `bottomCenter`, `bottomRight` | `arrange.position` |
 | `preset` | `straightConnector1`, `bentConnector3`, `curvedConnector3` | `drawing.connect` |
-| `style` | `single`, `double`, `dotted`, `dashed`, `thick`, `triple`, `dotDash`, `wave` | `design.pageBorders`, `para.borders` |
+| `style` | `single`, `double`, `dotted`, `dashed`, `thick`, `triple`, `dotDash`, `wave` | `page.borders`, `paragraph.borders` |
 | `style` | `single`, `double`, `thick`, `dotted`, `dash`, `dotDash`, `dotDotDash`, `wave`, `words` | `format.underline` |
-| `style` | `APA`, `MLA`, `Chicago`, `IEEE` | `references.citationStyle` |
-| `style` | `simpleFrame`, `thickFrame`, `rounded`, `softEdge`, `shadow` | `picture.style` |
+| `style` | `APA`, `MLA`, `Chicago`, `IEEE` | `citation.style` |
+| `style` | `simpleFrame`, `thickFrame`, `rounded`, `softEdge`, `shadow` | `image.style` |
 | `template` | `blank`, `sample`, `letter`, `resume`, `report` | `file.new` |
-| `type` | `column`, `stackedColumn`, `percentColumn`, `bar`, `stackedBar`, `percentBar`, `line`, `lineMarkers`, `stackedLine`, `area`, `stackedArea`, `pie`, `doughnut`, `scatter`, `radar` | `insert.chart` |
+| `type` | `column`, `stackedColumn`, `percentColumn`, `bar`, `stackedBar`, `percentBar`, `line`, `lineMarkers`, `stackedLine`, `area`, `stackedArea`, `pie`, `doughnut`, `scatter`, `radar` | `chart.insert` |
 | `valign` | `top`, `center`, `bottom` | `table.properties` |
 
 ## Examples
@@ -203,7 +203,7 @@ doc_run {
   "steps": [
     { "command": "select.range", "params": { "anchor": { "block": 2, "off": 34 }, "focus": { "block": 2, "off": 34 } } },
     { "command": "text.newParagraph", "params": {} },
-    { "command": "insert.table", "params": { "rows": 2, "cols": 2 } },
+    { "command": "table.insert", "params": { "rows": 2, "cols": 2 } },
     { "command": "select.range", "params": { "anchor": { "story": "body", "path": [3, 0, 0, 0], "off": 0 }, "focus": { "story": "body", "path": [3, 0, 0, 0], "off": 0 } } },
     { "command": "text.insert", "params": { "text": "Region" } },
     { "command": "select.range", "params": { "anchor": { "story": "body", "path": [3, 0, 1, 0], "off": 0 }, "focus": { "story": "body", "path": [3, 0, 1, 0], "off": 0 } } },
@@ -212,7 +212,7 @@ doc_run {
 }
 ```
 
-`insert.table` answers `{ "table": [3] }`: the table is block 3, and the empty paragraph the caret
+`table.insert` answers `{ "table": [3] }`: the table is block 3, and the empty paragraph the caret
 was in follows it as block 4. Cell paths are `[3, row, cell, 0]`. Afterwards `doc_check` may report
 `doc.font-substituted` (info) for the new cells' theme font; that is expected.
 
@@ -244,5 +244,5 @@ was in follows it as block 4. Cell paths are `[3, row, cell, 0]`. Afterwards `do
   here. The file keeps the font; only the preview and line breaks use a substitute. Don't change
   fonts to silence it unless asked.
 - **Tracked changes:** if `settings.trackChanges` is on, your edits become tracked revisions;
-  `doc.tracked-changes` reports them. Its fix `review.acceptAll` accepts every revision, so run it
+  `doc.tracked-changes` reports them. Its fix `change.acceptAll` accepts every revision, so run it
   only when the person asked for that.

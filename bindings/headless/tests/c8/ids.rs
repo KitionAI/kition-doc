@@ -82,7 +82,7 @@ async fn table_rows_have_ids_and_the_table_is_named_by_its_first_row() {
         None,
         json!([
             { "command": "select.range", "params": { "anchor": { "block": 4, "off": 0 }, "focus": { "block": 4, "off": 0 } } },
-            { "command": "insert.table", "params": { "rows": 2, "cols": 2 } }
+            { "command": "table.insert", "params": { "rows": 2, "cols": 2 } }
         ]),
     )
     .await

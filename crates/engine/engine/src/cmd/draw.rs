@@ -2,8 +2,8 @@
 //!
 //! An ink stroke is a floating freeform shape ([`Freeform`] with its pen set) anchored to the
 //! paragraph under where it starts, in front of the text (a highlighter's behind it). The pen
-//! commands only choose what dragging on the page does (session view state); `draw.stroke` and
-//! `draw.erase` change the document.
+//! commands only choose what dragging on the page does (session view state); `ink.stroke` and
+//! `ink.erase` change the document.
 
 use std::sync::Arc;
 
@@ -107,7 +107,7 @@ const ERASE_SLOP: f32 = 3.0;
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("draw.select", "Select", "Draw › Tools", |s, _| {
+        CommandSpec::new("ink.select", "Select", "Draw › Tools", |s, _| {
             s.view.draw.mode = DrawMode::Select;
             s.view.draw.shape = None;
             state(s)
@@ -115,34 +115,34 @@ pub fn specs() -> Vec<CommandSpec> {
         .pure(),
         // Insert › Shapes: the next drag on the page draws this shape (a line between two shapes
         // glues to them); `null` puts it down.
-        CommandSpec::new("draw.shape", "Draw Shape", "", |s, v| {
+        CommandSpec::new("ink.shape", "Draw Shape", "", |s, v| {
             s.view.draw.shape = match v.get("preset").and_then(Value::as_str) {
                 Some(p) if kition_office_core::preset::info(p).is_some() || kition_office_core::connect::is_line_preset(p) => {
                     s.view.draw.mode = DrawMode::Select;
                     Some(p.to_string())
                 }
-                Some(p) => return Err(CmdError::Params(format!("draw.shape: preset `{p}` is not drawn"))),
+                Some(p) => return Err(CmdError::Params(format!("ink.shape: preset `{p}` is not drawn"))),
                 None => None,
             };
             Ok(json!({ "shape": s.view.draw.shape }))
         })
         .params(r#"{"preset": DrawingML preset | null}"#)
         .pure(),
-        CommandSpec::new("draw.eraser", "Eraser", "Draw › Tools", |s, v| {
+        CommandSpec::new("ink.eraser", "Eraser", "Draw › Tools", |s, v| {
             // With a point, erase there (as a script would); without, pick up the eraser.
             if v.get("page").is_some() || v.get("x").is_some() || v.get("y").is_some() {
-                return s.run("draw.erase", v);
+                return s.run("ink.erase", v);
             }
             s.view.draw.mode = DrawMode::Eraser;
             state(s)
         })
         .params(r#"{"page"?: n, "x"?: pt, "y"?: pt}  (no point: use the eraser; a point: delete the ink stroke there)"#)
         .pure(),
-        CommandSpec::new("draw.pen", "Pen", "Draw › Pens", |s, v| pen(s, v, InkTool::Pen)).params(PEN_PARAMS).pure(),
-        CommandSpec::new("draw.pencil", "Pencil", "Draw › Pens", |s, v| pen(s, v, InkTool::Pencil)).params(PEN_PARAMS).pure(),
-        CommandSpec::new("draw.highlighter", "Highlighter", "Draw › Pens", |s, v| pen(s, v, InkTool::Highlighter)).params(PEN_PARAMS).pure(),
+        CommandSpec::new("ink.pen", "Pen", "Draw › Pens", |s, v| pen(s, v, InkTool::Pen)).params(PEN_PARAMS).pure(),
+        CommandSpec::new("ink.pencil", "Pencil", "Draw › Pens", |s, v| pen(s, v, InkTool::Pencil)).params(PEN_PARAMS).pure(),
+        CommandSpec::new("ink.highlighter", "Highlighter", "Draw › Pens", |s, v| pen(s, v, InkTool::Highlighter)).params(PEN_PARAMS).pure(),
         // The pen in use, as the shared Draw controls show it (the same in every kit).
-        CommandSpec::new("draw.state", "Draw State", "", |s, _| {
+        CommandSpec::new("ink.state", "Draw State", "", |s, _| {
             let (tool, set) = match s.view.draw.mode {
                 DrawMode::Select => ("select", None),
                 DrawMode::Eraser => ("eraser", None),
@@ -152,11 +152,11 @@ pub fn specs() -> Vec<CommandSpec> {
             Ok(json!({ "tool": tool, "color": format!("#{:02X}{:02X}{:02X}", set.color.0, set.color.1, set.color.2), "width": set.width }))
         })
         .pure(),
-        CommandSpec::new("draw.stroke", "Draw Ink", "Draw › Pens", stroke).params(
+        CommandSpec::new("ink.stroke", "Draw Ink", "Draw › Pens", stroke).params(
             r#"{"page": n, "points": [[x, y], …] (page points, at most 5000), "tool"?: "pen|pencil|highlighter", "color"?: "RRGGBB", "width"?: pt}"#,
         ),
-        CommandSpec::new("draw.erase", "Erase Ink", "Draw › Tools", erase).params(r#"{"page": n, "x": pt, "y": pt}"#),
-        CommandSpec::new("review.hideInk", "Hide Ink", "Review › Ink", |s, v| {
+        CommandSpec::new("ink.erase", "Erase Ink", "Draw › Tools", erase).params(r#"{"page": n, "x": pt, "y": pt}"#),
+        CommandSpec::new("ink.hide", "Hide Ink", "Review › Ink", |s, v| {
             s.view.hide_ink = p::bool(v, "value").unwrap_or(!s.view.hide_ink);
             Ok(json!({"value": s.view.hide_ink}))
         })
@@ -349,7 +349,7 @@ mod tests {
 
     fn session() -> Session {
         let mut s = Session::new(kition_doc_doc::Document::new());
-        s.run("document.setText", &json!({"text": "First paragraph of text.\nSecond paragraph of text."})).unwrap();
+        s.run("file.setText", &json!({"text": "First paragraph of text.\nSecond paragraph of text."})).unwrap();
         s
     }
 
@@ -362,7 +362,7 @@ mod tests {
         let mut s = session();
         let text = s.doc.plain_text(StoryRef::Body);
         let r = s
-            .run("draw.stroke", &json!({"page": 0, "points": [[100, 90], [150, 120], [f64::NAN, 3], [200, 95]], "color": "C00000", "width": 2}))
+            .run("ink.stroke", &json!({"page": 0, "points": [[100, 90], [150, 120], [f64::NAN, 3], [200, 95]], "color": "C00000", "width": 2}))
             .unwrap();
         let [x, y] = [r["rect"][0].as_f64().unwrap() as f32, r["rect"][1].as_f64().unwrap() as f32];
         assert_eq!((x, y), (99.0, 89.0), "the points' bounds, grown by half the width");
@@ -379,49 +379,49 @@ mod tests {
         assert!(ink(&s).is_empty());
         assert_eq!(s.doc.plain_text(StoryRef::Body), text);
         // A highlighter goes behind the text, translucent.
-        s.run("draw.highlighter", &json!({"color": "00FF00"})).unwrap();
-        s.run("draw.stroke", &json!({"page": 0, "points": [[80, 80]]})).unwrap();
+        s.run("ink.highlighter", &json!({"color": "00FF00"})).unwrap();
+        s.run("ink.stroke", &json!({"page": 0, "points": [[80, 80]]})).unwrap();
         let objs = ink(&s);
         let [InlineObject::Shape { float, freeform: Some(f), stroke, .. }] = objs.as_slice() else { panic!() };
         assert_eq!((float.wrap, f.ink, *stroke), (Wrap::BehindText, Some(InkTool::Highlighter), Some(kition_doc_doc::Rgb(0, 0xFF, 0))));
         assert!(f.alpha < 1.0);
         // Hostile input is refused, not drawn.
-        assert!(s.run("draw.stroke", &json!({"page": 99, "points": [[1, 1]]})).is_err());
-        assert!(s.run("draw.stroke", &json!({"page": 0, "points": [["x", 1], [1]]})).is_err());
-        assert!(s.run("draw.stroke", &json!({"page": 0, "points": [[1, 1]], "tool": "crayon"})).is_err());
+        assert!(s.run("ink.stroke", &json!({"page": 99, "points": [[1, 1]]})).is_err());
+        assert!(s.run("ink.stroke", &json!({"page": 0, "points": [["x", 1], [1]]})).is_err());
+        assert!(s.run("ink.stroke", &json!({"page": 0, "points": [[1, 1]], "tool": "crayon"})).is_err());
     }
 
     #[test]
     fn the_eraser_removes_the_stroke_under_the_point_and_hide_ink_hides_it() {
         let mut s = session();
-        s.run("draw.stroke", &json!({"page": 0, "points": [[100, 100], [200, 100]], "width": 2})).unwrap();
-        assert!(s.run("draw.eraser", &json!({"page": 0, "x": 150, "y": 130})).is_err(), "nothing there");
+        s.run("ink.stroke", &json!({"page": 0, "points": [[100, 100], [200, 100]], "width": 2})).unwrap();
+        assert!(s.run("ink.eraser", &json!({"page": 0, "x": 150, "y": 130})).is_err(), "nothing there");
         assert_eq!(ink(&s).len(), 1);
         // Review › Hide Ink: not drawn, not erasable, still in the document.
-        assert_eq!(s.run("review.hideInk", &json!({})).unwrap()["value"], true);
+        assert_eq!(s.run("ink.hide", &json!({})).unwrap()["value"], true);
         assert!(s.view.hide_ink);
-        assert!(s.run("draw.eraser", &json!({"page": 0, "x": 150, "y": 101})).is_err());
-        s.run("review.hideInk", &json!({"value": false})).unwrap();
-        s.run("draw.eraser", &json!({"page": 0, "x": 150, "y": 101})).unwrap();
+        assert!(s.run("ink.eraser", &json!({"page": 0, "x": 150, "y": 101})).is_err());
+        s.run("ink.hide", &json!({"value": false})).unwrap();
+        s.run("ink.eraser", &json!({"page": 0, "x": 150, "y": 101})).unwrap();
         assert!(ink(&s).is_empty());
         // Without a point it picks up the eraser; Select puts it down.
-        s.run("draw.eraser", &json!({})).unwrap();
+        s.run("ink.eraser", &json!({})).unwrap();
         assert_eq!(s.view.draw.mode, super::DrawMode::Eraser);
-        s.run("draw.pencil", &json!({"width": 1e9})).unwrap();
+        s.run("ink.pencil", &json!({"width": 1e9})).unwrap();
         assert_eq!((s.view.draw.mode, s.view.draw.pencil.width), (super::DrawMode::Pen(InkTool::Pencil), super::MAX_WIDTH));
-        s.run("draw.select", &json!({})).unwrap();
+        s.run("ink.select", &json!({})).unwrap();
         assert_eq!(s.view.draw.mode, super::DrawMode::Select);
     }
 
-    /// `draw.eraser` is a view command, but with a point it erases through `draw.erase`, which
+    /// `ink.eraser` is a view command, but with a point it erases through `ink.erase`, which
     /// changes the document: that must be one undo step and mark the document changed.
     #[test]
     fn erasing_through_the_eraser_command_is_undoable_and_marks_the_document_dirty() {
         let mut s = session();
-        s.run("draw.stroke", &json!({"page": 0, "points": [[100, 100], [200, 100]], "width": 2})).unwrap();
+        s.run("ink.stroke", &json!({"page": 0, "points": [[100, 100], [200, 100]], "width": 2})).unwrap();
         s.dirty = false;
         let steps = s.undo_depth();
-        s.run("draw.eraser", &json!({"page": 0, "x": 150, "y": 101})).unwrap();
+        s.run("ink.eraser", &json!({"page": 0, "x": 150, "y": 101})).unwrap();
         assert!(ink(&s).is_empty());
         assert!(s.dirty, "erasing is an unsaved change");
         assert_eq!(s.undo_depth(), steps + 1, "one undo step");

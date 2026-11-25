@@ -48,7 +48,7 @@ pub fn specs() -> Vec<CommandSpec> {
         CommandSpec::new("drawing.arrange", "Arrange Drawing Objects", "", arrange)
             .params(r#"{"ids": [id], "order": "front"|"back"|"forward"|"backward"} (floating objects; an inline one has no place in the stack)"#),
         // Insert › Chart: `drawing.insert` of a chart of a type, with its data when given.
-        CommandSpec::new("insert.chart", "Chart", "Insert › Illustrations", |s, v| insert(s, &chart_insert(v)?))
+        CommandSpec::new("chart.insert", "Chart", "Insert › Illustrations", |s, v| insert(s, &chart_insert(v)?))
             .params(r#"{"type"?: "column"|"stackedColumn"|"percentColumn"|"bar"|"stackedBar"|"percentBar"|"line"|"lineMarkers"|"stackedLine"|"area"|"stackedArea"|"pie"|"doughnut"|"scatter"|"radar", "title"?: text|null, "categories"?, "series"?: [{name, values, color?}], "legend"?, "dataLabels"?, "gridlines"?, "xTitle"?, "yTitle"?, "width"?: pt, "height"?: pt} (in line at the caret, which stays after it; without data, Word's sample data)"#),
         CommandSpec::new("drawing.chart", "Change Chart", "", |s, v| apply(s, "drawing.chart", v)).params(
             r#"{"id", "kind"?, "title"?: text|null, "legend"?: "top"|"bottom"|"left"|"right"|"topRight"|null, "dataLabels"?, "gridlines"?, "xTitle"?, "yTitle"?, "categories"?, "series"?: [{name, values, color?}]}"#,
@@ -56,13 +56,13 @@ pub fn specs() -> Vec<CommandSpec> {
     ]
 }
 
-/// `insert.chart`'s parameters as `drawing.insert`'s: `type` is the chart's kind, `width` and
+/// `chart.insert`'s parameters as `drawing.insert`'s: `type` is the chart's kind, `width` and
 /// `height` its frame, and the rest its description (`drawing.chart`'s members).
 fn chart_insert(v: &Value) -> Result<Value, CmdError> {
     let mut chart = match v {
         Value::Object(m) => m.clone(),
         Value::Null => serde_json::Map::new(),
-        _ => return Err(CmdError::Params("insert.chart: parameters are an object".into())),
+        _ => return Err(CmdError::Params("chart.insert: parameters are an object".into())),
     };
     let kind = chart.remove("type").or_else(|| chart.remove("kind")).unwrap_or_else(|| json!("column"));
     chart.insert("kind".into(), kind);
@@ -71,7 +71,7 @@ fn chart_insert(v: &Value) -> Result<Value, CmdError> {
     if w.is_some() || h.is_some() {
         let num = |x: Option<Value>, name: &str, default: f64| match x {
             None => Ok(default),
-            Some(x) => x.as_f64().ok_or_else(|| CmdError::Params(format!("insert.chart: `{name}` is a number of points"))),
+            Some(x) => x.as_f64().ok_or_else(|| CmdError::Params(format!("chart.insert: `{name}` is a number of points"))),
         };
         out["frame"] = json!({ "w": num(w, "width", 432.0)?, "h": num(h, "height", 252.0)? });
     }
@@ -698,8 +698,8 @@ fn insert(s: &mut Session, v: &Value) -> CmdResult {
         s.sel = Selection { anchor: at.clone(), focus: end };
         Some(at)
     } else if o.kind == dm::ObjectKind::TextBox {
-        s.run("insert.textBox", &json!({ "width": w, "height": h }))?;
-        // `insert.textBox` puts the caret in the box; the new object is its anchor's.
+        s.run("textBox.insert", &json!({ "width": w, "height": h }))?;
+        // `textBox.insert` puts the caret in the box; the new object is its anchor's.
         let part = s.sel.focus.story;
         s.doc
             .shapes()
@@ -707,7 +707,7 @@ fn insert(s: &mut Session, v: &Value) -> CmdResult {
             .find(|(_, x)| matches!(x, InlineObject::Shape { story: Some(id), .. } if StoryRef::Part(*id) == part))
             .map(|(p, _)| p)
     } else {
-        s.run("insert.shape", &json!({ "kind": "rectangle", "width": w, "height": h }))?;
+        s.run("shape.insert", &json!({ "kind": "rectangle", "width": w, "height": h }))?;
         super::objects::selected(s).map(|(p, _)| p)
     };
     let pos = created.ok_or_else(|| CmdError::Failed("drawing.insert: the new shape was not found".into()))?;
@@ -1586,7 +1586,7 @@ mod tests {
     #[test]
     fn insert_art_text_makes_a_drawing_object_with_its_warp() {
         let mut s = session();
-        let id = s.run("insert.artText", &json!({ "text": "Kition", "warp": "textWave1" })).unwrap()["id"].as_str().unwrap().to_string();
+        let id = s.run("artText.insert", &json!({ "text": "Kition", "warp": "textWave1" })).unwrap()["id"].as_str().unwrap().to_string();
         let o = obj(&mut s, &id);
         let t = o.text.clone().unwrap();
         assert_eq!(
@@ -1601,7 +1601,7 @@ mod tests {
                 || s.run("drawing.describe", &json!({ "ids": [id] })).unwrap()["objects"].as_array().unwrap().is_empty()
         );
         // Without a warp it is flat art text.
-        let id = s.run("insert.artText", &json!({})).unwrap()["id"].as_str().unwrap().to_string();
+        let id = s.run("artText.insert", &json!({})).unwrap()["id"].as_str().unwrap().to_string();
         assert_eq!(obj(&mut s, &id).text.unwrap().warp, None);
     }
 

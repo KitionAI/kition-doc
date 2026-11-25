@@ -42,12 +42,12 @@ pub fn reads_mode(id: &str) -> bool {
                 | "edit.paste"
                 | "format.changeCase"
                 | "format.charStyle"
-                | "format.growFont"
-                | "format.growFont1"
-                | "format.shrinkFont"
-                | "format.shrinkFont1"
-                | "para.style"
-                | "review.language"
+                | "format.increaseFontSize"
+                | "format.increaseFontSizeByOne"
+                | "format.decreaseFontSize"
+                | "format.decreaseFontSizeByOne"
+                | "paragraph.style"
+                | "spelling.language"
         )
 }
 
@@ -60,57 +60,57 @@ pub fn reads_mode(id: &str) -> bool {
 pub const SELECTION_FREE: &[&str] = &[
     "select.range",
     "caret.set",
-    "document.text",
-    "document.paragraph",
-    "design.effects",
-    "design.pageColor",
-    "design.paragraphSpacing",
-    "design.styleSet",
-    "design.theme",
-    "design.themeColors",
-    "design.themeFonts",
-    "design.watermark",
+    "file.text",
+    "file.paragraph",
+    "theme.effects",
+    "page.color",
+    "theme.paragraphSpacing",
+    "theme.styleSet",
+    "theme.set",
+    "theme.colors",
+    "theme.fonts",
+    "page.watermark",
     "comment.reply",
     "comment.resolve",
-    "document.setText",
+    "file.setText",
     "drawing.arrange",
     "file.encrypt",
     "file.new",
     "file.properties",
     "file.protect",
-    "layout.hyphenation",
-    "layout.differentOddEven",
-    "mailings.envelopes",
-    "mailings.findRecipient",
-    "mailings.finish",
-    "mailings.labels",
-    "mailings.next",
-    "mailings.preview",
-    "mailings.previous",
-    "para.insert",
-    "references.noteOptions",
-    "references.sources",
-    "review.compare",
-    "review.editComment",
-    "review.reply",
-    "review.restrict",
-    "review.trackChanges",
-    "styles.addToGallery",
-    "styles.delete",
-    "styles.modify",
-    "styles.setVisibility",
+    "page.hyphenation",
+    "page.differentOddEven",
+    "mailMerge.envelopes",
+    "mailMerge.findRecipient",
+    "mailMerge.finish",
+    "mailMerge.labels",
+    "mailMerge.next",
+    "mailMerge.preview",
+    "mailMerge.previous",
+    "paragraph.insert",
+    "footnote.options",
+    "citation.sources",
+    "file.compare",
+    "comment.edit",
+    "comment.replyCurrent",
+    "file.restrictEditing",
+    "change.track",
+    "style.addToGallery",
+    "style.delete",
+    "style.set",
+    "style.setVisibility",
 ];
 
 /// The place parameters of each command (see the module docs).
 pub fn places(id: &str) -> &'static [&'static str] {
     match id {
         "select.range" | "select.column" => &["anchor", "focus"],
-        "caret.set" | "review.suggestions" | "equation.edit" => &["pos"],
+        "caret.set" | "spelling.suggestions" | "equation.edit" => &["pos"],
         "select.addObject" => &["pos", "index", "objects"],
         "select.objects" => &["index"],
-        "para.text" => &["index"],
-        "para.insert" => &["after", "before"],
-        "document.paragraph" | "document.text" | "para.dialog" => &["path"],
+        "paragraph.text" => &["index"],
+        "paragraph.insert" => &["after", "before"],
+        "file.paragraph" | "file.text" | "paragraph.dialog" => &["path"],
         "edit.goto" | "comment.goto" => &["paragraph"],
         // Page points (C8-doc-2 item 4): what the eraser's path takes depends on where every ink
         // stroke is (`place::under` names them all).
@@ -184,9 +184,9 @@ pub const MERGE_SOURCE: &str = "mergeSource";
 pub fn reads_merge_source(command: &str, params: &serde_json::Value) -> bool {
     let given = |name: &str| params.get(name).is_some_and(|value| !value.is_null());
     match command {
-        "mailings.next" | "mailings.previous" | "mailings.preview" | "mailings.findRecipient" | "mailings.finish" => true,
-        "mailings.envelopes" => !given("delivery"),
-        "mailings.labels" => !given("text"),
+        "mailMerge.next" | "mailMerge.previous" | "mailMerge.preview" | "mailMerge.findRecipient" | "mailMerge.finish" => true,
+        "mailMerge.envelopes" => !given("delivery"),
+        "mailMerge.labels" => !given("text"),
         _ => false,
     }
 }
