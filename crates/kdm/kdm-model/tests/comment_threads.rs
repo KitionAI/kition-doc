@@ -1,7 +1,6 @@
 //! Comments beside the content (Kition platform rule M23): the schema declares the
 //! reserved `CommentThread` and `Comment` types; a comment, a reply, a resolve or a delete touches
-//! only those (what a sync server lets a commenter push); concurrent comments on one thread are
-//! all kept.
+//! only those (what a sync server lets a commenter push).
 
 mod common;
 
@@ -161,66 +160,6 @@ fn the_content_holds_no_comment_and_a_comment_touches_only_comments() {
     let p = d.para(StoryRef::Body, &Path::top(2)).unwrap_or_else(|| panic!("paragraph"));
     assert!(matches!(p.objects.first(), Some(InlineObject::CommentStart { .. })) && p.text.starts_with('\u{fffc}'), "{:?}", p.text);
     assert_eq!(bodies(d), ["A comment", "A reply", "Is this right?"]);
-}
-
-#[test]
-fn concurrent_comments_on_one_thread_are_all_kept() {
-    let mut a = session(&rich());
-    let mut b = copy(&a);
-    record(&mut a, "user:ann", |d| {
-        reply(d, 1, "user:ann", "Ann", "From A");
-    });
-    record(&mut b, "user:bob", |d| {
-        reply(d, 1, "user:bob", "Bob", "From B");
-    });
-    // And both open a thread on the same words at once.
-    record(&mut a, "user:ann", |d| {
-        comment_on(d, 0, (0, 9), "user:ann", "Ann", "A's thread");
-    });
-    record(&mut b, "user:bob", |d| {
-        comment_on(d, 0, (0, 9), "user:bob", "Bob", "B's thread");
-    });
-    exchange(&mut a, &mut b);
-    let d = a.document();
-    assert_eq!(bodies(d), ["A comment", "A reply", "A's thread", "B's thread", "From A", "From B"]);
-    // The replies are in the first thread, after the reply it had.
-    let thread = &a.model().ids().threads[&1];
-    let listed = a.replica().list(thread, "comments").unwrap_or_default();
-    assert_eq!(listed.len(), 4);
-    let mut replies: Vec<String> = listed[2..].iter().map(|o| a.replica().text(o, "body").unwrap_or_default()).collect();
-    replies.sort();
-    assert_eq!(replies, ["From A", "From B"]);
-    for (id, c) in &d.comments {
-        if c.parent.is_some() {
-            assert_eq!(c.parent, Some(1), "comment {id} replies to the thread's first comment");
-        }
-    }
-    // Both new threads are anchored on paragraph 0's first word.
-    let p = d.para(StoryRef::Body, &Path::top(0)).unwrap_or_else(|| panic!("paragraph"));
-    assert_eq!(p.objects.iter().filter(|o| matches!(o, InlineObject::CommentStart { .. })).count(), 2);
-    assert_eq!(p.text.chars().filter(|c| *c != '\u{fffc}').collect::<String>(), "Paragraph 0");
-}
-
-#[test]
-fn a_deleted_thread_keeps_a_reply_made_to_it_meanwhile() {
-    let mut a = session(&rich());
-    let mut b = copy(&a);
-    record(&mut a, "user:ann", |d| {
-        let p = body_para(d, 1);
-        for off in p.object_offsets().into_iter().rev() {
-            p.delete(off, off + kition_doc_doc::para::OBJ.len_utf8()).unwrap_or_else(|e| panic!("{e}"));
-        }
-        for id in [1, 2] {
-            if let Some(c) = d.comments.remove(&id) {
-                d.parts.remove(&c.part);
-            }
-        }
-    });
-    record(&mut b, "user:bob", |d| {
-        reply(d, 1, "user:bob", "Bob", "Wait");
-    });
-    exchange(&mut a, &mut b);
-    assert_eq!(bodies(a.document()), ["Wait"], "the reply is kept, opening the thread");
 }
 
 #[test]

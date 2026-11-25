@@ -1,10 +1,11 @@
-// A document changed outside Kition keeps its history (Kit UI protocol UI-R1, section 7; kit-editor's
-// `replicaMergesFile`): node tests/replica-merge.mjs [chromium|webkit]
+// A document changed outside Kition keeps its history (Kit UI protocol UI-R1, section 7):
+// node tests/replica-merge.mjs [chromium|webkit]
 // Through the development host with a stored replica and checkpoints: the person's edit is saved,
 // another program changes the .docx (here a second editor without a replica), and the document
-// reopens with the stored replica, which the engine merges the newer file into. The outside change
-// shows, the paragraphs keep their object ids, and the replica and its checkpoints stay. Opening the
-// file alone (no replica) gives new ids, so the ids kept are the replica's, not the file's.
+// reopens with the stored replica (the host always hands it over), on which the engine records
+// what the newer file holds as one `import` change. The outside change shows, the paragraphs keep
+// their object ids, and the replica and its checkpoints stay. Opening the file alone (no replica)
+// gives new ids, so the ids kept are the replica's, not the file's.
 import assert from 'node:assert/strict'
 import { chromium, webkit } from 'playwright'
 import { createServer } from 'vite'
@@ -46,8 +47,8 @@ async function save(page) {
 const append = (page, text) => run(page, [{ command: 'caret.docEnd', params: {} }, { command: 'text.insert', params: { text } }])
 
 try {
-  // The person's editor: the host keeps the replica and its checkpoints, and knows the kit merges.
-  const page = await openPage('&replica=1&checkpoints=1&replica-merges-file=1')
+  // The person's editor: the host keeps the replica and its checkpoints.
+  const page = await openPage('&replica=1&checkpoints=1')
   await append(page, ' Kept here.')
   await until(page, async () => (await bodyText(page)).includes('Kept here.'), 'the edit')
   await save(page)
@@ -69,22 +70,22 @@ try {
   const changed = await outside.evaluate((path) => [...new Uint8Array(window.devHost.files.get(path).bytes)], PATH)
   await outside.close()
 
-  // The file changed outside reopens with the stored replica: the engine merges it.
+  // The file changed outside reopens with the stored replica: the engine records the difference.
   await page.evaluate((bytes) => window.devHost.reopenChanged(new Uint8Array(bytes).buffer), changed)
   await page.waitForFunction(() => document.getElementById('status')?.textContent?.includes(' open in '), null, { timeout: 60000 })
   await until(page, async () => (await bodyText(page)).includes('Changed outside.'), 'the outside change shows')
   const text = await bodyText(page)
   assert.ok(text.includes('Kept here. Changed outside.'), `the person's edit and the outside change: ${text.slice(-200)}`)
-  assert.deepEqual(await paragraphIds(page), ids, 'the paragraphs keep their object ids (the stored replica, merged)')
-  assert.equal(await page.frameLocator('#kit').getByTestId('doc-unsaved').count(), 0, 'merging the newer file is no unsaved edit')
+  assert.deepEqual(await paragraphIds(page), ids, 'the paragraphs keep their object ids (the stored replica, with the import change)')
+  assert.equal(await page.frameLocator('#kit').getByTestId('doc-unsaved').count(), 0, 'taking the newer file is no unsaved edit')
   assert.ok(await page.evaluate((path) => window.devHost.history.replica(path) != null, PATH), 'the replica is still kept')
-  // The next save writes the replica on: its lineage continues, so the earlier checkpoint stays.
+  // The next save writes the replica on, and the earlier checkpoint stays.
   await append(page, ' After.')
-  await until(page, async () => (await bodyText(page)).includes('Changed outside. After.'), 'an edit after the merge')
+  await until(page, async () => (await bodyText(page)).includes('Changed outside. After.'), 'an edit after the import')
   await save(page)
   const kept = await page.evaluate((path) => window.devHost.history.checkpoints(path), PATH)
-  assert.ok(kept.some((entry) => entry.id === checkpoint.id && entry.available), `the earlier checkpoint stays available: ${JSON.stringify(kept)}`)
-  console.log('PASS a file changed outside merges into the stored replica')
+  assert.ok(kept.some((entry) => entry.id === checkpoint.id), `the earlier checkpoint stays: ${JSON.stringify(kept)}`)
+  console.log('PASS a file changed outside opens on the stored replica')
 
   // The control: the same file opened alone (its replica dropped) has other ids.
   const current = await page.evaluate((path) => [...new Uint8Array(window.devHost.files.get(path).bytes)], PATH)
@@ -94,7 +95,7 @@ try {
   console.log('PASS a file opened alone starts a new replica')
 
   assert.deepEqual(errors, [], 'no page errors')
-  console.log(`PASS replica merge (${which})`)
+  console.log(`PASS file changed outside (${which})`)
 } finally {
   await browser.close()
   await server.close()

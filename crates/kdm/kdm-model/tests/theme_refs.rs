@@ -1,7 +1,7 @@
 //! Theme colour and font references and paragraph ids (Phase 7 fidelity): they replicate as
 //! three more run marks and optional fields of existing JSON registers, so the schema version
 //! does not change and a 0.4.x build (whose types lack them) reads the document; two replicas
-//! editing other fields concurrently converge on them.
+//! editing other fields one after the other agree on them.
 
 mod common;
 
@@ -74,7 +74,7 @@ fn theme_references_and_paragraph_ids_replicate_and_older_builds_read_them() {
 }
 
 #[test]
-fn two_replicas_converge_on_theme_references() {
+fn two_replicas_agree_on_theme_references() {
     let blobs = SharedBlobs::default();
     let mut a = first(&document(), &blobs);
     let mut b = peer(&a, 2, &blobs);
@@ -85,6 +85,7 @@ fn two_replicas_converge_on_theme_references() {
             p.format(0, 3, &|c| c.color = Some(TextColor::Rgb(Rgb(1, 2, 3)))).unwrap_or_else(|e| panic!("{e}"));
         }
     });
+    sync(&mut a, &mut b);
     edit(&mut b, &blobs, |d| {
         if let Block::Para(p) = std::sync::Arc::make_mut(&mut d.body[1]) {
             p.props.para_id = Some(0x2B3C_4D5E);

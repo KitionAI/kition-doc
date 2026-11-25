@@ -2,11 +2,10 @@
 //! command replicates as the transactions of its undo steps and reproduces the document in a peer,
 //! typing coalesced into one undo step is one transaction per keystroke, undo after a remote edit
 //! keeps the remote edit, selection-only commands write nothing, the history limit never loses an
-//! edit, a remote deletion of the caret's paragraph leaves a valid selection, two sessions running
-//! random commands converge with the engine's document equal to its own replica after every
-//! step, a remote keystroke in a 2,000-paragraph document keeps every other paragraph's
-//! layout cache key, and two sessions typing and formatting in one paragraph keep both (text
-//! marks, K3).
+//! edit, a remote deletion of the caret's paragraph leaves a valid selection, two sessions taking
+//! turns at random commands agree with the engine's document equal to its own replica after every
+//! step, and a remote keystroke in a 2,000-paragraph document keeps every other paragraph's layout
+//! cache key.
 
 use std::sync::Arc;
 use std::time::Instant;
@@ -221,10 +220,11 @@ fn undo_after_a_remote_edit_keeps_it() {
     let mut b = peer(&mut a);
     caret_at(&mut a, 0, 0);
     run(&mut a, "text.insert", json!({"text": "Local "}));
+    send(&mut a, &mut b);
     caret_at(&mut b, 2, 0);
     run(&mut b, "text.insert", json!({"text": "Remote "}));
     run(&mut b, "text.newParagraph", json!({}));
-    sync(&mut a, &mut b);
+    send(&mut b, &mut a);
     assert_same(&mut a, &mut b, "exchanged");
     run(&mut a, "edit.undo", json!({}));
     assert_eq!(para_text(&a, 0), "Alpha paragraph one.", "the local typing is undone");
@@ -485,12 +485,12 @@ fn random_command(s: &mut Session, rng: &mut Rng, picture: &str) -> String {
     format!("{id} {params} -> {outcome}")
 }
 
-/// Two sessions run ~250 random commands between them with a history limit small enough to wrap,
-/// exchanging changes every few commands. After every command the document is exactly what its
-/// own replica holds and the selection is valid; after every exchange both hold the same
-/// replicated state and the same document.
+/// Two sessions take turns at ~250 random commands with a history limit small enough to wrap,
+/// each sending its changes to the other after its command (one line of changes). After every
+/// command the document is exactly what its own replica holds and the selection is valid; every
+/// few commands both hold the same replicated state and the same document.
 #[test]
-fn random_commands_keep_document_and_replica_equal_and_converge() {
+fn random_commands_keep_document_and_replica_equal_and_peers_agree() {
     let picture = png();
     for seed in [3u64, 11, 2026] {
         let mut rng = Rng(seed.wrapping_mul(0x9e37_79b9_7f4a_7c15) | 1);
@@ -500,7 +500,8 @@ fn random_commands_keep_document_and_replica_equal_and_converge() {
         b.set_undo_limit(4);
         let mut log: Vec<String> = Vec::new();
         for step in 0..63 {
-            for (name, s) in [("a", &mut a), ("b", &mut b)] {
+            for name in ["a", "b"] {
+                let (s, other) = if name == "a" { (&mut a, &mut b) } else { (&mut b, &mut a) };
                 let what = random_command(s, &mut rng, &picture);
                 log.push(format!("{name}: {what}"));
                 let context = || format!("seed {seed}, step {step}, {name}; last commands:\n{}", log[log.len().saturating_sub(6)..].join("\n"));
@@ -508,6 +509,7 @@ fn random_commands_keep_document_and_replica_equal_and_converge() {
                 let (mine, held) = (canonical(&s.doc), canonical(&replica_doc(s)));
                 assert!(mine == held, "the document is not what its replica holds: {}\n{:#?}", context(), differences(&mine, &held));
                 assert!(s.doc.para_at(&s.sel.focus).is_some_and(|p| s.sel.focus.off <= p.text.len()), "caret out of range: {}", context());
+                send(s, other);
             }
             if step % 4 == 3 {
                 sync(&mut a, &mut b);
@@ -554,49 +556,6 @@ fn a_remote_keystroke_in_a_long_document_reloads_one_paragraph() {
     eprintln!("2,000 paragraphs: local keystroke + write {local:?}, remote import {import:?}, relayout {relayout:?}");
     assert_eq!(kept, 1999, "only the typed paragraph is new");
     assert!(para_text(&b, 1000).starts_with("xParagraph"));
-}
-
-/// Two people type into the same paragraph, one at its start and one at its end, then bold and
-/// italicise overlapping ranges of it: after an exchange both texts and both formats are there.
-#[test]
-fn two_sessions_typing_and_formatting_one_paragraph_keep_both() {
-    let mut a = new_session();
-    let mut b = peer(&mut a);
-    caret_at(&mut a, 1, 0);
-    run(&mut a, "text.insert", json!({"text": "Ann "}));
-    let end = "Beta paragraph two.".len();
-    caret_at(&mut b, 1, end);
-    run(&mut b, "text.insert", json!({"text": " Bo"}));
-    sync(&mut a, &mut b);
-    assert_same(&mut a, &mut b, "typed");
-    assert_eq!(para_text(&a, 1), "Ann Beta paragraph two. Bo");
-
-    // "Ann Beta paragraph two. Bo": A bolds "Ann Beta" (0..8), B italicises "Beta paragraph" (4..18).
-    select(&mut a, (1, 0), (1, 8));
-    run(&mut a, "format.bold", json!({}));
-    select(&mut b, (1, 4), (1, 18));
-    run(&mut b, "format.italic", json!({}));
-    sync(&mut a, &mut b);
-    assert_same(&mut a, &mut b, "formatted");
-    assert_holds(&a, "formatted");
-    let p = a.doc.para_at(&Pos::body(1, 0)).cloned().expect("paragraph 1");
-    let props_at = |off: usize| {
-        let mut start = 0;
-        p.runs
-            .iter()
-            .find(|r| {
-                let hit = off < start + r.len;
-                start += r.len;
-                hit
-            })
-            .map(|r| r.props.clone())
-            .unwrap_or_default()
-    };
-    assert_eq!((props_at(0).bold, props_at(0).italic), (Some(true), None));
-    assert_eq!((props_at(5).bold, props_at(5).italic), (Some(true), Some(true)));
-    assert_eq!((props_at(10).bold, props_at(10).italic), (None, Some(true)));
-    assert_eq!(a.kdm_resets(), 0);
-    assert_eq!(b.kdm_resets(), 0);
 }
 
 /// The first few paths at which two JSON values differ (for a readable failure).

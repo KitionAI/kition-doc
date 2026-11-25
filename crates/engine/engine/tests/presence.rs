@@ -1,6 +1,6 @@
 //! Presence (Kit UI protocol section 7e): a person's caret and selection travel as replica text
 //! positions (`{object, field, offset}`), and a co-editor places them in their own view, also
-//! after concurrent typing, around comment anchors (kept beside the content), and in a paragraph
+//! after a peer's typing, around comment anchors (kept beside the content), and in a paragraph
 //! merged into another.
 
 use kition_doc_engine::doc::{Document, Pos};
@@ -118,13 +118,13 @@ fn a_selection_travels_as_its_ends_and_the_paragraphs_it_covers() {
 }
 
 #[test]
-fn a_caret_follows_concurrent_typing_before_it() {
+fn a_caret_follows_a_peers_typing_before_it() {
     let mut a = new_session();
     let mut b = peer(&mut a);
     after(&mut a, "Beta paragraph");
     let before = run(&mut a, "presence.caret", json!({}));
     assert_eq!(before["caret"]["offset"], 14);
-    // The peer types at the paragraph's start meanwhile.
+    // The peer types at the paragraph's start.
     caret_at(&mut b, 1, 0);
     run(&mut b, "text.insert", json!({ "text": "New " }));
     sync(&mut a, &mut b);

@@ -1,7 +1,7 @@
-//! The Kition platform convergence suite's adapter for Kition Doc: replicas are
-//! [`DocDocument`]s driven the way a host drives the engine (contract 1 commands, the contract 2
-//! change exchange, `openWithReplica` to join), and the canonical state is read from each
-//! replica's snapshot.
+//! The adapter of the Kition platform kit suite's performance mode (`kition_convergence::perf`)
+//! for Kition Doc: replicas are [`DocDocument`]s driven the way a host drives the engine
+//! (contract 1 commands, the contract 2 change exchange, `openWithReplica` to join), and the
+//! canonical state is read from each replica's snapshot.
 
 #![allow(dead_code)]
 
@@ -78,6 +78,17 @@ pub fn decode_blobs(bytes: &[u8]) -> Result<Blobs, String> {
         at += 72 + len;
     }
     Ok(out)
+}
+
+/// Blobs as `DocDocument::add_blobs` takes them: `(64-character hex hash, u64 LE length, bytes) * N`.
+pub fn encode_blobs(blobs: &Blobs) -> Vec<u8> {
+    let mut out = Vec::new();
+    for (hash, bytes) in blobs {
+        out.extend_from_slice(hash.as_bytes());
+        out.extend_from_slice(&(bytes.len() as u64).to_le_bytes());
+        out.extend_from_slice(bytes);
+    }
+    out
 }
 
 /// A small 24-bit BMP of one colour from `seed`, base64-encoded for `insert.picture`.
@@ -253,7 +264,7 @@ impl KitAdapter for DocKit {
     }
 
     fn join(&self, snapshot: &[u8], blobs: &Blobs) -> Result<DocReplica, String> {
-        let doc = DocDocument::open_with_replica(NAME, &[], snapshot, &kition_convergence::wasm::encode_blobs(blobs))?;
+        let doc = DocDocument::open_with_replica(NAME, &[], snapshot, &encode_blobs(blobs))?;
         if !doc.has_replica() {
             return Err("the snapshot did not open as a replica".into());
         }
@@ -270,7 +281,7 @@ impl KitAdapter for DocKit {
 
     fn import_changes(&self, replica: &mut DocReplica, bytes: &[u8]) -> Result<(), String> {
         if !replica.store.is_empty() {
-            replica.doc.add_blobs(&kition_convergence::wasm::encode_blobs(&replica.store))?;
+            replica.doc.add_blobs(&encode_blobs(&replica.store))?;
         }
         replica.doc.import_changes(bytes)?;
         self.no_reset(&replica.doc, "an import")
@@ -416,14 +427,7 @@ impl KitAdapter for DocKit {
             serde_json::to_value(kdm_model::normalize(&document)).map_err(|error| error.to_string())
         };
         let (mine, theirs) = (read(&doc.save(None)?)?, read(&fresh.doc.save(None)?)?);
-        if mine == theirs {
-            Ok(())
-        } else {
-            Err(format!(
-                "the view saves differently from its replica: {}",
-                kition_convergence::state::first_difference(&theirs, &mine).unwrap_or_default()
-            ))
-        }
+        if mine == theirs { Ok(()) } else { Err(format!("the view saves differently from its replica:\n  view    {mine}\n  replica {theirs}")) }
     }
 
     fn blobs(&self, replica: &mut DocReplica) -> Result<Blobs, String> {
@@ -432,7 +436,7 @@ impl KitAdapter for DocKit {
 
     fn add_blobs(&self, replica: &mut DocReplica, blobs: &Blobs) -> Result<(), String> {
         replica.store.extend(blobs.iter().map(|(hash, bytes)| (hash.clone(), bytes.clone())));
-        replica.doc.add_blobs(&kition_convergence::wasm::encode_blobs(blobs))
+        replica.doc.add_blobs(&encode_blobs(blobs))
     }
 
     fn export_file(&self, replica: &mut DocReplica) -> Result<Option<Vec<u8>>, String> {

@@ -219,10 +219,11 @@ fn a_co_editor_finds_the_anchor_after_both_edited() {
     let mut a = new_session();
     let mut b = peer(&mut a);
     let anchor = anchor_on(&mut a, "quoted passage");
+    // One after the other: the co-editor types, then this view.
     type_at(&mut b, 1, 0, "Their words. ");
+    send(&mut b, &mut a);
     type_at(&mut a, 2, 0, "Mine. ");
     send(&mut a, &mut b);
-    send(&mut b, &mut a);
     for s in [&mut a, &mut b] {
         let found = locate(s, &anchor);
         assert_eq!((found["found"].clone(), found["text"].clone()), (json!(true), json!("quoted passage")), "{found}");

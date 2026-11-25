@@ -1,8 +1,7 @@
-//! Comment threads between two replicas as a host drives them (Kition platform rule M23):
-//! comments two people add to one thread at once are both kept, and a replica open for commenting
-//! only (`setCommentOnly`) refuses edits of the content, answers no unsaved changes, and sends
-//! changes that touch only `CommentThread` and `Comment` objects (what a sync server takes from a
-//! commenter, sync protocol 1.6).
+//! Comment threads between two replicas as a host drives them (Kition platform rule M23): a
+//! replica open for commenting only (`setCommentOnly`) refuses edits of the content, answers no
+//! unsaved changes, and sends changes that touch only `CommentThread` and `Comment` objects (what
+//! a sync server takes from a commenter, sync protocol 1.6).
 
 mod common;
 
@@ -52,28 +51,6 @@ fn threads(doc: &mut DocDocument) -> Vec<Value> {
 fn select_words(doc: &mut DocDocument, from: usize, to: usize) {
     exec(doc, "caret.set", json!({ "pos": { "story": "body", "path": [0], "off": from } }));
     exec(doc, "caret.set", json!({ "pos": { "story": "body", "path": [0], "off": to }, "extend": true }));
-}
-
-#[test]
-fn comments_added_to_one_thread_at_once_are_both_kept() {
-    let mut a = first();
-    select_words(&mut a, 0, 6);
-    let thread = exec(&mut a, "comment.add", json!({ "text": "Shared how?", "author": "user:ann", "name": "Ann" }))["thread"].clone();
-    let mut b = join(&mut a);
-    let theirs = threads(&mut b)[0]["id"].clone();
-    exec(&mut a, "comment.reply", json!({ "thread": thread, "text": "Ann again", "author": "user:ann", "name": "Ann" }));
-    exec(&mut b, "comment.reply", json!({ "thread": theirs, "text": "Bob here", "author": "user:bob", "name": "Bob" }));
-    exchange(&mut a, &mut b);
-    for doc in [&mut a, &mut b] {
-        let found = threads(doc);
-        assert_eq!(found.len(), 1);
-        let mut bodies: Vec<String> =
-            found[0]["comments"].as_array().into_iter().flatten().map(|c| c["body"].as_str().unwrap_or("").to_owned()).collect();
-        assert_eq!(bodies.remove(0), "Shared how?");
-        bodies.sort();
-        assert_eq!(bodies, ["Ann again", "Bob here"]);
-        assert_eq!(found[0]["anchor"]["quote"], json!("Shared"));
-    }
 }
 
 #[test]

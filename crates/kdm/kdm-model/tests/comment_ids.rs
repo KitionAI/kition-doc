@@ -75,12 +75,13 @@ fn comment_ids_and_people_replicate_and_save() {
 }
 
 #[test]
-fn comment_ids_survive_concurrent_edits() {
+fn comment_ids_survive_edits_on_two_replicas() {
     let blobs = SharedBlobs::default();
     let mut a = first(&document(), &blobs);
     let mut b = peer(&a, 2, &blobs);
     // One person resolves the reply, the other edits the first comment's text.
     edit(&mut a, &blobs, |d| d.comments.get_mut(&2).unwrap_or_else(|| panic!("reply")).resolved = true);
+    sync(&mut a, &mut b);
     edit(&mut b, &blobs, |d| {
         let part = d.comments[&1].part;
         d.parts.get_mut(&part).unwrap_or_else(|| panic!("part")).blocks = vec![para("Checked")];

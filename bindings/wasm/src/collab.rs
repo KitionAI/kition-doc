@@ -425,6 +425,29 @@ mod tests {
         assert_eq!(b.save(None).unwrap(), edited);
     }
 
+    /// An unchanged document reopened with its stored replica keeps every object id and saves
+    /// the same bytes (plan 2026-11-24, section 9.3).
+    #[test]
+    fn reopening_with_the_stored_replica_keeps_every_object_id() {
+        use kition_kit::kdm::{ActorId, Replica};
+        use kition_kit::session::KitModel;
+        let ids = |doc: &mut DocDocument| -> Vec<String> {
+            let replica = Replica::load(kdm_model::DocModel::schema(), &doc.snapshot().unwrap(), ActorId::random()).unwrap();
+            replica.state_json().unwrap()["objects"].as_object().map(|objects| objects.keys().cloned().collect()).unwrap_or_default()
+        };
+        let mut a = DocDocument::open("Document.docx", &fixture()).unwrap();
+        extra_edit(&mut a);
+        let bytes = a.save(None).unwrap();
+        let (snapshot, blobs) = (a.snapshot().unwrap(), a.blobs().unwrap());
+        let before = ids(&mut a);
+        assert!(before.len() > 1, "the document's objects: {before:?}");
+        let mut b = DocDocument::open_with_replica("Document.docx", &bytes, &snapshot, &blobs).unwrap();
+        assert_eq!(ids(&mut b), before, "the same object ids after reopening");
+        assert_eq!(b.save(None).unwrap(), bytes, "and the same bytes when saved unchanged");
+        let mut c = DocDocument::open_with_replica("Document.docx", &b.save(None).unwrap(), &b.snapshot().unwrap(), &b.blobs().unwrap()).unwrap();
+        assert_eq!(ids(&mut c), before, "and again after a second reopening");
+    }
+
     /// A damaged (or missing) stored replica never stops the file from opening: it opens plainly,
     /// never as a blank document.
     #[test]

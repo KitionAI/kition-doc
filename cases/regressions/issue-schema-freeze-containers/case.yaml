@@ -2,10 +2,10 @@ format: 1
 id: regressions/issue-schema-freeze-containers
 feature: doc.collab.concurrent-structure
 intent: >-
-  Two people changing two styles, adding two styles, changing the document defaults and a style,
-  or resizing two columns of one table at once both keep their change, and the replicas end
-  identical: each style is an entry of the styles map keyed by its id, the defaults their own
-  register, and each grid column a Col object of its table.
+  The styles and a table's columns are containers of the object model: each style is an entry of
+  the styles map keyed by its id, the defaults their own register, and each grid column a Col
+  object of its table; deleting a style rewrites no other entry. (The tests of two people editing
+  them at once went with the CRDT, plan 2026-11-24.)
 layer: gate
 tags: [collab, kdm]
 source:

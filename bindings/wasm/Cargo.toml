@@ -31,5 +31,5 @@ base64 = { workspace = true }
 # The conformance fixture writer (examples/checks.rs) takes parts out of a written package.
 zip = { workspace = true }
 image = { workspace = true }
-# The Kition platform convergence suite (L6), on the same kition-sdk revision.
+# The Kition platform kit suite's performance mode (tests/perf.rs), on the same kition-sdk revision.
 kition-convergence = { workspace = true }

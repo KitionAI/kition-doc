@@ -20,13 +20,10 @@ Third-party material
   Project Authors, SIL Open Font License 1.1 (below).
 - English word list (assets/hyphenation/en-us.dic): from the Moby Hyphenator II list by Grady Ward,
   public domain; hyphenation patterns trained from it (assets/hyphenation/en-us.pat), CC0-1.0.
-- Loro (https://github.com/loro-dev/loro): Copyright (c) 2023 Zixuan Chen, MIT License (below).
-- MPL-2.0 crates used unmodified (source on crates.io): bitmaps, im, sized-chunks.
 
-MIT License (WordCraft, Loro)
+MIT License (WordCraft)
 
 Copyright (c) 2026 ArtCraft Team and the WordCraft contributors
-Copyright (c) 2023 Zixuan Chen
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

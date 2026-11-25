@@ -1,17 +1,16 @@
 //! The styles and a table's columns as containers (schema-freeze): each style is an entry of the
 //! root's `styles` map keyed by its style id, the document defaults the `styleDefaults` register,
-//! and each grid column a `Col` object of its table's `cols` list. Two replicas changing two
-//! styles, adding two styles, changing the defaults and a style, or resizing two columns of one
-//! table at once both keep their change, and the replicas end identical.
+//! and each grid column a `Col` object of its table's `cols` list; deleting a style rewrites no
+//! other entry.
 
 mod common;
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use common::{Session, SharedBlobs, assert_no_dangling, assert_replica_clean, assert_same, edit, first, para, peer, sync};
+use common::{Session, SharedBlobs, edit, first, para, peer};
 use kition_doc_doc::table::Table;
-use kition_doc_doc::{Block, Document, Style};
+use kition_doc_doc::{Block, Document};
 use serde_json::Value;
 
 fn doc() -> Document {
@@ -27,30 +26,8 @@ fn pair() -> (SharedBlobs, Session, Session) {
     (blobs, a, b)
 }
 
-fn assert_converged(a: &Session, b: &Session) {
-    assert_eq!(a.state_hash().ok(), b.state_hash().ok(), "same replica state");
-    assert_same("views", &a.model().document, &b.model().document);
-    assert_no_dangling(&a.model().document);
-    assert_replica_clean(a.replica());
-}
-
-fn style_mut<'d>(d: &'d mut Document, id: &str) -> &'d mut Style {
-    d.styles.styles.iter_mut().find(|s| s.id == id).unwrap_or_else(|| panic!("style {id}"))
-}
-
-fn style<'d>(d: &'d Document, id: &str) -> &'d Style {
-    d.styles.styles.iter().find(|s| s.id == id).unwrap_or_else(|| panic!("style {id}"))
-}
-
 fn table(d: &Document) -> &Table {
     match d.body.get(1).map(|b| &**b) {
-        Some(Block::Table(t)) => t,
-        _ => panic!("the table"),
-    }
-}
-
-fn table_mut(d: &mut Document) -> &mut Table {
-    match d.body.get_mut(1).map(Arc::make_mut) {
         Some(Block::Table(t)) => t,
         _ => panic!("the table"),
     }
@@ -81,47 +58,6 @@ fn the_replica_holds_each_style_and_each_column_on_its_own() {
 }
 
 #[test]
-fn changes_to_two_styles_are_both_kept() {
-    let (blobs, mut a, mut b) = pair();
-    edit(&mut a, &blobs, |d| style_mut(d, "Heading1").chr.bold = Some(false));
-    edit(&mut b, &blobs, |d| style_mut(d, "Normal").chr.italic = Some(true));
-    sync(&mut a, &mut b);
-    assert_converged(&a, &b);
-    let d = &a.model().document;
-    assert_eq!(style(d, "Heading1").chr.bold, Some(false), "A's change");
-    assert_eq!(style(d, "Normal").chr.italic, Some(true), "B's change");
-}
-
-#[test]
-fn two_styles_added_at_once_are_both_kept() {
-    let (blobs, mut a, mut b) = pair();
-    let add = |id: &str| {
-        let id = id.to_owned();
-        move |d: &mut Document| d.styles.styles.push(Style { id: id.clone(), name: id.clone(), ..Default::default() })
-    };
-    edit(&mut a, &blobs, add("FromA"));
-    edit(&mut b, &blobs, add("FromB"));
-    sync(&mut a, &mut b);
-    assert_converged(&a, &b);
-    let d = &a.model().document;
-    assert_eq!(d.styles.styles.len(), doc().styles.styles.len() + 2);
-    let ids: Vec<&str> = d.styles.styles.iter().map(|s| s.id.as_str()).collect();
-    assert!(ids.ends_with(&["FromA", "FromB"]), "both after the built-in ones: {ids:?}");
-}
-
-#[test]
-fn a_change_of_the_defaults_and_of_a_style_are_both_kept() {
-    let (blobs, mut a, mut b) = pair();
-    edit(&mut a, &blobs, |d| d.styles.default_para.space_after = Some(4.0));
-    edit(&mut b, &blobs, |d| style_mut(d, "Heading2").chr.size = Some(15.0));
-    sync(&mut a, &mut b);
-    assert_converged(&a, &b);
-    let d = &a.model().document;
-    assert_eq!(d.styles.default_para.space_after, Some(4.0), "A's change");
-    assert_eq!(style(d, "Heading2").chr.size, Some(15.0), "B's change");
-}
-
-#[test]
 fn deleting_a_style_rewrites_no_other() {
     let (blobs, mut a, _) = pair();
     let root = kition_kit::kdm::ObjectId::from_string("document");
@@ -132,24 +68,4 @@ fn deleting_a_style_rewrites_no_other() {
     assert!(before.remove("NoSpacing").is_some());
     assert_eq!(entries(&a), before, "the other entries, orders included, stay as they were");
     assert!(!a.model().document.styles.styles.iter().any(|s| s.id == "NoSpacing"));
-}
-
-#[test]
-fn resizing_two_columns_at_once_keeps_both() {
-    let (blobs, mut a, mut b) = pair();
-    edit(&mut a, &blobs, |d| table_mut(d).grid[0] = 60.0);
-    edit(&mut b, &blobs, |d| table_mut(d).grid[2] = 140.0);
-    sync(&mut a, &mut b);
-    assert_converged(&a, &b);
-    assert_eq!(table(&a.model().document).grid, vec![60.0, 100.0, 140.0], "A's and B's widths");
-}
-
-#[test]
-fn a_column_added_and_another_resized_at_once_are_both_kept() {
-    let (blobs, mut a, mut b) = pair();
-    edit(&mut a, &blobs, |d| table_mut(d).grid.push(50.0));
-    edit(&mut b, &blobs, |d| table_mut(d).grid[1] = 120.0);
-    sync(&mut a, &mut b);
-    assert_converged(&a, &b);
-    assert_eq!(table(&a.model().document).grid, vec![100.0, 120.0, 100.0, 50.0]);
 }

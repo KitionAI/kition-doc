@@ -1,8 +1,7 @@
 //! Comment threads through the engine's commands (Kition platform rule M23): a thread on
-//! a selection, replies, resolving, deleting a reply or the whole thread, and going to one; two
-//! people commenting on one thread at once keep both comments; a session open for commenting
-//! only refuses every edit of the content, writes only comment objects, and takes its own
-//! comments back with Undo.
+//! a selection, replies, resolving, deleting a reply or the whole thread, and going to one; a
+//! session open for commenting only refuses every edit of the content, writes only comment
+//! objects, and takes its own comments back with Undo.
 
 use std::collections::BTreeSet;
 
@@ -120,26 +119,6 @@ fn a_thread_on_a_selection_with_replies_resolve_delete_and_go_to() {
     assert!(threads(&mut s).is_empty());
     assert!(s.doc.comments.is_empty() && !s.doc.parts.values().any(|p| p.kind == kition_doc_engine::doc::PartKind::Comment));
     assert_eq!(s.doc.plain_text(kition_doc_engine::doc::StoryRef::Body).trim_end(), "Alpha paragraph one.\nBeta paragraph two.");
-}
-
-#[test]
-fn two_people_commenting_on_one_thread_at_once_keep_both() {
-    let mut a = new_session();
-    select(&mut a, 0, 0, 5);
-    let thread = run(&mut a, "comment.add", json!({ "text": "Open", "author": "user:ann", "name": "Ann" }))["thread"].clone();
-    let mut b = peer(&mut a);
-    let theirs = threads(&mut b)[0]["id"].clone();
-    run(&mut a, "comment.reply", json!({ "thread": thread, "text": "From Ann", "author": "user:ann", "name": "Ann" }));
-    run(&mut b, "comment.reply", json!({ "thread": theirs, "text": "From Bob", "author": "user:bob", "name": "Bob" }));
-    sync(&mut a, &mut b);
-    for s in [&mut a, &mut b] {
-        let found = threads(s);
-        assert_eq!(found.len(), 1);
-        let mut all = bodies(&found[0]);
-        assert_eq!(all.remove(0), "Open");
-        all.sort();
-        assert_eq!(all, ["From Ann", "From Bob"]);
-    }
 }
 
 #[test]
