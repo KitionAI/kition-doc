@@ -865,6 +865,11 @@ pub mod web {
         JsError::new(&message)
     }
 
+    /// An origin in the KDM's commit form, the JSON array `[kind, principal, label]`.
+    fn origin_of(origin: &str) -> Result<kition_doc_engine::Origin, JsError> {
+        kition_doc_engine::Origin::decode(origin).ok_or_else(|| error(format!("origin is not [kind, principal, label]: {origin}")))
+    }
+
     #[wasm_bindgen(js_class = "DocDocument", wasm_bindgen = kition_kit::wasm_bindgen)]
     impl WebDocument {
         /// The canvas around the pages in `#rrggbb` (the editor's canvas color).
@@ -929,8 +934,7 @@ pub mod web {
         #[wasm_bindgen(js_name = executeAs)]
         pub fn execute_as(&mut self, command: &str, params: &str, origin: &str) -> Result<String, JsError> {
             let params = kition_kit::parse_params(params).map_err(error)?;
-            let origin =
-                kition_doc_engine::Origin::decode(origin).ok_or_else(|| error(format!("origin is not [kind, principal, label]: {origin}")))?;
+            let origin = origin_of(origin)?;
             self.0.execute_as(command, params, &origin).map(|value| value.to_string()).map_err(error)
         }
 
@@ -956,6 +960,65 @@ pub mod web {
         #[wasm_bindgen(js_name = kdmResets)]
         pub fn kdm_resets(&self) -> u32 {
             self.0.kdm_resets()
+        }
+
+        /// `model/describe` (the object model, `KitObjectModel 1.0`) as JSON text, through the
+        /// change exchange `kition-doc` serves it with headless ([`crate::collab`]). A failure's
+        /// message is the error's JSON (`{"code", "index", "message"}`).
+        #[wasm_bindgen(js_name = modelDescribe)]
+        pub fn model_describe(&mut self) -> Result<String, JsError> {
+            kition_kit::session::model::Exchange::new()
+                .describe(&mut self.0)
+                .map(|answer| answer.to_string())
+                .map_err(|failure| error(failure.to_json().to_string()))
+        }
+
+        /// `model/batch`: the request and the answer as JSON text, one undo step; a failure's
+        /// message is the error's JSON (`{"code", "index", "message"}`).
+        #[wasm_bindgen(js_name = modelBatch)]
+        pub fn model_batch(&mut self, request: &str) -> Result<String, JsError> {
+            let request: serde_json::Value = serde_json::from_str(request).map_err(|failure| {
+                error(json!({ "code": "invalid-op", "index": null, "message": format!("the batch is not JSON: {failure}") }).to_string())
+            })?;
+            kition_kit::session::model::Exchange::new()
+                .batch(&mut self.0, &request, false)
+                .map(|answer| answer.to_string())
+                .map_err(|failure| error(failure.to_json().to_string()))
+        }
+
+        /// A draft's changes taken in as one undo step, recorded with `origin` (`[kind, principal,
+        /// label]`): `{"damage", "summary"}`. A refusal fails with the KDM's message.
+        #[wasm_bindgen(js_name = mergeChanges)]
+        pub fn merge_changes(&mut self, changes: &[u8], origin: &str) -> Result<String, JsError> {
+            let origin = origin_of(origin)?;
+            self.0.merge_changes(changes, &origin).map(|answer| answer.to_string()).map_err(error)
+        }
+
+        /// What merging a draft's changes would change now, as `StateDiff` JSON; changes nothing.
+        #[wasm_bindgen(js_name = compareChanges)]
+        pub fn compare_changes(&self, changes: &[u8]) -> Result<String, JsError> {
+            self.0.compare_changes(changes).map(|answer| answer.to_string()).map_err(error)
+        }
+
+        /// Writes the state a snapshot holds over the document as one change of `origin`;
+        /// answers the damage JSON.
+        #[wasm_bindgen(js_name = restoreState)]
+        pub fn restore_state(&mut self, snapshot: &[u8], origin: &str) -> Result<String, JsError> {
+            let origin = origin_of(origin)?;
+            self.0.restore_state(snapshot, &origin).map(|damage| serde_json::to_string(&damage).unwrap_or_else(|_| "null".to_owned())).map_err(error)
+        }
+
+        /// An agent's reply (JSON text) with its object ids named as the tool interface names them.
+        #[wasm_bindgen(js_name = modelReply)]
+        pub fn model_reply(&self, value: &str) -> Result<String, JsError> {
+            self.0.model_reply(value).map_err(error)
+        }
+
+        /// What changed since the version `since` (a receipt): `{"changes": StateDiff}`, or
+        /// `{"changes": null, "unavailable"}` when the replica's log does not hold it.
+        #[wasm_bindgen(js_name = changesSince)]
+        pub fn changes_since(&self, since: &[u8]) -> String {
+            self.0.changes_since(since).to_string()
         }
 
         /// Opens a file with the replica a host stored for it (the Kit UI protocol's `replica`

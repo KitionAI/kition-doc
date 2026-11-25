@@ -597,7 +597,7 @@ impl Session {
         // A new step clears its own history's redo, never the other scope's.
         self.redo.retain(|u| u.scope != scope);
     }
-    fn push_step(&mut self, u: Undo) {
+    pub(crate) fn push_step(&mut self, u: Undo) {
         self.history.push(Arc::new(u));
         self.pushed = self.pushed.saturating_add(1);
         if self.depth > 0 {
@@ -767,12 +767,11 @@ impl Session {
         let from = if redo { &self.redo } else { &self.history };
         let Some(steps) = from.get(i).and_then(|u| u.steps) else { return false };
         let before = self.doc.clone();
-        if !self.replay_kdm(steps, !redo, scope) {
-            return false;
-        }
+        let Some((taken, past)) = self.replay_kdm(steps, !redo, scope) else { return false };
         let from = if redo { &mut self.redo } else { &mut self.history };
         let u = Arc::unwrap_or_clone(from.remove(i));
-        let cur = Undo { label: u.label, doc: before, sel: self.sel.clone(), steps: u.steps, scope };
+        self.consume_older(!redo, scope, past);
+        let cur = Undo { label: u.label, doc: before, sel: self.sel.clone(), steps: Some(taken), scope };
         if redo {
             self.history.push(Arc::new(cur))
         } else {

@@ -148,6 +148,70 @@ impl DocDocument {
         Ok(encode_blobs(&blobs))
     }
 
+    /// The replicated state, the replica made first if there is none yet.
+    fn replicated_state(&mut self) -> Result<Value, String> {
+        self.session().version().map_err(engine_error)?;
+        let session = self.session();
+        let kdm = session.kdm().ok_or("the document has no replica")?;
+        kdm.replica().state_json().map_err(engine_error)
+    }
+
+    /// Takes a draft's changes (from a replica forked from this one) in as one undo step of the
+    /// person (`mergeChanges`, as `kition-sdk`'s `export_kit_session!` answers it): the engine's
+    /// document follows, and one Undo takes the whole draft back. Add the draft's blobs first.
+    /// Answers `{"damage", "summary"}`, `summary` the `StateDiff` of the replicated state before
+    /// and after. A refused merge changes nothing and fails with the KDM's message.
+    pub fn merge_changes(&mut self, bytes: &[u8], origin: &Origin) -> Result<Value, String> {
+        let before = self.replicated_state()?;
+        let damage = self.session().merge_changes(bytes, origin).map_err(engine_error)?;
+        let after = self.replicated_state()?;
+        Ok(json!({ "damage": damage, "summary": kition_kit::kdm::diff::diff_states(&before, &after).to_json() }))
+    }
+
+    /// What merging a draft's changes would change in the document now, as `StateDiff` JSON;
+    /// nothing changes. Refuses what [`DocDocument::merge_changes`] refuses.
+    pub fn compare_changes(&self, bytes: &[u8]) -> Result<Value, String> {
+        let session = self.session();
+        let kdm = session.kdm().ok_or("the document has no replica, so no draft of it")?;
+        let before = kdm.replica().state_json().map_err(engine_error)?;
+        let after = kdm.merged_state(bytes).map_err(engine_error)?;
+        Ok(kition_kit::kdm::diff::diff_states(&before, &after).to_json())
+    }
+
+    /// Writes the state a snapshot holds (a checkpoint of this document, the Kit UI protocol's
+    /// `replica/restore`) over the document by object id, as one undo step of `origin`'s scope:
+    /// the engine's document follows. Add the blobs it references first. Nothing changes when the
+    /// states are equal; another document's snapshot is refused.
+    pub fn restore_state(&mut self, snapshot: &[u8], origin: &Origin) -> Result<Damage, String> {
+        self.session().restore_state(snapshot, origin).map_err(engine_error)
+    }
+
+    /// An agent's reply (JSON text) with every object id it holds as a value or a key named as
+    /// the tool interface names it (its tool id, KitObjectModel OM9); unchanged without a replica
+    /// or when the schema declares no tool ids.
+    pub fn model_reply(&self, value: &str) -> Result<String, String> {
+        let value: Value = serde_json::from_str(value).map_err(|error| format!("the reply is not JSON: {error}"))?;
+        let session = self.session();
+        let Some(kdm) = session.kdm() else { return Ok(value.to_string()) };
+        let ids = kition_kit::kdm::tool_ids::ToolIds::of_replica(kdm.replica());
+        Ok(if ids.is_active() { ids.show_json(&value) } else { value }.to_string())
+    }
+
+    /// What changed since the version `since` (empty bytes: since the replica began), a receipt as
+    /// `kition-sdk`'s `changesSince` answers it: `{"changes": StateDiff}`, or `{"changes": null,
+    /// "unavailable": "<why>"}` when the replica's log does not hold `since` (or there is no
+    /// replica yet).
+    pub fn changes_since(&self, since: &[u8]) -> Value {
+        let session = self.session();
+        let Some(kdm) = session.kdm() else { return json!({ "changes": null, "unavailable": "the document has no replica yet" }) };
+        let replica = kdm.replica();
+        let since = if since.is_empty() { Ok(Version::empty()) } else { Version::decode(since) };
+        match since.and_then(|since| replica.changes_since(&since)) {
+            Ok(changes) => json!({ "changes": changes.to_recorded_json(replica.schema()) }),
+            Err(error) => json!({ "changes": null, "unavailable": error.to_string() }),
+        }
+    }
+
     /// How many times the document left its replica because it refused a write or an undo (a
     /// document it cannot hold, or a bug). The document keeps working, undoing from its own
     /// history; the next shared edit makes a fresh replica, which collaborators must resync (its
@@ -515,6 +579,121 @@ mod tests {
         assert_ne!(a.version().unwrap(), before);
         assert!(DocDocument::open_with_replica("Document.docx", &[], &newer.snapshot().unwrap(), &[]).is_err(), "nor opens it");
     }
+    /// The body's text, read without moving the person.
+    fn body(doc: &DocDocument) -> String {
+        doc.session().doc.plain_text(kition_doc_engine::doc::StoryRef::Body)
+    }
+
+    /// A draft (a replica forked from the document's) merges in as one step of the person's Undo:
+    /// the comparison beforehand names what the merge does and changes nothing, the engine's
+    /// document follows the merge, an edit made here meanwhile stays, and a refused merge changes
+    /// nothing.
+    #[test]
+    fn a_draft_merges_in_as_one_undo_step_and_the_document_follows() {
+        let mut doc = DocDocument::open("Document.docx", &fixture()).unwrap();
+        let base = doc.version().unwrap();
+        let mut draft = DocDocument::open_with_replica("Document.docx", &[], &doc.snapshot().unwrap(), &doc.blobs().unwrap()).unwrap();
+        draft.execute("caret.docEnd", json!({})).unwrap();
+        draft.execute("text.newParagraph", json!({})).unwrap();
+        draft.execute("text.insert", json!({ "text": "From the draft" })).unwrap();
+        let changes = draft.export_changes(&base).unwrap();
+        // Here meanwhile: the document's title, another object's field than the draft's.
+        doc.execute("file.properties", json!({ "title": "Meanwhile" })).unwrap();
+        let version = doc.version().unwrap();
+        let preview = doc.compare_changes(&changes).unwrap();
+        assert_eq!(doc.version().unwrap(), version, "comparing changes nothing");
+        assert!(!body(&doc).contains("From the draft"));
+        let origin = Origin::person("person:local");
+        let answer = doc.merge_changes(&changes, &origin).unwrap();
+        assert_eq!(answer["summary"], preview, "the comparison named what the merge did: {answer}");
+        assert_ne!(answer["damage"], json!("none"), "{answer}");
+        let text = body(&doc);
+        assert!(text.contains("From the draft"), "the engine's document follows the merge: {text:?}");
+        assert!(doc.replicated_state().unwrap().to_string().contains("Meanwhile"), "the edit made here stays");
+        assert!(doc.dirty());
+        assert!(doc.undo().unwrap().0);
+        let text = body(&doc);
+        assert!(!text.contains("From the draft"), "one undo takes the whole draft back: {text:?}");
+        assert!(doc.replicated_state().unwrap().to_string().contains("Meanwhile"), "and only the draft");
+        assert!(doc.redo().unwrap().0);
+        assert!(body(&doc).contains("From the draft"), "and one redo brings it again");
+        let at = doc.version().unwrap();
+        assert!(doc.merge_changes(b"not changes", &origin).is_err());
+        assert_eq!(doc.version().unwrap(), at, "a refused merge changes nothing");
+    }
+
+    /// An earlier state (a checkpoint's snapshot) is written over the document by object id as
+    /// one undo step: the replica holds that state again, with the same ids, and one Undo takes
+    /// it back.
+    #[test]
+    fn a_restored_state_keeps_the_ids_and_undoes_as_one_step() {
+        use kition_kit::kdm::{ActorId, Replica};
+        use kition_kit::session::KitModel;
+        let mut doc = DocDocument::open("Document.docx", &fixture()).unwrap();
+        doc.version().unwrap();
+        let checkpoint = doc.snapshot().unwrap();
+        let before = body(&doc);
+        extra_edit(&mut doc);
+        let edited = body(&doc);
+        assert_ne!(edited, before);
+        let origin = Origin::person("person:local");
+        let damage = doc.restore_state(&checkpoint, &origin).unwrap();
+        assert_ne!(damage, Damage::None);
+        assert_eq!(body(&doc), before, "the engine's document follows the restore");
+        let then = Replica::load(kdm_model::DocModel::schema(), &checkpoint, ActorId::random()).unwrap().state_json().unwrap();
+        assert_eq!(doc.replicated_state().unwrap()["objects"], then["objects"], "the checkpoint's objects, under their ids");
+        let at = doc.version().unwrap();
+        assert_eq!(doc.restore_state(&checkpoint, &origin).unwrap(), Damage::None, "the same state again changes nothing");
+        assert_eq!(doc.version().unwrap(), at);
+        assert!(doc.undo().unwrap().0);
+        assert_eq!(body(&doc), edited, "one undo takes the restore back");
+        let other = DocDocument::open("Document.docx", &fixture()).unwrap().snapshot().unwrap();
+        assert!(doc.restore_state(&other, &origin).is_err(), "another document's state is refused");
+    }
+
+    /// An agent's reply names objects by their tool ids; text that merely holds an id stays.
+    #[test]
+    fn a_reply_names_objects_by_their_tool_ids() {
+        let mut doc = DocDocument::open("Document.docx", &fixture()).unwrap();
+        let state = doc.replicated_state().unwrap();
+        let block = state["objects"]
+            .as_object()
+            .unwrap()
+            .iter()
+            .find(|(_, object)| object["$type"] == "Block")
+            .map(|(id, _)| id.clone())
+            .unwrap_or_else(|| panic!("a block object: {state}"));
+        let tool_id = {
+            let session = doc.session();
+            let ids = kition_kit::kdm::tool_ids::ToolIds::of_replica(session.kdm().unwrap().replica());
+            ids.tool_id(&kition_kit::kdm::ObjectId::from_string(block.as_str())).map(str::to_owned)
+        };
+        let tool_id = tool_id.unwrap_or_else(|| panic!("block {block} has a tool id"));
+        assert_ne!(tool_id, block);
+        let shown: Value =
+            serde_json::from_str(&doc.model_reply(&json!({ "target": block, "note": format!("about {block}") }).to_string()).unwrap()).unwrap();
+        assert_eq!(shown["target"], json!(tool_id), "{shown}");
+        assert_eq!(shown["note"], json!(format!("about {block}")), "text that holds an id stays");
+        assert!(doc.model_reply("not json").is_err());
+    }
+
+    /// A receipt names what changed since a version the replica's log holds, and says so when it
+    /// cannot (no replica yet, a version of another line).
+    #[test]
+    fn changes_since_answers_a_receipt_or_why_not() {
+        let mut doc = DocDocument::open("Document.docx", &fixture()).unwrap();
+        assert!(doc.changes_since(&[])["changes"].is_null(), "no replica yet");
+        let since = doc.version().unwrap();
+        extra_edit(&mut doc);
+        let receipt = doc.changes_since(&since);
+        assert!(receipt["changes"].is_object(), "{receipt}");
+        let now = doc.version().unwrap();
+        assert_ne!(receipt["changes"], doc.changes_since(&now)["changes"], "the edit is in the receipt: {receipt}");
+        let other = DocDocument::open("Document.docx", &fixture()).unwrap().version().unwrap();
+        let refused = doc.changes_since(&other);
+        assert!(refused["changes"].is_null() && refused["unavailable"].is_string(), "{refused}");
+    }
+
     /// `kition-doc` serves the object model through `ReplicaPort`: a command and a model edit in
     /// batches reach the engine, and a read-only batch refuses writes.
     #[test]

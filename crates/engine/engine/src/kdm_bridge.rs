@@ -210,6 +210,68 @@ impl Session {
         result.map_err(kdm_error)
     }
 
+    /// Takes a draft's changes (made on a replica forked from this one, `mergeChanges`) into the
+    /// document as one undo step of the person, as a command's edit is (the KDM makes a merged
+    /// draft the person's step: they approved it): local edits not written yet are written first,
+    /// the document and its selection follow the replica, and one Undo takes the whole draft
+    /// back. Add the draft's blobs first ([`Session::add_blobs`]). A refused merge changes nothing.
+    pub fn merge_changes(&mut self, bytes: &[u8], origin: &Origin) -> Result<Damage, CmdError> {
+        self.take_in("Merge Draft", UndoScope::Person, |kdm| kdm.merge_changes(bytes, origin))
+    }
+
+    /// Writes the state a snapshot holds (a checkpoint of this document, `replica/restore`) over
+    /// the document by object id, as one undo step of `origin`'s scope, taken in as a merged draft
+    /// is ([`Session::merge_changes`]). Nothing changes when the states are equal; another
+    /// document's snapshot is refused.
+    pub fn restore_state(&mut self, snapshot: &[u8], origin: &Origin) -> Result<Damage, CmdError> {
+        let scope = UndoScope::of(origin.kind).unwrap_or(UndoScope::Person);
+        self.take_in("Restore Version", scope, |kdm| kdm.restore_state(snapshot, origin))
+    }
+
+    /// One transaction `write` makes on the replica, taken into the document as a command's step:
+    /// the document follows the replica as after an import, and the history gets the step (its
+    /// replica steps the transaction's) when the transaction is an undo step.
+    fn take_in(
+        &mut self,
+        label: &str,
+        scope: UndoScope,
+        write: impl FnOnce(&mut DocSession) -> kdm_model::kition_kit::session::Result<(u32, Damage)>,
+    ) -> Result<Damage, CmdError> {
+        if self.comment_only {
+            return Err(CmdError::Disabled(
+                "the document is open for commenting only: a draft or an earlier version is not a commenter's to take in".into(),
+            ));
+        }
+        self.close_typing();
+        // Local edits not written yet are written first; the selection's paragraphs are found
+        // on what that wrote.
+        self.active_kdm()?;
+        let anchors = self.anchors();
+        let kdm = self.link.kdm.as_mut().ok_or_else(no_replica)?;
+        let before_version = kdm.version();
+        let result = write(&mut *kdm);
+        let changed = kdm.version() != before_version;
+        let follow = changed && (result.is_ok() || kdm.view_loaded());
+        let (before, sel) = (self.doc.clone(), self.sel.clone());
+        if follow {
+            self.follow_kdm(anchors);
+        } else if changed {
+            self.detach_kdm();
+        }
+        let steps = result.as_ref().map_or(0, |(steps, _)| *steps);
+        if follow && steps > 0 {
+            self.push_step(Undo { label: label.to_owned(), doc: before, sel, steps: Some(steps), scope });
+            // A new step clears its own history's redo, never the other scope's.
+            self.redo.retain(|u| u.scope != scope);
+            self.link.recorded = self.link.recorded.saturating_add(u64::from(steps));
+            // The step is written already: the bridge has nothing of it left to record.
+            self.link.mark = self.pushed;
+            self.dirty = true;
+        }
+        self.trim_kdm();
+        result.map(|(_, damage)| damage).map_err(kdm_error)
+    }
+
     /// Imports only the saved-file difference, retaining the live replica and its undo scopes.
     pub fn reread_document(&mut self, after: &Document) -> Result<Damage, CmdError> {
         let anchors = self.anchors();
@@ -420,11 +482,15 @@ impl Session {
             self.trim_kdm();
             return;
         }
-        if steps > 0 && !(0..steps).all(|_| matches!(if undo { kdm.undo_in(scope) } else { kdm.redo_in(scope) }, Ok((true, _)))) {
+        let Some((taken, past)) = step_replica(kdm, steps, undo, scope) else {
             self.detach_kdm();
             return;
-        }
+        };
         let view = kdm.document().clone();
+        // The step, now on the other stack, holds the replica steps that one took back; steps
+        // the replica passed over beyond this one's were older steps'.
+        self.set_moved_steps(undo, taken);
+        self.consume_older(undo, scope, past);
         let sel = self.sel.clone();
         self.doc = view;
         self.sel.anchor = follow_by_content(reference, &self.doc, &sel.anchor);
@@ -433,24 +499,56 @@ impl Session {
 
     /// [`Session::step`] under the other scope's later steps: the replica undoes (or redoes) the
     /// step's `steps` transactions of `scope` and the document becomes its view, with the other
-    /// scope's later edits and every collaborator's. `false`, changing nothing, when the replica
+    /// scope's later edits and every collaborator's. Answers the replica steps it took back (what
+    /// the step holds on the other stack) and how many it passed over beyond the step's, which
+    /// were older steps' ([`Session::consume_older`]); `None`, changing nothing, when the replica
     /// does not hold them.
-    pub(crate) fn replay_kdm(&mut self, steps: u32, undo: bool, scope: UndoScope) -> bool {
-        let Some(kdm) = self.link.kdm.as_mut() else { return false };
+    pub(crate) fn replay_kdm(&mut self, steps: u32, undo: bool, scope: UndoScope) -> Option<(u32, usize)> {
+        let kdm = self.link.kdm.as_mut()?;
         let (available, can) = if undo { (kdm.steps().0, kdm.can_undo_in(scope)) } else { (kdm.steps().1, kdm.can_redo_in(scope)) };
         if steps == 0 || !can || usize::try_from(steps).unwrap_or(usize::MAX) > available {
-            return false;
+            return None;
         }
-        if !(0..steps).all(|_| matches!(if undo { kdm.undo_in(scope) } else { kdm.redo_in(scope) }, Ok((true, _)))) {
+        let Some((taken, past)) = step_replica(kdm, steps, undo, scope) else {
             self.detach_kdm();
-            return false;
-        }
+            return None;
+        };
         let view = kdm.document().clone();
         let before = std::mem::replace(&mut self.doc, view);
         let sel = self.sel.clone();
         self.sel.anchor = follow_by_content(&before, &self.doc, &sel.anchor);
         self.sel.focus = follow_by_content(&before, &self.doc, &sel.focus);
-        true
+        Some((taken, past))
+    }
+
+    /// The step [`Session::step`] just moved to the other stack holds `taken` replica steps.
+    fn set_moved_steps(&mut self, undo: bool, taken: u32) {
+        let to = if undo { &mut self.redo } else { &mut self.history };
+        if let Some(u) = to.last_mut()
+            && u.steps.is_some()
+        {
+            std::sync::Arc::make_mut(u).steps = Some(taken);
+        }
+    }
+
+    /// The replica passed over `past` steps beyond the ones an undo (or redo) step held: they were
+    /// the next older steps' of `scope` on the same stack. A history step whose replica steps all
+    /// went with them is taken back with it (it leaves its stack); one only partly taken holds that
+    /// many fewer.
+    pub(crate) fn consume_older(&mut self, undo: bool, scope: UndoScope, mut past: usize) {
+        let from = if undo { &mut self.history } else { &mut self.redo };
+        while past > 0 {
+            let Some(i) = from.iter().rposition(|u| u.scope == scope && u.steps.is_some_and(|n| n > 0)) else { break };
+            let Some(u) = from.get_mut(i) else { break };
+            let held = u.steps.unwrap_or(0) as usize;
+            if held <= past {
+                from.remove(i);
+                past -= held;
+            } else {
+                std::sync::Arc::make_mut(u).steps = Some(u32::try_from(held - past).unwrap_or(u32::MAX));
+                past = 0;
+            }
+        }
     }
 
     /// [`Session::restore`]'s part: the replica undoes what it recorded since the snapshot, the
@@ -474,14 +572,15 @@ impl Session {
         }
         let scope = self.undo_scope();
         let Some(kdm) = self.link.kdm.as_mut() else { return };
-        if !(0..k).all(|_| matches!(kdm.undo_in(scope), Ok((true, _)))) {
+        let Some((_, past)) = step_replica(kdm, u32::try_from(k).unwrap_or(u32::MAX), true, scope) else {
             self.detach_kdm();
             return;
-        }
+        };
+        // A collaborator's edit came in meanwhile: it stays.
+        let view = (self.link.imports != mark.imports).then(|| kdm.document().clone());
+        self.consume_older(true, scope, past);
         self.link.recorded = mark.recorded;
-        if self.link.imports != mark.imports {
-            // A collaborator's edit came in meanwhile: it stays.
-            let view = kdm.document().clone();
+        if let Some(view) = view {
             self.doc = view;
             self.clamp_selection();
         }
@@ -533,6 +632,28 @@ impl Session {
         self.touch();
         self.link.rev = self.rev;
     }
+}
+
+/// Steps `kdm` back (or forward) over `steps` of its steps in `scope`, one undo (or redo) at a
+/// time, counting what each took off its stack (a step passed over counts too, [`UndoOutcome`]):
+/// answers how many it took back and how many it went past `steps`; stops early when the replica
+/// has nothing left to take. `None` when the replica refused.
+///
+/// [`UndoOutcome`]: kdm_model::kition_kit::kdm::UndoOutcome
+fn step_replica(kdm: &mut DocSession, steps: u32, undo: bool, scope: UndoScope) -> Option<(u32, usize)> {
+    let want = usize::try_from(steps).unwrap_or(usize::MAX);
+    let (mut consumed, mut taken) = (0usize, 0u32);
+    while consumed < want {
+        match kdm.step_in(scope, undo) {
+            Ok((outcome, _)) if outcome.steps() > 0 => {
+                consumed = consumed.saturating_add(outcome.steps());
+                taken = taken.saturating_add(u32::from(outcome.is_done()));
+            }
+            Ok(_) => break,
+            Err(_) => return None,
+        }
+    }
+    Some((taken, consumed.saturating_sub(want)))
 }
 
 fn part_of(story: StoryRef) -> Option<u32> {
