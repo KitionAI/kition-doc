@@ -80,7 +80,7 @@ impl DocDocument {
         })
     }
 
-    pub(crate) fn restore_state(&mut self, saved: &Value) -> Result<(), String> {
+    pub(crate) fn restore_selection_state(&mut self, saved: &Value) -> Result<(), String> {
         let strict = std::mem::take(&mut self.validating_reread);
         let selection_active = saved.get("activeSelection").and_then(Value::as_bool).unwrap_or(false);
         let mut selection: Selection =

@@ -601,7 +601,7 @@ impl KitDocument for DocDocument {
     }
 
     fn restore_editor_state(&mut self, saved: &Value) -> Result<(), String> {
-        self.restore_state(saved)
+        self.restore_selection_state(saved)
     }
 
     fn carry_replica_objects(&mut self, _previous: &Self) -> Result<(), String> {
@@ -623,7 +623,7 @@ impl KitDocument for DocDocument {
         self.session().reread_document(&after).map_err(|error| error.to_string())?;
         // The retained replica follows text edits before the caret as well as paragraph moves.
         state["positions"] = Self::state_of(&self.session.borrow())["positions"].clone();
-        self.restore_state(&state)?;
+        self.restore_selection_state(&state)?;
         Ok(true)
     }
 
