@@ -162,7 +162,13 @@ fn an_object_a_draft_lists_twice_is_listed_once() {
     let (first_block, len) = (body[0].clone(), body.len());
     let at = root.clone();
     d.record(&agent(), move |tx| Ok(tx.list_insert(&at, "body", len, &first_block)?)).unwrap_or_else(|e| panic!("record: {e}"));
-    merge(&mut a, &d, &base, &person("test"));
+    // The repair takes the later entry back, so the merge changes nothing: it records no change
+    // and no step (kition-sdk 6a57d68, regressions/issue-merge-cancelled-by-repair).
+    let version = a.version();
+    let bytes = d.export_changes(&base).unwrap_or_else(|error| panic!("export: {error}"));
+    let (scope, _) = a.merge_changes(&bytes, &person("test")).unwrap_or_else(|error| panic!("merge: {error}"));
+    assert_eq!(scope, None, "a merge that changes nothing is no step");
+    assert_eq!(a.version(), version, "and logs no change");
     assert_eq!(a.replica().list(&root, "body").unwrap_or_else(|e| panic!("{e}")), body, "the later entry goes");
     common::assert_same("the view", &a.model().document, &view);
     assert_clean(&a);

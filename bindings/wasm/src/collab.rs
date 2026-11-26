@@ -680,7 +680,8 @@ mod tests {
         }
         let changes = draft.export_changes(&base).unwrap();
         let (state, before) = (doc.replicated_state().unwrap(), view(&doc));
-        let (hash, depth) = (doc.session().state_hash().unwrap(), replica_depth(&doc));
+        let hash = doc.session().state_hash().unwrap();
+        let depth = replica_depth(&doc);
         let agent = Origin::agent("agent:writer");
         doc.merge_changes(&changes, &agent).unwrap();
         assert_eq!(body(&doc), "Hello world\nMeanwhile\nFrom the draft");
