@@ -269,14 +269,30 @@ impl Session {
             self.link.mark = self.pushed;
             self.dirty = true;
             // Both sides may have numbered a new paragraph, row or drawing object alike (each
-            // numbers from the same state): the ids are made unique now and written onto this
-            // step, in its scope, so the merged document holds each tool id once and one Undo
-            // still gives back the state before it.
+            // numbers from the same state): the ids are made unique now and written into the
+            // replica's own undo step of the merge (`Replica::transact_in_step`), not a change of
+            // their own, so the merged document holds each tool id once, one Undo gives back the
+            // exact state before the merge and one Redo the merged state with the ids.
             if self.stable_ids && self.doc.ensure_tool_ids() {
                 self.rev = self.rev.wrapping_add(1);
                 let doc = self.doc.clone();
                 let own = if scope == UndoScope::Agent { origin.clone() } else { local_person() };
-                self.record_onto(self.history.len().checked_sub(1), &own, &doc);
+                let joined = self.link.kdm.as_mut().map(|kdm| kdm.record_in_step(scope, &own, &doc));
+                match joined {
+                    Some(Ok(Some(_))) | None => {}
+                    // With the ids the step changes nothing any more: the replica dropped it, so
+                    // the history keeps no step of it either.
+                    Some(Ok(None)) => {
+                        self.history.pop();
+                    }
+                    // Refused (the step no longer holds the replica's newest change): nothing was
+                    // written, so the ids are written onto the history's step as a change of
+                    // their own.
+                    Some(Err(error)) => {
+                        log::warn!("the merge's undo step did not take the tool ids: {error}");
+                        self.record_onto(self.history.len().checked_sub(1), &own, &doc);
+                    }
+                }
                 self.link.rev = self.rev;
             }
         }

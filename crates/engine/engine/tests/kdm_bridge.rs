@@ -643,6 +643,77 @@ fn an_undo_that_passes_over_a_step_takes_the_one_below_with_it() {
     assert_eq!(s.kdm_resets(), 0);
 }
 
+/// An agent's draft refers to a footnote again while the person deletes that footnote, their last
+/// named step (regressions/issue-merge-cancelled-by-repair): the repair of the merged state
+/// deletes the draft's dangling note reference, which takes back all the draft did. The merge
+/// records nothing: no scope, no damage, the state hash, the version and the replica's undo depth
+/// stay, and the history keeps its steps, labels, replica steps and selection (no "Merge Draft").
+/// The next Undo is the person's "Delete Footnote" and takes it back exactly.
+#[test]
+fn a_draft_its_repair_takes_back_entirely_leaves_the_history_as_it_was() {
+    use kition_doc_engine::Damage;
+    use kition_doc_engine::doc::para::NoteKind;
+    use kition_doc_engine::doc::props::CharProps;
+    use kition_doc_engine::doc::{InlineObject, PartKind};
+    use kition_doc_engine::kdm_model::kition_kit::kdm::UndoScope;
+
+    let mut s = new_session();
+    caret_at(&mut s, 0, "Alpha paragraph one.".len());
+    run(&mut s, "footnote.insert", json!({ "text": "A note" }));
+    let note = s.doc.parts.iter().find(|(_, p)| p.kind == PartKind::Footnote).map(|(id, _)| *id).expect("the footnote");
+    caret_at(&mut s, 1, 0);
+    let base = s.version().unwrap();
+    let mut draft = s.kdm().unwrap().fork().unwrap();
+    let mut d = draft.document().clone();
+    let end = d.para_at(&Pos::body(2, 0)).unwrap().len();
+    d.insert_object(&Pos::body(2, end), InlineObject::NoteRef { kind: NoteKind::Footnote, id: note, custom: String::new() }, &CharProps::default())
+        .unwrap();
+    assert_eq!(draft.record(&Origin::agent("agent:writer"), &d).unwrap(), 1);
+    let changes = draft.export_changes(&base).unwrap();
+
+    // The person deletes the footnote: its story and its reference, one named step.
+    let before_delete = s.state_hash().unwrap();
+    let (doc, sel) = (s.doc.clone(), s.sel.clone());
+    s.push_undo("Delete Footnote", doc, sel);
+    s.doc.parts.remove(&note);
+    {
+        let p = s.doc.para_mut(StoryRef::Body, &Path::top(0)).unwrap();
+        let off = p.object_offsets().into_iter().find(|&off| matches!(p.object_at(off), Some(InlineObject::NoteRef { .. }))).unwrap();
+        let end = p.next_boundary(off);
+        p.delete(off, end).unwrap();
+    }
+    s.relayout();
+    let (hash, version) = (s.state_hash().unwrap(), s.version().unwrap());
+    assert_ne!(hash, before_delete);
+    assert_holds(&s, "after the deletion");
+    assert_eq!(s.undo_label(), Some("Delete Footnote"));
+    let (depth, labels, steps, sel) = (s.undo_depth(), s.undo_labels(), s.kdm_undo_steps(), s.sel.clone());
+    let (replica_depth, replica_steps) = (s.kdm().unwrap().replica().undo_depth(UndoScope::Person), s.kdm().unwrap().steps());
+    let doc = canonical(&s.doc);
+
+    let (scope, damage) = s.merge_changes(&changes, &Origin::agent("agent:writer")).unwrap();
+    assert_eq!(scope, None, "no step was recorded");
+    assert_eq!(damage, Damage::None);
+    assert_eq!(s.state_hash().unwrap(), hash);
+    assert_eq!(s.version().unwrap(), version, "no change is logged, the version stays");
+    assert_eq!(s.kdm().unwrap().replica().undo_depth(UndoScope::Person), replica_depth);
+    assert_eq!(s.kdm().unwrap().steps(), replica_steps);
+    assert_eq!(s.undo_depth(), depth, "no step of the history's");
+    assert_eq!(s.undo_labels(), labels, "no Merge Draft label");
+    assert_eq!(s.kdm_undo_steps(), steps);
+    assert_eq!(s.sel, sel, "the selection stays");
+    assert!(canonical(&s.doc) == doc, "the document stays");
+    assert_eq!(s.kdm_resets(), 0);
+
+    assert_eq!(s.undo_label(), Some("Delete Footnote"), "the next Undo is the person's step");
+    run(&mut s, "edit.undo", json!({}));
+    assert_eq!(s.undo_depth(), depth - 1);
+    assert_eq!(s.state_hash().unwrap(), before_delete, "the Undo takes back the deletion exactly");
+    assert!(s.doc.parts.contains_key(&note), "the footnote is back");
+    assert_holds(&s, "after the undo");
+    assert_eq!(s.kdm_resets(), 0);
+}
+
 /// The first few paths at which two JSON values differ (for a readable failure).
 fn differences(a: &Value, b: &Value) -> Vec<String> {
     fn walk(a: &Value, b: &Value, path: String, out: &mut Vec<String>) {

@@ -1,0 +1,33 @@
+format: 1
+id: regressions/issue-merge-cancelled-by-repair
+feature: doc.collab.drafts
+intent: >-
+  A draft's merge that the kit's repair takes back entirely records nothing (kition-sdk 6a57d68):
+  an agent's draft refers to a footnote again while the person deletes that footnote, their last
+  named step; the repair deletes the draft's dangling note reference and its U+FFFC. The merge
+  answers no scope and no damage, the state hash, the version and the replica's undo depth stay,
+  the engine's history keeps its steps, labels and selection (no "Merge Draft"), and the next Undo
+  is the person's "Delete Footnote", which takes the deletion back exactly. Before, the merge was a
+  step that changed nothing, which the person's Undo passed over to take back their step below.
+layer: gate
+tags: [collab, kdm]
+source:
+  kind: issue
+  from: kition-sdk regressions/issue-merge-changing-nothing (pin 6a57d68)
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kdm-model
+      test: session
+      filter: a_merge_its_repair_takes_back_entirely_records_nothing
+  - cargo-test:
+      package: kition-doc-engine
+      test: kdm_bridge
+      filter: a_draft_its_repair_takes_back_entirely_leaves_the_history_as_it_was
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-26"

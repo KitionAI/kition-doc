@@ -111,6 +111,36 @@ impl DocSession {
         Ok(u32::from(undoable))
     }
 
+    /// [`DocSession::record`] as part of the replica's top undo step of `scope`
+    /// (`Replica::transact_in_step`), not a step of its own: for what the engine writes because
+    /// of a merge or a restore, right after it (the tool ids it makes unique), so one undo takes
+    /// back both and one redo brings back both. The step must hold the replica's newest change,
+    /// else it is refused and nothing is written. Answers the scope the step is in, `None` when
+    /// the step, with this write, changes nothing any more and was dropped.
+    pub fn record_in_step(&mut self, scope: UndoScope, origin: &Origin, after: &Document) -> Result<Option<UndoScope>> {
+        let mut ids = self.model.ids().clone();
+        let (model, blobs) = (&self.model, &mut self.blobs);
+        let result = self.replica.transact_in_step(scope, origin, |tx| write_changes(tx, &model.document, after, &mut ids, blobs).map(|_| ()));
+        let changed = self.replica.take_changed();
+        let joined = match result {
+            Ok(((), joined)) => joined,
+            Err(error) => {
+                self.index.collect_garbage(&mut self.blobs);
+                return Err(kit_err(error));
+            }
+        };
+        let moved = self.index.update(&self.replica, &changed);
+        self.model.adopt(after.clone(), ids);
+        self.log_added(moved.added.iter().cloned());
+        if joined.is_some() {
+            self.index.join_step(moved);
+        } else {
+            self.index.drop_step();
+        }
+        self.index.collect_garbage(&mut self.blobs);
+        Ok(joined)
+    }
+
     /// Whether the replica holds `document`'s content, compared id-blind ([`normalize`]) as
     /// [`read_document`] reads both back. Errs if `document` cannot be written to a replica.
     pub fn holds(&self, document: &Document) -> Result<bool> {
@@ -255,7 +285,7 @@ impl DocSession {
     /// checkpoint keeps it) over the replica as one transaction of `origin`, keyed by object id
     /// (`kition_kit::session::write_state`), so every object the two share keeps its id: one undo
     /// step of its scope unless `origin` is a `system` or `import` one. Nothing changes when the
-    /// states are equal. Refuses another document's snapshot. Add the blobs it references first.
+    /// states are equal, or when the repair takes back all the restore wrote. Refuses another document's snapshot. Add the blobs it references first.
     pub fn restore_state(&mut self, snapshot: &[u8], origin: &Origin) -> Result<(Option<UndoScope>, Damage)> {
         let schema = DocModel::schema();
         let loaded = Replica::load(Arc::clone(&schema), snapshot, ActorId::random()).map_err(kit_err)?;
@@ -269,7 +299,10 @@ impl DocSession {
         let before = self.replica.version();
         // The repair of the restored state (its text included) is part of the same change and undo
         // step, as a merge's: no set of changed objects, so it checks every paragraph.
-        let result = self.replica.transact(origin, |tx| {
+        // A restore its repair takes back entirely (a stored state whose only difference is a
+        // reference to something deleted since, which the repair clears) changes nothing: no
+        // change, no undo step, the version stays.
+        let result = self.replica.transact_unless_unchanged(origin, |tx| {
             kition_kit::session::write_state(tx, &schema, &now, &then).map_err(crate::kdm_err)?;
             repair(tx, &BTreeSet::new())
         });

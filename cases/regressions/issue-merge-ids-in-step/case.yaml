@@ -1,0 +1,27 @@
+format: 1
+id: regressions/issue-merge-ids-in-step
+feature: doc.collab.drafts
+intent: >-
+  The tool ids the engine makes unique after a draft's merge (paragraphs both sides numbered alike)
+  are written into the replica's own undo step of the merge (kition-sdk Replica::transact_in_step,
+  DocSession::record_in_step), not a change of their own: the merge raises the replica's undo depth
+  by one, the history's step is that one replica step, one Undo of the person gives back the exact
+  state hash from before the merge and one Redo the exact merged state with the ids. Before, the
+  ids were a second person step on the replica that the history counted into the merge's step.
+layer: gate
+tags: [collab, kdm]
+source:
+  kind: issue
+  from: kition-sdk regressions/issue-merge-follow-up-in-step (pin 6a57d68)
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: paragraphs_numbered_alike_on_both_sides_get_their_own_tool_ids_in_the_merge
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 600
+since: "2026-11-26"

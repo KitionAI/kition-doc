@@ -156,6 +156,21 @@ impl BlobIndex {
         self.redo.clear();
     }
 
+    /// A transaction that joined the top undo step (`Replica::transact_in_step`): that step keeps
+    /// its blobs too.
+    pub fn join_step(&mut self, moved: Moved) {
+        match self.undo.back_mut() {
+            Some(top) => top.extend(moved.all()),
+            None => self.undo.push_back(moved.all()),
+        }
+        self.redo.clear();
+    }
+
+    /// The top undo step was dropped: with what joined it, it changes nothing any more.
+    pub fn drop_step(&mut self) {
+        self.undo.pop_back();
+    }
+
     /// An undo that passed over `passed` steps and took one back (`taken`) or none: the steps
     /// leave the undo stack, and the one redo step a taken undo leaves keeps the blobs of all of
     /// them.

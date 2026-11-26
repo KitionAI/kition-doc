@@ -662,10 +662,14 @@ mod tests {
 
     /// A draft and the document each add a paragraph at the end: both number it from the same
     /// state, so the merged paragraphs would share a tool id. The merge's own step makes them
-    /// unique (the summary names that too), so the next command, here an agent's Undo with nothing
-    /// of its own to take, writes nothing; one Undo of the person gives back the exact state before.
+    /// unique (the summary names that too): the ids are written into the replica's one undo step
+    /// of the merge (`record_in_step`), not a change of their own, so the next command, here an
+    /// agent's Undo with nothing of its own to take, writes nothing; one Undo of the person gives
+    /// back the exact state (hash) before the merge, and one Redo the exact merged state.
     #[test]
     fn paragraphs_numbered_alike_on_both_sides_get_their_own_tool_ids_in_the_merge() {
+        use kition_kit::kdm::UndoScope;
+        let replica_depth = |doc: &DocDocument| doc.session().kdm().unwrap().replica().undo_depth(UndoScope::Person);
         let mut doc = DocDocument::open("Document.docx", &fixture()).unwrap();
         let base = doc.version().unwrap();
         let mut draft = DocDocument::open_with_replica("Document.docx", &[], &doc.snapshot().unwrap(), &doc.blobs().unwrap()).unwrap();
@@ -676,10 +680,14 @@ mod tests {
         }
         let changes = draft.export_changes(&base).unwrap();
         let (state, before) = (doc.replicated_state().unwrap(), view(&doc));
+        let (hash, depth) = (doc.session().state_hash().unwrap(), replica_depth(&doc));
         let agent = Origin::agent("agent:writer");
         doc.merge_changes(&changes, &agent).unwrap();
         assert_eq!(body(&doc), "Hello world\nMeanwhile\nFrom the draft");
+        assert_eq!(replica_depth(&doc), depth + 1, "the merge and its ids are one undo step of the replica");
+        assert_eq!(doc.session().kdm_undo_steps().last().copied(), Some(Some(1)), "the history's step is that one replica step");
         let merged_state = doc.replicated_state().unwrap();
+        let merged_hash = doc.session().state_hash().unwrap();
         let tool_ids: Vec<&Value> =
             merged_state["objects"].as_object().unwrap().values().filter(|object| object["$type"] == "Block").map(|object| &object["id"]).collect();
         let unique: std::collections::BTreeSet<String> = tool_ids.iter().map(|id| id.to_string()).collect();
@@ -690,7 +698,13 @@ mod tests {
         assert_eq!(view(&doc), merged);
         assert!(doc.undo().unwrap().0);
         assert_eq!(doc.replicated_state().unwrap(), state, "one undo gives back the exact state before the merge");
+        assert_eq!(doc.session().state_hash().unwrap(), hash);
+        assert_eq!(replica_depth(&doc), depth);
         assert_eq!(view(&doc), before);
+        assert!(doc.redo().unwrap().0);
+        assert_eq!(doc.replicated_state().unwrap(), merged_state, "one redo gives back the merged state, the ids with it");
+        assert_eq!(doc.session().state_hash().unwrap(), merged_hash);
+        assert_eq!(view(&doc), merged);
     }
 
     /// An earlier state (a checkpoint's snapshot) is written over the document by object id as

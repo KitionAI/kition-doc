@@ -206,3 +206,65 @@ fn a_merge_repairs_a_dangling_note_anchor_in_its_text_within_its_own_undo_step()
     assert_eq!(a.state_hash().unwrap(), merged_hash, "Redo gives back the repaired state");
     assert_eq!(field(&a), "typed Paragraph 0");
 }
+
+/// The person types (an earlier step), then deletes the footnote (their last step), while an
+/// agent's draft refers to that footnote again at the end of another paragraph
+/// (regressions/issue-merge-cancelled-by-repair). The repair of the merged state deletes the
+/// draft's note reference (its `Inline` object names a deleted part) and its U+FFFC, which takes
+/// back all the draft did: the merge records nothing (no step, scope `None`, no damage), the state
+/// hash, the version, the replica's undo depth and the view stay as they were, and the person's
+/// Undo takes back their own deletion exactly, then their typing.
+#[test]
+fn a_merge_its_repair_takes_back_entirely_records_nothing() {
+    use common::append_object;
+    use kition_doc_doc::para::NoteKind;
+    use kition_doc_doc::{InlineObject, PartKind, StoryRef};
+    use kition_kit::kdm::{Origin, UndoScope};
+    use kition_kit::session::Damage;
+
+    let mut a = DocSession::create(&rich()).unwrap();
+    let note = a.document().parts.iter().find(|(_, p)| p.kind == PartKind::Footnote).map(|(id, _)| *id).unwrap();
+    let mut draft = a.fork().unwrap();
+    let base = a.version();
+    // Body block 5 is the paragraph "Paragraph 4" (block 3 is the table).
+    let after =
+        edited(&draft, |d| append_object(d, StoryRef::Body, 5, InlineObject::NoteRef { kind: NoteKind::Footnote, id: note, custom: String::new() }));
+    assert_eq!(draft.record(&Origin::agent("agent:test"), &after).unwrap(), 1);
+    let changes = draft.export_changes(&base).unwrap();
+
+    let after = edited(&a, |d| type_at_start(d, 1, "typed "));
+    assert_eq!(a.record(&person("a"), &after).unwrap(), 1, "the person's earlier step");
+    let typed = a.state_hash().unwrap();
+    let after = edited(&a, |d| {
+        d.parts.remove(&note);
+        let p = body_para(d, 0);
+        let off = p.object_offsets().into_iter().find(|&off| matches!(p.object_at(off), Some(InlineObject::NoteRef { .. }))).unwrap();
+        let end = p.next_boundary(off);
+        p.delete(off, end).unwrap();
+    });
+    assert_eq!(a.record(&person("a"), &after).unwrap(), 1, "the person deletes the footnote");
+
+    let (hash, version, depth, steps) = (a.state_hash().unwrap(), a.version(), a.replica().undo_depth(UndoScope::Person), a.steps());
+    let view = a.document().clone();
+    let state = a.replica().state_json().unwrap();
+    assert_ne!(a.replica().merged_state(&changes).unwrap(), state, "without the repair the draft changes the paragraph");
+    assert_eq!(a.merged_state(&changes).unwrap(), state, "the preview, repaired, is the state as it is");
+
+    let (scope, damage) = a.merge_changes(&changes, &Origin::agent("agent:test")).unwrap();
+    assert_eq!(scope, None, "no step was recorded");
+    assert_eq!(damage, Damage::None);
+    assert_eq!(a.state_hash().unwrap(), hash);
+    assert_eq!(a.version(), version, "no change is logged, the version stays");
+    assert_eq!(a.replica().undo_depth(UndoScope::Person), depth);
+    assert_eq!(a.replica().undo_depth(UndoScope::Agent), 0);
+    assert_eq!(a.steps(), steps, "the blob index counts no step either");
+    assert_same("after the merge", a.document(), &view);
+
+    assert!(a.undo().unwrap().0, "the person's Undo takes back their own deletion");
+    assert_eq!(a.state_hash().unwrap(), typed, "exactly: the footnote is back, the typing stays");
+    assert!(a.document().parts.contains_key(&note));
+    assert!(a.document().plain_text(StoryRef::Body).contains("typed "));
+    assert!(a.undo().unwrap().0);
+    assert!(!a.document().plain_text(StoryRef::Body).contains("typed "));
+    assert!(!a.can_undo());
+}
