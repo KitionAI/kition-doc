@@ -1,0 +1,28 @@
+format: 1
+id: doc.collab.drafts/editor
+feature: doc.collab.drafts
+intent: >-
+  In the editor, through the dev host (`?replica=1&checkpoints=1`): the person types into a
+  paragraph; an agent's draft (`ai/run` on the draft) adds text to the last paragraph; the draft's
+  comparison (`draft/compare`) lists the change and leaves the document as it was; the person types
+  again meanwhile and accepts the draft (`draft/merge`, the agent's origin): both of the person's
+  edits and the draft's text are in the document. One click of Undo takes back the draft's text
+  only, Redo brings it back. A checkpoint labelled at a save, text typed after it, the checkpoint
+  restored (`replica/restore`): the document is the checkpoint's, and one Undo brings the later
+  text back.
+layer: gate
+source:
+  kind: probe
+  from: web/tests/drafts.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/drafts.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+timeout_s: 180
+since: "2026-11-26"

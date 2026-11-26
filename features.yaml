@@ -508,10 +508,10 @@ features:
     dimension: [collab, data-safety]
     priority: P1
     status: partial
-    paths: [bindings/wasm/src/collab.rs, bindings/wasm/src/lib.rs, crates/engine/engine/src/kdm_bridge.rs, crates/kdm/kdm-model/src/session.rs]
+    paths: [bindings/wasm/src/collab.rs, bindings/wasm/src/lib.rs, crates/engine/engine/src/kdm_bridge.rs, crates/kdm/kdm-model/src/session.rs, web/tests/drafts.mjs]
     target: "Kit UI protocol section 7 (replica/restore); engine contract K3a members mergeChanges, compareChanges, restoreState, changesSince, modelReply, modelBatch, modelDescribe"
-    gap: Engine tests merge a draft, compare it first, restore a version, answer a receipt and name reply ids, and web/ test:contract checks the built engine exports every member; no case drives a draft or a restore in the editor yet.
-    cases: [regressions/issue-merge-repair-reads-text, regressions/issue-merge-cancelled-by-repair, regressions/issue-merge-ids-in-step]
+    gap: "Engine tests merge a draft, compare it first, restore a version, answer a receipt and name reply ids, and web/ test:contract checks the built engine exports every member; web/tests/drafts.mjs drives a draft (compare, merge over the person's edits, Undo, Redo) and a labelled checkpoint's restore in the editor through the dev host only. Not yet driven in the editor: a colliding draft refused, and a checkpoint kept across a save and reload; the editor has no control of its own to save a labelled version or to say why a draft was refused (the refusal reaches the host only)."
+    cases: [regressions/issue-merge-repair-reads-text, regressions/issue-merge-cancelled-by-repair, regressions/issue-merge-ids-in-step, doc.collab.drafts/editor]
     since: "2026-11-25"
   - id: doc.collab.replica-merges-file
     title: "A document changed outside Kition keeps its history: the stored replica opens and the newer file is recorded on it as one import change"
