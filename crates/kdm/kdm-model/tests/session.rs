@@ -158,3 +158,51 @@ fn comment_zero_and_abstract_list_zero_keep_their_ids_across_a_reload() {
     assert_eq!(d.numbering.abstracts[0].id, 0, "abstract list 0 is still 0");
     assert_eq!(d.numbering.nums[0].id, list);
 }
+
+/// A draft deletes the footnote's story while the paragraph holding its reference is typed in
+/// here (regressions/issue-merge-repair-reads-text): the merge leaves a dangling note anchor. The
+/// repair inside the merge's one step deletes its inline object and its U+FFFC in the paragraph's
+/// text (`Tx` reads text), so no `system` change follows the merge: one Undo of the person gives
+/// back the exact state before the merge, and Redo the repaired one. The draft's preview
+/// (`merged_state`, `compareChanges`'s "after") runs the same repair, so it is what the merge gave.
+#[test]
+fn a_merge_repairs_a_dangling_note_anchor_in_its_text_within_its_own_undo_step() {
+    use kition_doc_doc::PartKind;
+    use kition_doc_doc::para::OBJ;
+    use kition_kit::kdm::{Origin, UndoScope};
+
+    let mut a = DocSession::create(&rich()).unwrap();
+    let mut draft = a.fork().unwrap();
+    let base = a.version();
+    let after = edited(&draft, |d| {
+        let id = d.parts.iter().find(|(_, p)| p.kind == PartKind::Footnote).map(|(id, _)| *id).unwrap();
+        d.parts.remove(&id);
+    });
+    draft.record(&Origin::agent("agent:test"), &after).unwrap();
+    let changes = draft.export_changes(&base).unwrap();
+    let after = edited(&a, |d| type_at_start(d, 0, "typed "));
+    assert_eq!(a.record(&person("a"), &after).unwrap(), 1);
+    let paragraph = a.model().ids().body[0].object.clone();
+    let field = |s: &DocSession| s.replica().text(&paragraph, "text").unwrap();
+    assert!(field(&a).contains(OBJ), "the paragraph's text holds the note's anchor");
+
+    let (hash, version) = (a.state_hash().unwrap(), a.version());
+    let preview = a.merged_state(&changes).unwrap();
+    assert_eq!(a.version(), version, "the preview changes nothing");
+    assert_ne!(preview, a.replica().merged_state(&changes).unwrap(), "the repair changes this merge");
+
+    let (scope, _) = a.merge_changes(&changes, &Origin::agent("agent:test")).unwrap();
+    assert_eq!(scope, Some(UndoScope::Person));
+    assert_eq!(field(&a), "typed Paragraph 0", "the anchor's character is gone from the text");
+    assert!(a.document().para(kition_doc_doc::StoryRef::Body, &kition_doc_doc::Path::top(0)).unwrap().objects.is_empty());
+    let merged = a.replica().state_json().unwrap();
+    assert_eq!(preview, merged, "the preview is what the merge gave");
+    let merged_hash = a.state_hash().unwrap();
+
+    assert!(a.undo().unwrap().0, "the merge is one step of the person");
+    assert_eq!(a.state_hash().unwrap(), hash, "one Undo gives back the exact state before the merge");
+    assert!(field(&a).contains(OBJ));
+    assert!(a.redo().unwrap().0);
+    assert_eq!(a.state_hash().unwrap(), merged_hash, "Redo gives back the repaired state");
+    assert_eq!(field(&a), "typed Paragraph 0");
+}

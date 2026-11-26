@@ -262,8 +262,15 @@ impl KitModel for DocModel {
         Ok(Damage::Full)
     }
 
+    /// The state repair (`validate`), then the text repair (`repair`) on what it leaves, in
+    /// the same transaction: a merge's or a restore's own change and undo step. The text repair
+    /// checks every paragraph when the state repair wrote (it may delete a note reference) or
+    /// when `changed` is empty (a restore names no objects).
     fn validate(tx: &mut Tx<'_>, changed: &BTreeSet<ObjectId>) -> Result<bool> {
-        validate::validate(tx, changed).map_err(kit_err)
+        let wrote = validate::validate(tx, changed).map_err(kit_err)?;
+        let scope = (!wrote && !changed.is_empty()).then_some(changed);
+        let repaired = repair::repair(tx, scope).map_err(kit_err)?;
+        Ok(wrote || repaired)
     }
 
     fn import(name: &str, bytes: &[u8], blobs: &mut dyn BlobSink, actor: ActorId) -> Result<Replica> {

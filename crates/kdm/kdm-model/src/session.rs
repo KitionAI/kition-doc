@@ -71,7 +71,7 @@ impl DocSession {
         let index = BlobIndex::build(&replica);
         let mut session = Self { replica, model, blobs, index, blob_log: Vec::new() };
         // Best effort: a replica merged elsewhere may need the read repair; a failure leaves it.
-        let _ = session.repair_read(None);
+        let _ = session.repair_read();
         session.index.collect_garbage(&mut session.blobs);
         Ok(session)
     }
@@ -234,9 +234,7 @@ impl DocSession {
     /// repair fails, changes nothing.
     pub fn merge_changes(&mut self, bytes: &[u8], origin: &Origin) -> Result<(Option<UndoScope>, Damage)> {
         let before = self.replica.version();
-        let merged = self.replica.merge_changes_repaired(bytes, origin, |tx, changed| {
-            DocModel::validate(tx, changed).map(|_| ()).map_err(|error| KdmError::Engine(error.to_string()))
-        });
+        let merged = self.replica.merge_changes_repaired(bytes, origin, repair);
         match merged {
             Ok(merged) => self.took_in(before, merged.scope),
             Err(error) => {
@@ -246,9 +244,11 @@ impl DocSession {
         }
     }
 
-    /// What merging a draft's changes would leave: the canonical state, nothing changed.
+    /// What merging a draft's changes would leave: the canonical state, the kit's repair
+    /// included as [`DocSession::merge_changes`] runs it (`Replica::merged_state_repaired`), so a
+    /// draft's preview is what accepting it gives; nothing changes.
     pub fn merged_state(&self, bytes: &[u8]) -> Result<serde_json::Value> {
-        self.replica.merged_state(bytes).map_err(kit_err)
+        self.replica.merged_state_repaired(bytes, repair).map_err(kit_err)
     }
 
     /// Writes the state `snapshot` holds (a snapshot or content of this document, as a host's
@@ -267,10 +267,11 @@ impl DocSession {
             return Ok((None, Damage::None));
         }
         let before = self.replica.version();
-        // The repair of the restored state is part of the same change and undo step, as a merge's.
+        // The repair of the restored state (its text included) is part of the same change and undo
+        // step, as a merge's: no set of changed objects, so it checks every paragraph.
         let result = self.replica.transact(origin, |tx| {
             kition_kit::session::write_state(tx, &schema, &now, &then).map_err(crate::kdm_err)?;
-            DocModel::validate(tx, &BTreeSet::new()).map(|_| ()).map_err(|error| KdmError::Engine(error.to_string()))
+            repair(tx, &BTreeSet::new())
         });
         if let Err(error) = result {
             self.replica.take_changed();
@@ -377,9 +378,10 @@ impl DocSession {
         Ok(true)
     }
 
-    /// As `KitSession`'s: repairs what changed in a `system` transaction (not an undo step), then
-    /// patches the view with both; the view follows the replica even if the repair fails. Also
-    /// answers which blobs moved (the index is updated either way).
+    /// As `KitSession`'s: repairs what changed (its text included, [`KitModel::validate`]) in a
+    /// `system` transaction (not an undo step), then patches the view with both; the view follows
+    /// the replica even if the repair fails. Also answers which blobs moved (the index is updated
+    /// either way).
     fn settle(&mut self) -> (Result<Damage>, Moved) {
         let mut changed = self.replica.take_changed();
         let repaired = if changed.is_empty() {
@@ -401,28 +403,18 @@ impl DocSession {
         changed.extend(self.replica.take_changed());
         let moved = self.index.update(&self.replica, &changed);
         let damage = self.refresh(&changed).and_then(|damage| repaired.map(|()| damage));
-        let damage = match damage {
-            Ok(damage) => self.repair_read(Some(&changed)).map(|repaired| match repaired {
-                Some(more) => damage.merge(more),
-                None => damage,
-            }),
-            failed => failed,
-        };
         (damage, moved)
     }
 
-    /// The read repair (`crate::repair`): dangling anchors and references in run marks the view
-    /// already drops, written as a `system` transaction (not an undo step), then the view
-    /// patched. `changed`: what the last import, undo or redo touched; `None` checks everything.
-    /// Answers the view's damage when it wrote.
-    fn repair_read(&mut self, changed: Option<&BTreeSet<ObjectId>>) -> Result<Option<Damage>> {
-        let repairs = crate::repair::plan(&self.replica, self.model.ids(), changed);
-        if repairs.is_empty() {
+    /// The text repair (`crate::repair`) of a replica just opened: dangling anchors and references
+    /// in run marks the view already drops, written as a `system` transaction (not an undo step),
+    /// then the view patched. Answers the view's damage when it wrote.
+    fn repair_read(&mut self) -> Result<Option<Damage>> {
+        let result = self.replica.transact(&Origin::system("repair"), |tx| crate::repair::repair(tx, None));
+        let changed = self.replica.take_changed();
+        if !result.map_err(kit_err)? {
             return Ok(None);
         }
-        let result = self.replica.transact(&Origin::system("repair"), |tx| crate::repair::apply(tx, &repairs));
-        let changed = self.replica.take_changed();
-        result.map_err(kit_err)?;
         let moved = self.index.update(&self.replica, &changed);
         self.log_added(moved.added.iter().cloned());
         self.refresh(&changed).map(Some)
@@ -435,4 +427,10 @@ impl DocSession {
         let blobs: &dyn BlobSource = &self.blobs;
         self.model.apply(&self.replica, changed, blobs)
     }
+}
+
+/// The kit's repair of a merged or restored state ([`KitModel::validate`]: the state repair, then
+/// the text repair) as the KDM runs it inside the merge's or the restore's transaction.
+fn repair(tx: &mut Tx<'_>, changed: &BTreeSet<ObjectId>) -> std::result::Result<(), KdmError> {
+    DocModel::validate(tx, changed).map(drop).map_err(|error| KdmError::Engine(error.to_string()))
 }

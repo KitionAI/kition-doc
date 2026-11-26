@@ -1,0 +1,30 @@
+format: 1
+id: regressions/issue-merge-repair-reads-text
+feature: doc.collab.drafts
+intent: >-
+  The repair of a merged draft or a restored version reads paragraph text (kition-sdk Tx::text_delta)
+  and runs in the merge's or the restore's one change: a draft that deletes a footnote's story while
+  the paragraph holding its reference is typed in leaves a dangling note anchor, and the merge's own
+  step deletes both its inline object and its U+FFFC in the paragraph's text, so no system change
+  follows it. One Undo of the person gives back the exact state hash from before the merge, Redo the
+  repaired state, and the draft's preview (merged_state, compareChanges) runs the same repair, so it
+  equals the state the merge gave. Before, the text repair ran as a separate system change after
+  the merge, which Undo could not take back.
+layer: gate
+tags: [collab, kdm]
+source:
+  kind: issue
+  from: kition-sdk regressions/issue-merge-repair-reads-text (pin 7466039)
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kdm-model
+      test: session
+      filter: a_merge_repairs_a_dangling_note_anchor_in_its_text_within_its_own_undo_step
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 300
+since: "2026-11-26"

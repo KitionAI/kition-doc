@@ -511,6 +511,7 @@ features:
     paths: [bindings/wasm/src/collab.rs, bindings/wasm/src/lib.rs, crates/engine/engine/src/kdm_bridge.rs, crates/kdm/kdm-model/src/session.rs]
     target: "Kit UI protocol section 7 (replica/restore); engine contract K3a members mergeChanges, compareChanges, restoreState, changesSince, modelReply, modelBatch, modelDescribe"
     gap: Engine tests merge a draft, compare it first, restore a version, answer a receipt and name reply ids, and web/ test:contract checks the built engine exports every member; no case drives a draft or a restore in the editor yet.
+    cases: [regressions/issue-merge-repair-reads-text]
     since: "2026-11-25"
   - id: doc.collab.replica-merges-file
     title: "A document changed outside Kition keeps its history: the stored replica opens and the newer file is recorded on it as one import change"

@@ -5,13 +5,12 @@
 //!   listed twice (replicas that repaired the same state concurrently both listed the paragraph
 //!   below): the reader reads it once, at its first place, so the view is unchanged, and list
 //!   positions stay the view's.
-//! - A note reference naming a deleted part is removed: its `Inline` object is deleted (a
-//!   transaction cannot read a text field, so its U+FFFC stays, and reads as nothing until the
-//!   paragraph's next write deletes it); a text box story, a section's header or footer, a tracked
-//!   change (`ins`/`del`, `fmtChange`, `numChange`) or a list reference naming a deleted part,
-//!   revision or list is cleared (in a run's marks, which a transaction cannot read, it reads as
-//!   cleared and is removed by the paragraph's next write); a picture of deleted media loses its
-//!   media key.
+//! - A note reference naming a deleted part is removed: its `Inline` object is deleted (its U+FFFC
+//!   in the paragraph's text goes in the text repair, `crate::repair`, which `DocModel`'s
+//!   `validate` runs next in the same transaction); a text box story, a section's header or
+//!   footer, a tracked change (`ins`/`del`, `fmtChange`, `numChange`) or a list reference naming a
+//!   deleted part, revision or list is cleared (in a run's marks, the text repair clears it); a
+//!   picture of deleted media loses its media key.
 //! - A body, part or table cell left without blocks (or a body or cell ending with a table) gets
 //!   an empty paragraph, under an id derived from the state, so replicas repairing the same state
 //!   create the same object (and readers skip the repeated list entry).
