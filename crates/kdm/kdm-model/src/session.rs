@@ -256,7 +256,7 @@ impl DocSession {
     /// (`kition_kit::session::write_state`), so every object the two share keeps its id: one undo
     /// step of its scope unless `origin` is a `system` or `import` one. Nothing changes when the
     /// states are equal. Refuses another document's snapshot. Add the blobs it references first.
-    pub fn restore_state(&mut self, snapshot: &[u8], origin: &Origin) -> Result<(u32, Damage)> {
+    pub fn restore_state(&mut self, snapshot: &[u8], origin: &Origin) -> Result<(Option<UndoScope>, Damage)> {
         let schema = DocModel::schema();
         let loaded = Replica::load(Arc::clone(&schema), snapshot, ActorId::random()).map_err(kit_err)?;
         if loaded.doc_id() != self.replica.doc_id() {
@@ -264,7 +264,7 @@ impl DocSession {
         }
         let (now, then) = (kition_kit::session::state(&self.replica)?, kition_kit::session::state(&loaded)?);
         if now == then {
-            return Ok((0, Damage::None));
+            return Ok((None, Damage::None));
         }
         let before = self.replica.version();
         // The repair of the restored state is part of the same change and undo step, as a merge's.
