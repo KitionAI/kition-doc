@@ -12,7 +12,7 @@ use kition_doc_doc::para::{NoteKind, ShapeKind};
 use kition_doc_doc::props::{CharProps, NumRef, PropChange};
 use kition_doc_doc::table::Table;
 use kition_doc_doc::{Block, Comment, Document, InlineObject, ListKind, Paragraph, PartKind, Pos, Revision, RevisionKind, StoryRef, para_block};
-use kition_kit::kdm::{ActorId, DocId, ObjectId, Origin, Replica, Version};
+use kition_kit::kdm::{ActorId, DocId, ObjectId, Origin, Replica, UndoScope, Version};
 use kition_kit::session::{BlobRef, BlobSink, BlobSource, KitError, KitModel, KitSession, sha256_hex};
 
 pub type Session = KitSession<DocModel>;
@@ -218,10 +218,12 @@ pub fn draft(of: &Session, value: u64, blobs: &SharedBlobs) -> (Session, Version
     (draft, of.version())
 }
 
-/// Takes `draft`'s changes since `base` into `into` (`mergeChanges`) with `origin`.
+/// Takes `draft`'s changes since `base` into `into` (`mergeChanges`) with `origin` (a person's
+/// or an agent's): one undo step of the person (M12a).
 pub fn merge(into: &mut Session, draft: &Session, base: &Version, origin: &Origin) {
     let bytes = draft.export_changes(base).unwrap_or_else(|error| panic!("export: {error}"));
-    into.merge_changes(&bytes, origin).unwrap_or_else(|error| panic!("merge: {error}"));
+    let (scope, _) = into.merge_changes(&bytes, origin).unwrap_or_else(|error| panic!("merge: {error}"));
+    assert_eq!(scope, Some(UndoScope::Person), "a merged draft is the person's step");
 }
 
 /// The view is exactly what a fresh read of the replica gives.

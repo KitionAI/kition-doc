@@ -211,12 +211,14 @@ impl Session {
     }
 
     /// Takes a draft's changes (made on a replica forked from this one, `mergeChanges`) into the
-    /// document as one undo step of the person, as a command's edit is (the KDM makes a merged
-    /// draft the person's step: they approved it): local edits not written yet are written first,
-    /// the document and its selection follow the replica, and one Undo takes the whole draft
-    /// back. Add the draft's blobs first ([`Session::add_blobs`]). A refused merge changes nothing.
-    pub fn merge_changes(&mut self, bytes: &[u8], origin: &Origin) -> Result<Damage, CmdError> {
-        self.take_in("Merge Draft", UndoScope::Person, &local_person(), |kdm| kdm.merge_changes(bytes, origin))
+    /// document as one undo step, as a command's edit is: local edits not written yet are written
+    /// first, the document and its selection follow the replica, and one Undo takes the whole
+    /// draft (and the repair of the merged state, which the KDM makes part of it) back. The step's
+    /// scope is the one the KDM recorded it in, the person's even for an agent's draft (they
+    /// approved it, M12a). Add the draft's blobs first ([`Session::add_blobs`]). A refused merge
+    /// changes nothing. Answers the scope and the damage.
+    pub fn merge_changes(&mut self, bytes: &[u8], origin: &Origin) -> Result<(Option<UndoScope>, Damage), CmdError> {
+        self.take_in("Merge Draft", origin, |kdm| kdm.merge_changes(bytes, origin))
     }
 
     /// Writes the state a snapshot holds (a checkpoint of this document, `replica/restore`) over
@@ -224,23 +226,18 @@ impl Session {
     /// is ([`Session::merge_changes`]). Nothing changes when the states are equal; another
     /// document's snapshot is refused.
     pub fn restore_state(&mut self, snapshot: &[u8], origin: &Origin) -> Result<Damage, CmdError> {
-        let (scope, own) = match UndoScope::of(origin.kind) {
-            Some(scope) => (scope, origin.clone()),
-            None => (UndoScope::Person, local_person()),
-        };
-        self.take_in("Restore Version", scope, &own, |kdm| kdm.restore_state(snapshot, origin))
+        self.take_in("Restore Version", origin, |kdm| kdm.restore_state(snapshot, origin)).map(|(_, damage)| damage)
     }
 
-    /// One transaction `write` makes on the replica, taken into the document as a command's step:
-    /// the document follows the replica as after an import, and the history gets the step (its
-    /// replica steps the transaction's) when the transaction is an undo step.
+    /// One transaction `write` makes on the replica (for `origin`), taken into the document as a
+    /// command's step: the document follows the replica as after an import, and the history gets
+    /// the step (its one replica step) in the scope the transaction's undo step went to, if any.
     fn take_in(
         &mut self,
         label: &str,
-        scope: UndoScope,
-        own: &Origin,
-        write: impl FnOnce(&mut DocSession) -> kdm_model::kition_kit::session::Result<(u32, Damage)>,
-    ) -> Result<Damage, CmdError> {
+        origin: &Origin,
+        write: impl FnOnce(&mut DocSession) -> kdm_model::kition_kit::session::Result<(Option<UndoScope>, Damage)>,
+    ) -> Result<(Option<UndoScope>, Damage), CmdError> {
         if self.comment_only {
             return Err(CmdError::Disabled(
                 "the document is open for commenting only: a draft or an earlier version is not a commenter's to take in".into(),
@@ -262,28 +259,29 @@ impl Session {
         } else if changed {
             self.detach_kdm();
         }
-        let steps = result.as_ref().map_or(0, |(steps, _)| *steps);
-        if follow && steps > 0 {
-            self.push_step(Undo { label: label.to_owned(), doc: before, sel, steps: Some(steps), scope });
+        let scope = result.as_ref().ok().and_then(|(scope, _)| *scope);
+        if let (true, Some(scope)) = (follow, scope) {
+            self.push_step(Undo { label: label.to_owned(), doc: before, sel, steps: Some(1), scope });
             // A new step clears its own history's redo, never the other scope's.
             self.redo.retain(|u| u.scope != scope);
-            self.link.recorded = self.link.recorded.saturating_add(u64::from(steps));
+            self.link.recorded = self.link.recorded.saturating_add(1);
             // The step is written already: the bridge has nothing of it left to record.
             self.link.mark = self.pushed;
             self.dirty = true;
             // Both sides may have numbered a new paragraph, row or drawing object alike (each
             // numbers from the same state): the ids are made unique now and written onto this
-            // step, in its scope (`own`), so the merged document holds each tool id once and one
-            // Undo still gives back the state before it.
+            // step, in its scope, so the merged document holds each tool id once and one Undo
+            // still gives back the state before it.
             if self.stable_ids && self.doc.ensure_tool_ids() {
                 self.rev = self.rev.wrapping_add(1);
                 let doc = self.doc.clone();
-                self.record_onto(self.history.len().checked_sub(1), own, &doc);
+                let own = if scope == UndoScope::Agent { origin.clone() } else { local_person() };
+                self.record_onto(self.history.len().checked_sub(1), &own, &doc);
                 self.link.rev = self.rev;
             }
         }
         self.trim_kdm();
-        result.map(|(_, damage)| damage).map_err(kdm_error)
+        result.map_err(kdm_error)
     }
 
     /// Imports only the saved-file difference, retaining the live replica and its undo scopes.

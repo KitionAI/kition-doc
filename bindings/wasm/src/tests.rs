@@ -177,10 +177,24 @@ fn takes_a_font_for_text_its_own_faces_do_not_cover() {
 fn the_catalog_flags_as_mutating_exactly_what_changes_the_document() {
     let doc = DocDocument::create("Flags.docx", 0, 0).unwrap();
     let mutates = |id: &str| doc.commands().into_iter().find(|command| command.id == id).unwrap_or_else(|| panic!("no {id}")).mutates;
-    for id in ["text.insert", "edit.paste", "edit.undo", "edit.redo", "file.new", "file.open", "file.save", "header.edit"] {
+    // `file.compare` and `file.combine` write the comparison into this document as tracked changes.
+    for id in
+        ["text.insert", "edit.paste", "edit.undo", "edit.redo", "file.new", "file.open", "file.save", "header.edit", "file.compare", "file.combine"]
+    {
         assert!(mutates(id), "{id} changes the document");
     }
-    for id in ["edit.selectAll", "edit.copy", "file.exportPdf", "file.print", "file.inspect"] {
+    // The reads the command naming standard moved into `file`: a read-only session runs them.
+    for id in [
+        "edit.selectAll",
+        "edit.copy",
+        "file.exportPdf",
+        "file.print",
+        "file.inspect",
+        "file.text",
+        "file.paragraph",
+        "file.selection",
+        "file.layout",
+    ] {
         assert!(!mutates(id), "{id} does not change the document");
     }
 }

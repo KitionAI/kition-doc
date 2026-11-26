@@ -159,13 +159,19 @@ impl DocDocument {
     /// Takes a draft's changes (from a replica forked from this one) in as one undo step of the
     /// person (`mergeChanges`, as `kition-sdk`'s `export_kit_session!` answers it): the engine's
     /// document follows, and one Undo takes the whole draft back. Add the draft's blobs first.
-    /// Answers `{"damage", "summary"}`, `summary` the `StateDiff` of the replicated state before
-    /// and after. A refused merge changes nothing and fails with the KDM's message.
+    /// Answers `{"damage", "summary", "scope"}`, `summary` the `StateDiff` of the replicated state
+    /// before and after, `scope` the undo scope the merge's step went to (`"person"`, also for an
+    /// agent's draft, or `null` for none). A refused merge changes nothing and fails with the KDM's
+    /// message.
     pub fn merge_changes(&mut self, bytes: &[u8], origin: &Origin) -> Result<Value, String> {
         let before = self.replicated_state()?;
-        let damage = self.session().merge_changes(bytes, origin).map_err(engine_error)?;
+        let (scope, damage) = self.session().merge_changes(bytes, origin).map_err(engine_error)?;
         let after = self.replicated_state()?;
-        Ok(json!({ "damage": damage, "summary": kition_kit::kdm::diff::diff_states(&before, &after).to_json() }))
+        Ok(json!({
+            "damage": damage,
+            "summary": kition_kit::kdm::diff::diff_states(&before, &after).to_json(),
+            "scope": scope.map(kition_kit::kdm::UndoScope::as_str),
+        }))
     }
 
     /// What merging a draft's changes would change in the document now, as `StateDiff` JSON;
@@ -623,6 +629,7 @@ mod tests {
         let answer = doc.merge_changes(&changes, &agent).unwrap();
         assert_eq!(answer["summary"], preview, "the comparison named what the merge did: {answer}");
         assert_ne!(answer["damage"], json!("none"), "{answer}");
+        assert_eq!(answer["scope"], json!("person"), "the person's step, though an agent made the draft: {answer}");
         assert_eq!(body(&doc), "Meanwhile\nHello world\nFrom the draft", "both paragraphs");
         assert!(doc.replicated_state().unwrap().to_string().contains("Meanwhile title"), "the title set here stays");
         assert!(doc.dirty());

@@ -226,17 +226,24 @@ impl DocSession {
     }
 
     /// Takes a draft's changes (made on a fork of this replica) in as one transaction of `origin`
-    /// (`Replica::merge_changes`): one undo step of the person unless `origin` is a `system` or
-    /// `import` one. Repairs the result and patches the view as an import does; add the draft's
-    /// blobs first ([`DocSession::add_blobs`]). Answers the undo steps it made (1 or 0) and the
-    /// damage. A refused merge changes nothing.
-    pub fn merge_changes(&mut self, bytes: &[u8], origin: &Origin) -> Result<(u32, Damage)> {
+    /// (`Replica::merge_changes_repaired`): the repair of the merged state ([`KitModel::validate`])
+    /// is part of that change and undo step, which is the person's even for an agent's draft
+    /// (M12a). Patches the view as an import does; add the draft's blobs first
+    /// ([`DocSession::add_blobs`]). Answers the undo scope the step went to (none for a `system`
+    /// or `import` origin, or when nothing changed) and the damage. A refused merge, or one whose
+    /// repair fails, changes nothing.
+    pub fn merge_changes(&mut self, bytes: &[u8], origin: &Origin) -> Result<(Option<UndoScope>, Damage)> {
         let before = self.replica.version();
-        if let Err(error) = self.replica.merge_changes(bytes, origin) {
-            self.replica.take_changed();
-            return Err(kit_err(error));
+        let merged = self.replica.merge_changes_repaired(bytes, origin, |tx, changed| {
+            DocModel::validate(tx, changed).map(|_| ()).map_err(|error| KdmError::Engine(error.to_string()))
+        });
+        match merged {
+            Ok(merged) => self.took_in(before, merged.scope),
+            Err(error) => {
+                self.replica.take_changed();
+                Err(kit_err(error))
+            }
         }
-        self.took_in(before, origin)
     }
 
     /// What merging a draft's changes would leave: the canonical state, nothing changed.
@@ -260,29 +267,32 @@ impl DocSession {
             return Ok((0, Damage::None));
         }
         let before = self.replica.version();
-        let result = self.replica.transact(origin, |tx| kition_kit::session::write_state(tx, &schema, &now, &then).map_err(crate::kdm_err));
+        // The repair of the restored state is part of the same change and undo step, as a merge's.
+        let result = self.replica.transact(origin, |tx| {
+            kition_kit::session::write_state(tx, &schema, &now, &then).map_err(crate::kdm_err)?;
+            DocModel::validate(tx, &BTreeSet::new()).map(|_| ()).map_err(|error| KdmError::Engine(error.to_string()))
+        });
         if let Err(error) = result {
             self.replica.take_changed();
             return Err(kit_err(error));
         }
-        self.took_in(before, origin)
+        self.took_in(before, UndoScope::of(origin.kind))
     }
 
-    /// After a merge or a restore wrote one transaction of `origin` since `before`: repairs and
-    /// patches the view as an import does, and counts the transaction as an undo step. A failed
-    /// repair or view load is the error, as an import's is: the transaction stays
-    /// ([`DocSession::view_loaded`] tells whether the view followed).
-    fn took_in(&mut self, before: Version, origin: &Origin) -> Result<(u32, Damage)> {
-        let wrote = self.replica.version() != before;
+    /// After a merge or a restore wrote one transaction (an undo step of `scope`, if any) since
+    /// `before`: patches the view as an import does, and counts the transaction as an undo step.
+    /// A failed view load is the error, as an import's is: the transaction stays
+    /// ([`DocSession::view_loaded`] tells whether the view followed). Answers the step's scope.
+    fn took_in(&mut self, before: Version, scope: Option<UndoScope>) -> Result<(Option<UndoScope>, Damage)> {
+        let scope = scope.filter(|_| self.replica.version() != before);
         let (damage, moved) = self.settle();
         self.log_added(moved.added.iter().cloned());
-        let undoable = wrote && !matches!(origin.kind, OriginKind::System | OriginKind::Import);
-        if undoable {
+        if scope.is_some() {
             self.index.push_step(moved);
         }
         self.index.imported();
         self.index.collect_garbage(&mut self.blobs);
-        damage.map(|damage| (u32::from(undoable), damage))
+        damage.map(|damage| (scope, damage))
     }
 
     /// Whether the view matches the replica as it is now (its own read succeeds).
