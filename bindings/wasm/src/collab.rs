@@ -607,26 +607,27 @@ mod tests {
         draft.execute("text.newParagraph", json!({})).unwrap();
         draft.execute("text.insert", json!({ "text": "From the draft" })).unwrap();
         let changes = draft.export_changes(&base).unwrap();
-        // Here meanwhile: a paragraph added at the same place of the body, and the document's title.
-        doc.execute("caret.docEnd", json!({})).unwrap();
+        // Here meanwhile: a paragraph added to the same body list (at its start, so the two new
+        // paragraphs are numbered apart), and the document's title.
+        doc.execute("caret.docStart", json!({})).unwrap();
         doc.execute("text.newParagraph", json!({})).unwrap();
+        doc.execute("caret.docStart", json!({})).unwrap();
         doc.execute("text.insert", json!({ "text": "Meanwhile" })).unwrap();
         doc.execute("file.properties", json!({ "title": "Meanwhile title" })).unwrap();
         let version = doc.version().unwrap();
         let (state, before) = (doc.replicated_state().unwrap(), view(&doc));
         let preview = doc.compare_changes(&changes).unwrap();
         assert_eq!(doc.version().unwrap(), version, "comparing changes nothing");
-        assert_eq!(body(&doc), "Hello world\nMeanwhile");
+        assert_eq!(body(&doc), "Meanwhile\nHello world");
         let agent = Origin::agent("agent:writer");
         let answer = doc.merge_changes(&changes, &agent).unwrap();
         assert_eq!(answer["summary"], preview, "the comparison named what the merge did: {answer}");
         assert_ne!(answer["damage"], json!("none"), "{answer}");
-        assert_eq!(body(&doc), "Hello world\nMeanwhile\nFrom the draft", "both paragraphs, the document's first");
+        assert_eq!(body(&doc), "Meanwhile\nHello world\nFrom the draft", "both paragraphs");
         assert!(doc.replicated_state().unwrap().to_string().contains("Meanwhile title"), "the title set here stays");
         assert!(doc.dirty());
         let (merged_state, merged) = (doc.replicated_state().unwrap(), view(&doc));
-        // Both sides numbered their new paragraph from the same state: the merge's step makes the
-        // tool ids unique, so the next command writes nothing of it.
+        // Each paragraph keeps a tool id of its own.
         let tool_ids: Vec<&Value> =
             merged_state["objects"].as_object().unwrap().values().filter(|object| object["$type"] == "Block").map(|object| &object["id"]).collect();
         let unique: std::collections::BTreeSet<String> = tool_ids.iter().map(|id| id.to_string()).collect();
@@ -650,6 +651,39 @@ mod tests {
         let at = doc.version().unwrap();
         assert!(doc.merge_changes(b"not changes", &agent).is_err());
         assert_eq!(doc.version().unwrap(), at, "a refused merge changes nothing");
+    }
+
+    /// A draft and the document each add a paragraph at the end: both number it from the same
+    /// state, so the merged paragraphs would share a tool id. The merge's own step makes them
+    /// unique (the summary names that too), so the next command, here an agent's Undo with nothing
+    /// of its own to take, writes nothing; one Undo of the person gives back the exact state before.
+    #[test]
+    fn paragraphs_numbered_alike_on_both_sides_get_their_own_tool_ids_in_the_merge() {
+        let mut doc = DocDocument::open("Document.docx", &fixture()).unwrap();
+        let base = doc.version().unwrap();
+        let mut draft = DocDocument::open_with_replica("Document.docx", &[], &doc.snapshot().unwrap(), &doc.blobs().unwrap()).unwrap();
+        for (side, text) in [(&mut draft, "From the draft"), (&mut doc, "Meanwhile")] {
+            side.execute("caret.docEnd", json!({})).unwrap();
+            side.execute("text.newParagraph", json!({})).unwrap();
+            side.execute("text.insert", json!({ "text": text })).unwrap();
+        }
+        let changes = draft.export_changes(&base).unwrap();
+        let (state, before) = (doc.replicated_state().unwrap(), view(&doc));
+        let agent = Origin::agent("agent:writer");
+        doc.merge_changes(&changes, &agent).unwrap();
+        assert_eq!(body(&doc), "Hello world\nMeanwhile\nFrom the draft");
+        let merged_state = doc.replicated_state().unwrap();
+        let tool_ids: Vec<&Value> =
+            merged_state["objects"].as_object().unwrap().values().filter(|object| object["$type"] == "Block").map(|object| &object["id"]).collect();
+        let unique: std::collections::BTreeSet<String> = tool_ids.iter().map(|id| id.to_string()).collect();
+        assert_eq!(unique.len(), tool_ids.len(), "each paragraph its own tool id: {tool_ids:?}");
+        let merged = view(&doc);
+        let _ = doc.execute_as("edit.undo", json!({}), &agent);
+        assert_eq!(doc.replicated_state().unwrap(), merged_state, "the next command writes nothing of the merge");
+        assert_eq!(view(&doc), merged);
+        assert!(doc.undo().unwrap().0);
+        assert_eq!(doc.replicated_state().unwrap(), state, "one undo gives back the exact state before the merge");
+        assert_eq!(view(&doc), before);
     }
 
     /// An earlier state (a checkpoint's snapshot) is written over the document by object id as
