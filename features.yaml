@@ -383,7 +383,7 @@ features:
     cases: [regressions/issue-file-parameter-declarations]
     since: "2026-11-17"
   - id: doc.platform.document-identity
-    title: "A host asks a Word file for its document id and forks it (document.identity, document.fork; Kit Process Protocol 5.6): a .docx embeds no replica, so it carries none and forks unchanged"
+    title: "A host asks a Word file for its document id and forks it (file.identity, file.fork; Kit Process Protocol 5.6): a .docx embeds no replica, so it carries none and forks unchanged"
     dimension: [platform, data-safety]
     priority: P1
     status: has

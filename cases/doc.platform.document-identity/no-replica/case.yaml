@@ -2,9 +2,9 @@ format: 1
 id: doc.platform.document-identity/no-replica
 feature: doc.platform.document-identity
 intent: >-
-  Through the real kition-doc process: the kit serves document.identity, and a .docx (a saved
+  Through the real kition-doc process: the kit serves file.identity, and a .docx (a saved
   document, a byte copy of it, an empty file) carries no document id, because the file is written
-  from the document and embeds no replica; document.fork writes the same bytes with no id, leaves
+  from the document and embeds no replica; file.fork writes the same bytes with no id, leaves
   the source as it was, and never replaces an existing file (file_conflict).
 layer: gate
 source:

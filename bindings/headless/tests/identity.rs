@@ -1,4 +1,4 @@
-//! `document.identity` and `document.fork` (Kit Process Protocol section 5.6, KitModel M7a)
+//! `file.identity` and `file.fork` (Kit Process Protocol section 5.6, KitModel M7a)
 //! through the real `kition-doc` process: a `.docx` is written from the engine's document
 //! (`kition_doc_engine::io::save_bytes`) and embeds no replica, so it carries no document id;
 //! opening it makes a new replica each time. A host learns that without parsing the file, and a
@@ -43,7 +43,7 @@ async fn a_word_file_embeds_no_replica_so_it_carries_no_identity_and_forks_uncha
     let bytes = document();
     std::fs::write(dir.join("Plan.docx"), &bytes).unwrap();
     let kit = launch(&dir).await;
-    assert!(kit.serves("document.identity"), "{}", kit.capabilities());
+    assert!(kit.serves("file.identity"), "{}", kit.capabilities());
 
     // A document, a byte copy of it and an empty file (made for the kit before it saved one)
     // carry no identity: the file holds the document, not its replica.

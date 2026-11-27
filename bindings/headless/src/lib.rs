@@ -2,7 +2,7 @@
 //! (`kition-doc-kit`), served headless over the Kit Protocol by `kition-headless`, as the kit's
 //! `kit.json` declares it, with the object model (`model.describe`, `model.batch`) and the replica
 //! methods (`model.open`, `model.import`, `model.export`, `model.save`) over the document's change
-//! exchange, and the identity a file carries (`document.identity`, `document.fork`): a `.docx`
+//! exchange, and the identity a file carries (`file.identity`, `file.fork`): a `.docx`
 //! is written from the engine's document and embeds no replica, so it carries none.
 //!
 //! The executable's `main` serves [`backend`]; tests drive the same backend in-process.

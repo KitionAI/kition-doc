@@ -21,7 +21,7 @@ kition-kit-server = { workspace = true }
 kition-kit = { workspace = true }
 # The agent tools (premise guard, receipts) the C8 tests drive the kit through.
 kition-kits = { workspace = true }
-# document.identity and document.fork through the real process (tests/identity.rs).
+# file.identity and file.fork through the real process (tests/identity.rs).
 kition-kit-host = { workspace = true }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 serde_json = { workspace = true }
