@@ -348,3 +348,50 @@ mod iso_tests {
         assert_eq!(iso_from_unix_secs(1_735_689_599), "2024-12-31T23:59:59Z");
     }
 }
+
+#[cfg(test)]
+mod title_tests {
+    use std::collections::BTreeMap;
+
+    /// Titles two commands still share in one place (`location`), each pair a known overlap to
+    /// resolve on its own; the list only shrinks.
+    const SHARED: &[(&str, &str, [&str; 2])] = &[
+        ("Home › Styles", "Styles Pane", ["style.pane", "view.stylesPane"]),
+        ("Insert › Pages", "Page Break", ["page.insertBreak", "text.pageBreak"]),
+    ];
+
+    /// No two commands show the same title in one place of the editor (a ribbon group, a
+    /// Backstage page, the agents' list): the person or agent could not tell them apart.
+    #[test]
+    fn no_two_commands_share_a_title_in_one_place() {
+        let registry = super::registry();
+        let mut by: BTreeMap<(&str, &str), Vec<&str>> = BTreeMap::new();
+        for spec in registry.all() {
+            by.entry((spec.location, spec.label)).or_default().push(spec.id);
+        }
+        let mut shared: Vec<(&str, &str, Vec<&str>)> = by
+            .into_iter()
+            .filter(|(_, ids)| ids.len() > 1)
+            .map(|((location, label), mut ids)| {
+                ids.sort_unstable();
+                (location, label, ids)
+            })
+            .collect();
+        shared.sort();
+        let known: Vec<(&str, &str, Vec<&str>)> = SHARED.iter().map(|(location, label, ids)| (*location, *label, ids.to_vec())).collect();
+        assert_eq!(shared, known, "titles shared in one place");
+    }
+
+    /// The agents' read of the document (`file.inspect`, a shared id in every kit) and the
+    /// Backstage feature that finds and removes hidden content (`file.removeHiddenContent`,
+    /// "Inspect Document" as people know it) have titles of their own.
+    #[test]
+    fn describe_and_inspect_document_are_two_titles() {
+        let registry = super::registry();
+        let title = |id: &str| registry.get(id).map(|spec| spec.label);
+        assert_eq!(title("file.inspect"), Some("Describe Document"));
+        assert_eq!(title("file.removeHiddenContent"), Some("Inspect Document"));
+        let inspect = registry.all().iter().filter(|spec| spec.label == "Inspect Document").map(|spec| spec.id).collect::<Vec<_>>();
+        assert_eq!(inspect, ["file.removeHiddenContent"], "one command is Inspect Document");
+    }
+}

@@ -82,7 +82,7 @@ pub fn specs() -> Vec<CommandSpec> {
         CommandSpec::new("file.setAuthor", "User Name", "File › Options › General", set_author)
             .params(r#"{"name": string (author of new tracked changes and comments)}"#)
             .pure(),
-        CommandSpec::new("file.inspect", "Inspect Document", "Agents", inspect).params(r#"{"text"?: bool}"#).pure(),
+        CommandSpec::new("file.inspect", "Describe Document", "Agents", inspect).params(r#"{"text"?: bool}"#).pure(),
         CommandSpec::new("file.text", "Document Text", "Agents", |s, v| {
             let story = super::story_param(s, v);
             Ok(json!({"text": s.doc.plain_text(story)}))
