@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useKitEditor } from '@kition/sdk/editor'
 import { DialogShell, Row, numberOf, shown } from './Shell'
+import type { DocInfo } from '../doc'
 
 /**
- * Size (Picture Format › Size; plan "Doc usable by hand" stage 6A item 4; walkthrough P8): the
- * selected picture's (or shape's) width and height in points, the aspect ratio locked by default
- * (WPS), or a scale. It starts from the object's size (the Selection Pane's list, matched with the
- * selection); OK runs one `image.size`.
+ * Size (Picture Format › Size; plan "Doc usable by hand" stage 6A item 4, stage 5A item 4;
+ * walkthrough P8): the selected picture's (or shape's) width and height in points, the aspect
+ * ratio locked by default (WPS), and a picture's angle. It starts from the object's size (the
+ * Selection Pane's list, matched with the selection) and the picture's angle (`inspect().picture`);
+ * OK runs one `image.size` when the size changed and one `arrange.rotation` when the angle did
+ * (both changed: two undo steps).
  */
 type Listed = { pos?: { path?: number[]; off?: number }; size?: [number, number] }
 type Ends = { anchor?: { path?: number[]; off?: number }; focus?: { path?: number[]; off?: number } }
@@ -14,7 +17,10 @@ type Ends = { anchor?: { path?: number[]; off?: number }; focus?: { path?: numbe
 const same = (a?: { path?: number[]; off?: number }, b?: { path?: number[]; off?: number }) => !!a && !!b && a.off === b.off && JSON.stringify(a.path) === JSON.stringify(b.path)
 
 export function PictureSize() {
-  const { run, query, t } = useKitEditor()
+  const { run, query, t, session } = useKitEditor()
+  // A picture's angle (a shape turns by its handle and Shape Format).
+  const turned = (session.state as DocInfo | null)?.picture?.rotation ?? null
+  const [rotation, setRotation] = useState(() => (turned == null ? '' : shown(turned, 1)))
   const [size, setSize] = useState<[number, number] | null>(null)
   const [width, setWidth] = useState('')
   const [height, setHeight] = useState('')
@@ -47,10 +53,15 @@ export function PictureSize() {
   }
   const w = numberOf(width)
   const h = numberOf(height)
-  const bad = w == null || h == null || w < 1 || h < 1 || w > 4000 || h > 4000
+  const degrees = turned == null ? null : numberOf(rotation)
+  const bad = w == null || h == null || w < 1 || h < 1 || w > 4000 || h > 4000 || (turned != null && (degrees == null || Math.abs(degrees) > 3600))
   const ok = async () => {
-    if (bad) return false
-    return (await run('image.size', { width: w, height: h, lockAspect: false })) != null
+    if (bad || w == null || h == null) return false
+    const resized = !size || Math.abs(w - size[0]) > 0.05 || Math.abs(h - size[1]) > 0.05
+    const turn = turned != null && degrees != null && Math.abs(degrees - turned) > 0.05
+    if (resized && (await run('image.size', { width: w, height: h, lockAspect: false })) == null) return false
+    if (turn && (await run('arrange.rotation', { degrees })) == null) return false
+    return true
   }
   return (
     <DialogShell title={t('pictureSizeTitle')} testId="doc-picture-size" onOk={ok} okDisabled={bad}>
@@ -70,6 +81,14 @@ export function PictureSize() {
         <input type="checkbox" checked={lock} onChange={(event) => setLock(event.target.checked)} data-testid="doc-picture-size-lock" />
         {t('pictureLock')}
       </label>
+      {turned != null ? (
+        <Row label={t('pictureRotation')}>
+          <span className="doc-dialog-measure">
+            <input className="kui-field" inputMode="decimal" value={rotation} onChange={(event) => setRotation(event.target.value)} data-testid="doc-picture-size-rotation" />
+            <span className="doc-dialog-suffix">°</span>
+          </span>
+        </Row>
+      ) : null}
     </DialogShell>
   )
 }

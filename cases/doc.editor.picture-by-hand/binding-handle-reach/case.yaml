@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.picture-by-hand/binding-handle-reach
+feature: doc.editor.picture-by-hand
+intent: "A handle takes a press 6 screen pixels from its corner at 100% and 200%; 9 pixels out the press goes to the text."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/objects.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: a_handle_is_taken_seven_pixels_from_its_centre_at_any_zoom
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 180
+since: "2026-11-28"

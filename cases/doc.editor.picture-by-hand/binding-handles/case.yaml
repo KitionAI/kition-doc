@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.picture-by-hand/binding-handles
+feature: doc.editor.picture-by-hand
+intent: "The engine's overlays for a selected picture: eight ringed handles of the brand's colour and the rotation handle above, no white handles, no selection highlight; inspect().picture gives its box and wrapping."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/objects.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: a_selected_picture_shows_eight_ringed_handles_and_a_rotation_handle_and_no_tint
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 180
+since: "2026-11-28"

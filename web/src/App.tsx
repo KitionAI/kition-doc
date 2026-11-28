@@ -24,7 +24,7 @@ import {
 import { engineManifest } from './engine'
 import { useEngineBackdrop } from './backdrop'
 import { CATALOGS } from './strings'
-import { CONTEXT_TABS, EXPORT_COMMANDS, HOST_FILE_COMMANDS, DOC_PRIMARY, describe } from './doc'
+import { CONTEXT_TABS, EXPORT_COMMANDS, HOST_FILE_COMMANDS, DOC_PRIMARY, PICTURE_OFF, describe } from './doc'
 import { FindBar, type FindRequest } from './FindBar'
 import { CommentsPane, commenting, markerDecoration, useCommentMarkers, type CommentThread } from './Comments'
 import { HostCommentLayer, hostHighlightDecoration, useHostComments } from './HostComments'
@@ -52,6 +52,7 @@ import { ASKING, NOTICES, OWN_WINDOWS, PARAMS_FIRST, REQUESTS, unfilled, type As
 import { ReviewTab, REVIEW_OWN } from './ribbon/ReviewTab'
 import { ReadModeBar } from './ReadModeBar'
 import { TableDesignGroups, TableLayoutGroups, TABLE_DESIGN_OWN, TABLE_LAYOUT_OWN } from './ribbon/TableGroups'
+import { LayoutOptionsButton, LayoutOptionsPanel, PictureArrangeGroup, buttonPlace } from './LayoutOptions'
 
 const NO_PAGES: RasterRect[] = []
 /** Word's New Comment: in a host that keeps comment threads, the host's new thread instead. */
@@ -90,6 +91,12 @@ const hiddenShortcut = (command: string) => command === 'select.collapse' || com
  * The commands stay, for agents and the command search.
  */
 const HIDDEN_FROM_RIBBON = ['theme.list', 'research.open']
+
+/**
+ * The engine's anchors (a selected object's handles) drawn round, as WPS draws them (stage 5A
+ * item 1; walkthrough P2): paper inside, the engine's colour as the ring.
+ */
+const OVERLAY_STYLE = { anchor: { shape: 'circle', ringWidth: 1.5 } } as const
 
 const TABS = ['file', 'home', 'insert', 'draw', 'design', 'layout', 'references', 'mailings', 'review', 'view'] as const
 const TAB_MENUS: Record<string, string> = { file: 'File', home: 'Home', insert: 'Insert', draw: 'Draw', design: 'Design', layout: 'Layout', references: 'References', mailings: 'Mailings', review: 'Review', view: 'View' }
@@ -180,6 +187,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   const tools = useEngineTools(session.tool, doc != null, change, {
     initial: 'text',
     hostTools: {},
+    overlayStyle: OVERLAY_STYLE,
     escapable: () => state?.escape === true,
     // A dialog the engine asks for (its `ui_requests`, the binding's tool requests): dialogs/asks.ts.
     onDialog: (name, params) => {
@@ -382,6 +390,26 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   }
   const newComment = () => (hosted.on ? void editor.run(NEW_COMMENT) : startComment())
 
+  // Layout Options (LayoutOptions.tsx; stage 5A item 4): the panel by the selected picture, from its
+  // button or a Wrap Text button; another object gets the command's parameters.
+  const [layoutAt, setLayoutAt] = useState<{ x: number; y: number } | null>(null)
+  const closeLayout = useCallback(() => setLayoutAt(null), [])
+  const picture = state?.picture ?? null
+  const openLayoutOptions = () => {
+    const shown = canvas.current?.view()
+    const surface = document.querySelector<HTMLCanvasElement>('[data-testid=kit-canvas-surface]')
+    if (!picture || !shown || !surface) {
+      ownEditor.ask('arrange.wrap')
+      return
+    }
+    const box = surface.getBoundingClientRect()
+    const { left, top } = buttonPlace({ ...shown, width: box.width, height: box.height }, picture)
+    setLayoutAt({ x: box.left + left, y: box.top + top + 28 })
+  }
+  useEffect(() => {
+    if (!picture) setLayoutAt(null)
+  }, [picture])
+
   // Insert › Pictures' file picker (the host's), for the engine's request of it.
   const pickPicture = useRef<() => void>(() => undefined)
   asks.current = {
@@ -397,6 +425,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     close: () => host.close(),
     comment: startComment,
     commentsPane: () => setCommentsOpen((open) => !open),
+    layoutOptions: () => openLayoutOptions(),
   }
   // Review's buttons on comments and tracked changes are grey when the document has none (REVIEW_OWN).
   const [revisions, setRevisions] = useState<number | null>(null)
@@ -502,7 +531,8 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
           {context.id === 'chartDesign' && state?.chart ? <ChartDesignGroups id={state.chart} testId="doc-chart" /> : null}
           {context.id === 'tableDesign' ? <TableDesignGroups /> : null}
           {context.id === 'tableLayout' ? <TableLayoutGroups /> : null}
-          <CommandTab menu={context.menu} extra={context.extra} primary={context.primary} exclude={context.id === 'tableDesign' ? TABLE_DESIGN_OWN : context.id === 'tableLayout' ? TABLE_LAYOUT_OWN : undefined} />
+          {context.id === 'pictureFormat' ? <PictureArrangeGroup /> : null}
+          <CommandTab menu={context.menu} extra={context.extra} primary={context.primary} exclude={context.id === 'tableDesign' ? TABLE_DESIGN_OWN : context.id === 'tableLayout' ? TABLE_LAYOUT_OWN : context.id === 'pictureFormat' ? PICTURE_OFF : undefined} />
         </>
       ),
     })),
@@ -520,6 +550,35 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   useEffect(() => {
     if (state && tab !== activeTab) setTab(activeTab)
   }, [state, tab, activeTab])
+  // A picture selected brings its Picture Format tab; let go, the tab it came from comes back (WPS
+  // W-W4; stage 5A item 5, walkthrough P9). Another picture selected after it keeps the tab.
+  const pictureSelected = picture != null
+  const pictureShown = contextTabs.some((context) => context.id === 'pictureFormat')
+  const pictureFrom = useRef<string | null>(null)
+  useEffect(() => {
+    if (pictureSelected && pictureShown && pictureFrom.current == null) {
+      pictureFrom.current = activeTab === 'pictureFormat' ? 'home' : activeTab
+      setTab('pictureFormat')
+    } else if (!pictureSelected && pictureFrom.current != null) {
+      const back = pictureFrom.current
+      pictureFrom.current = null
+      if (tab === 'pictureFormat' || activeTab !== tab) setTab(back)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- on the picture coming and going
+  }, [pictureSelected, pictureShown])
+  // A double click on the selected picture shows its tab again (walkthrough P9).
+  const showPictureTab = useRef<() => void>(() => undefined)
+  showPictureTab.current = () => {
+    if (pictureShown) setTab('pictureFormat')
+  }
+  useEffect(() => {
+    const onDouble = (event: MouseEvent) => {
+      const target = event.target
+      if (target instanceof HTMLCanvasElement && target.classList.contains('kui-canvas-surface')) window.setTimeout(() => showPictureTab.current(), 60)
+    }
+    document.addEventListener('dblclick', onDouble)
+    return () => document.removeEventListener('dblclick', onDouble)
+  }, [])
 
   return (
     <KitEditorProvider editor={editor} tools={tools}>
@@ -586,23 +645,25 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
             placeInput(view)
           }}
           decorate={decorate}
-          overlay={
-            hosted.on
-              ? (view) => (
-                  <HostCommentLayer
-                    view={view}
-                    marks={hostMarks}
-                    pages={state?.pages ?? NO_PAGES}
-                    selection={hostSelection}
-                    canCreate={hostCreates}
-                    onCreate={startHosted}
-                    onOpen={hosted.open}
-                    strings={{ comment: t('commentAction'), open: (count) => t('commentThread', { count }) }}
-                  />
-                )
-              : undefined
-          }
+          overlay={(view) => (
+            <>
+              {hosted.on ? (
+                <HostCommentLayer
+                  view={view}
+                  marks={hostMarks}
+                  pages={state?.pages ?? NO_PAGES}
+                  selection={hostSelection}
+                  canCreate={hostCreates}
+                  onCreate={startHosted}
+                  onOpen={hosted.open}
+                  strings={{ comment: t('commentAction'), open: (count) => t('commentThread', { count }) }}
+                />
+              ) : null}
+              {picture && !layoutAt ? <LayoutOptionsButton view={view} picture={picture} onOpen={setLayoutAt} /> : null}
+            </>
+          )}
         />
+        <LayoutOptionsPanel at={layoutAt} wrap={picture?.wrap ?? null} onClose={closeLayout} />
         <DocContextMenu menu={menu} onClose={closeMenu} onClipboard={clipboard} onNewComment={newComment} />
         <DocDialogs pick={pickPicture} />
       </EditorFrame>

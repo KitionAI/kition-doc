@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-hand-p2-visible-handles
+feature: doc.editor.picture-by-hand
+intent: "A click selects a picture with eight round handles ringed in a colour that is not the paper's (they were white on white), no selection tint over it; the pointer is a double arrow on a corner and on an edge, move on the picture (walkthrough P2; WPS W-O1)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/picture.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/picture.mjs, chromium, p2-visible-handles]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 180
+since: "2026-11-28"

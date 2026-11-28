@@ -233,3 +233,25 @@
 .doc-read-mode {
   gap: 8px;
 }
+
+/* Layout Options beside the selected picture (stage 5A): a small button over the pages. */
+.doc-layout-options {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.doc-layout-options-button {
+  position: absolute;
+  pointer-events: auto;
+}
+
+.doc-layout-options-button > .kui-icon-button {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--kit-surface, var(--kit-panel));
+  color: var(--kit-primary);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+}

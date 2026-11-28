@@ -28,6 +28,7 @@ pub const EDITOR_STATE: &[&str] = &[
     "/equation",
     "/shape",
     "/shapes",
+    "/picture",
     "/chart",
     "/escape",
     "/all",

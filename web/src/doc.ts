@@ -21,6 +21,8 @@ export type DocInfo = {
   shape: string | null
   /** Every selected drawing object's id (the selected one, then those added with Shift). */
   shapes: string[]
+  /** The selected picture: its box on the canvas (points, around it as turned) and how text wraps it. */
+  picture: PictureBox | null
   /** The selected chart's id (`drawing.chart`). */
   chart: string | null
   /** Whether Escape has something to cancel: a gesture, a shape chosen to draw, or a selection. */
@@ -35,6 +37,17 @@ export type DocInfo = {
 
 type Area = { x: number; y: number; width: number; height: number }
 
+/** The selected picture (stage 5A): its page, its box on the canvas in points, its wrapping (`arrange.wrap`'s values), its angle. */
+export type PictureBox = { page: number; x: number; y: number; width: number; height: number; wrap: string; rotation: number }
+
+const pictureOf = (picture: unknown): PictureBox | null => {
+  if (!picture || typeof picture !== 'object') return null
+  const { page, x, y, width, height, wrap, rotation } = picture as Record<string, unknown>
+  return [page, x, y, width, height].every((value) => typeof value === 'number' && Number.isFinite(value)) && typeof wrap === 'string'
+    ? { page: page as number, x: x as number, y: y as number, width: width as number, height: height as number, wrap, rotation: typeof rotation === 'number' && Number.isFinite(rotation) ? rotation : 0 }
+    : null
+}
+
 const caretOf = (caret: unknown): CaretRect | null => {
   if (!caret || typeof caret !== 'object') return null
   const { page, x, top, height } = caret as Record<string, unknown>
@@ -48,7 +61,7 @@ const preeditOf = (preedit: unknown): { text: string; cursor: number } | null =>
 }
 
 export function describe(info: KitEngineInfo): DocInfo {
-  const inspected = info.inspected as { page?: number; caret?: CaretRect | null; preedit?: unknown; inputAt?: unknown; pages?: Array<{ area?: Area }>; words?: number; selected?: number; story?: unknown; equation?: boolean; shape?: string | null; shapes?: string[]; chart?: string | null; escape?: boolean; all?: boolean; painter?: unknown; selectsTable?: boolean }
+  const inspected = info.inspected as { page?: number; caret?: CaretRect | null; preedit?: unknown; inputAt?: unknown; pages?: Array<{ area?: Area }>; words?: number; selected?: number; story?: unknown; equation?: boolean; shape?: string | null; shapes?: string[]; picture?: unknown; chart?: string | null; escape?: boolean; all?: boolean; painter?: unknown; selectsTable?: boolean }
   return {
     page: inspected.page ?? 0,
     caret: caretOf(inspected.caret),
@@ -61,6 +74,7 @@ export function describe(info: KitEngineInfo): DocInfo {
     equation: inspected.equation === true,
     shape: inspected.shape ?? null,
     shapes: Array.isArray(inspected.shapes) ? inspected.shapes : [],
+    picture: pictureOf(inspected.picture),
     chart: inspected.chart ?? null,
     escape: inspected.escape === true,
     all: inspected.all === true,
@@ -107,13 +121,22 @@ export type StyleEntry = { id: string; name: string; kind: string; quick: boolea
 export const CONTEXT_TABS: Array<{ id: string; menu: string; when: (enabled: (id: string) => boolean, info: DocInfo) => boolean; extra?: string[]; label?: string; primary?: readonly string[] }> = [
   { id: 'tableDesign', menu: 'Table Design', when: (enabled) => enabled('table.style'), primary: ['table.style', 'table.shading', 'table.borders', 'table.look'] },
   { id: 'tableLayout', menu: 'Table Layout', when: (enabled) => enabled('table.insertRowBelow'), primary: ['table.insertRowAbove', 'table.insertRowBelow', 'table.insertColumnLeft', 'table.insertColumnRight', 'table.deleteRow', 'table.deleteColumn', 'table.merge', 'table.split', 'table.cellAlign'] },
-  { id: 'pictureFormat', menu: 'Picture Format', when: (enabled) => enabled('image.size') && !enabled('shape.fill') && !enabled('arrange.ungroup'), primary: ['image.crop', 'image.size', 'image.corrections', 'image.color', 'image.effects', 'image.style', 'image.border', 'image.altText'] },
+  // Its own Arrange group (Wrap Text, which opens the Layout Options panel beside the picture, and
+  // Rotate) is `PictureArrangeGroup`; Crop and Corrections are off it (PICTURE_OFF; stage 5A item 4).
+  { id: 'pictureFormat', menu: 'Picture Format', when: (enabled) => enabled('image.size') && !enabled('shape.fill') && !enabled('arrange.ungroup'), primary: ['image.size', 'image.color', 'image.effects', 'image.style', 'image.border', 'image.altText'] },
   // A shape, or a group (Arrange › Ungroup applies), takes Shape Format.
   { id: 'shapeFormat', menu: 'Shape Format', when: (enabled) => enabled('shape.fill') || enabled('arrange.ungroup'), primary: ['shape.fill', 'shape.outline', 'shape.effects', 'shape.change'] },
   { id: 'chartDesign', menu: 'Chart Design', label: 'chartDesign', when: (_, info) => info.chart != null },
   { id: 'headerFooter', menu: 'Header & Footer', when: (_, info) => info.story === 'headerFooter', primary: ['header.close', 'page.differentFirstPage', 'page.differentOddEven', 'page.linkToPrevious', 'headerFooter.previous', 'headerFooter.next'] },
   { id: 'equation', menu: 'Equation', when: (_, info) => info.equation, primary: ['equation.insertStructure', 'equation.insertSymbol', 'equation.display', 'equation.inputFormat', 'equation.normalText', 'equation.convert', 'equation.exit'] },
 ]
+
+/**
+ * Picture Format's buttons left off the tab (stage 5A item 4): Crop and Corrections have no window
+ * a person would do them in (no crop handles, no gallery of corrections), only the command's
+ * numbers; the commands stay for agents and the command search.
+ */
+export const PICTURE_OFF = ['image.crop', 'image.corrections']
 
 /** File commands the host's own Save, Open, and Close already cover. */
 export const HOST_FILE_COMMANDS = ['file.new', 'file.open', 'file.save', 'file.saveAs', 'file.close', 'file.print', 'file.share', 'file.options']

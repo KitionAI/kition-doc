@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.picture-by-hand/binding-backspace-typing
+feature: doc.editor.picture-by-hand
+intent: "The person's Backspace after an inline picture selects it (no undo step), the next deletes it; typed text goes before a selected picture; an agent's text.backspace deletes at once."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/objects.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: backspace_after_a_picture_selects_it_first_and_typing_on_it_goes_before_it
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 180
+since: "2026-11-28"

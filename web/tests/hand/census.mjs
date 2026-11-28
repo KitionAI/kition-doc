@@ -126,6 +126,10 @@ async function tabCensus(e, tab, place) {
   const more = row.filter((id) => id.startsWith('kui-line-more-') || id.startsWith('kui-line-group-'))
   const targets = row.filter((id) => !more.includes(id)).map((id) => ({ id, via: null }))
   for (const panel of more) {
+    // The place again for each panel: the Escapes that close the one before may have let the
+    // picture go, and its tab with it (stage 5A: Picture Format follows the picture).
+    await PLACES[place](e)
+    await e.kit.getByTestId(`ribbon-tab-${tab}`).click()
     await e.kit.getByTestId(panel).click()
     await e.wait(250)
     const inside = await e.frame().evaluate(() => [...document.querySelectorAll('.kui-line-popover button')].filter((button) => button.getBoundingClientRect().height > 0 && button.dataset.testid).map((button) => button.dataset.testid))

@@ -3,14 +3,24 @@
 //! its handles resize and turn it, and a shape's adjust handles (the yellow dots) reshape it,
 //! through the gestures Kition's kits share (`kition_office_core::edit`). The preview is an overlay;
 //! the release runs one command (one undo step): `drawing.transform` for a shape,
-//! `drawing.format` for an adjust handle, `arrange.bounds` for a picture. Escape drops it.
+//! `drawing.format` for an adjust handle, `arrange.bounds` for a picture, `arrange.rotation` for a
+//! picture turned. Escape drops it.
+//!
+//! Pictures by hand (plan "Doc usable by hand", stage 5A; WPS W-O1-W-O7): the selected object shows
+//! its frame and eight round handles (paper inside, the brand's ring) with the rotation handle
+//! above, never the text selection's tint; a handle takes a press within [`HANDLE_REACH_PX`] of
+//! its centre, the nearest one winning; the pointer says what a press there does (a double arrow
+//! along the handle, turned with the object; move over an object). A picture's corner keeps its
+//! ratio unless Shift is held; Cmd (or Alt) sizes it about its centre. An inline picture dragged
+//! stays inline: a dashed bar shows where in the text it lands, and the release is one
+//! `text.move` there.
 
 use kition_doc_doc::Pos;
 use kition_doc_doc::para::{InlineObject, OBJ, Wrap};
 use kition_doc_engine::cmd::draw::DrawMode;
 use kition_doc_layout::hit::ObjectHit;
 use kition_kit::tools::{PointerAction, ToolMods, ToolOverlay, ToolPointer};
-use kition_office_core::edit::{Gesture, HandleHit, Mods, Preview, adjust_handles, box_handles, hit_adjust, hit_handle};
+use kition_office_core::edit::{Gesture, HandleHit, Mods, Preview, adjust_handles, box_handles, hit_adjust};
 use kition_office_core::ink::{EraserGesture, InkGesture, InkTool};
 use kition_office_core::model::Geometry;
 use kition_office_core::ops::{DrawingOp, FrameChange};
@@ -19,13 +29,21 @@ use serde_json::json;
 
 use crate::{DocDocument, PageArea};
 
-/// Handle hit radius in screen pixels.
+/// How near an object's edge (screen pixels) a press still takes it, and its drag threshold.
 const REACH_PX: f64 = 4.0;
-/// Frames and handles take the kit's brand.
+/// A resize handle takes a press this far from its centre (screen pixels; the nearest wins), as
+/// Slide's handles do (kition-slide stage 0B); the rotation handle a little farther.
+pub(crate) const HANDLE_REACH_PX: f64 = 7.0;
+const ROTATE_REACH_PX: f64 = 8.0;
+/// Frames and handles take the kit's brand: a handle is a ring of it around paper (the editor
+/// draws anchors round, `web/src/App.tsx`), so it shows on the white page.
 const ACCENT: [u8; 4] = [crate::BRAND[0], crate::BRAND[1], crate::BRAND[2], 255];
-const HANDLE: [u8; 4] = [255, 255, 255, 255];
+/// A resize handle's size, screen pixels.
+pub(crate) const HANDLE_PX: f32 = 9.0;
 /// Adjust handles are yellow, as in Office.
 const ADJUST: [u8; 4] = [255, 214, 0, 255];
+/// The pointer on a rotation handle: a turning arrow, drawn here (CSS has none).
+pub(crate) const ROTATE_CURSOR: &str = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M15.5 10a5.5 5.5 0 1 1-2-4.24' fill='none' stroke='white' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M15.5 10a5.5 5.5 0 1 1-2-4.24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'/%3E%3Cpath d='M11.4 3.2l4.6.6-1.6 4.3z' fill='black' stroke='white' stroke-width='.8'/%3E%3C/svg%3E\") 10 10, crosshair";
 
 /// A pen stroke or an eraser drag under way, on a page (`KitDrawing 1.2`, DR20): previewed while
 /// the pointer moves, one `drawing.ink` or `drawing.erase` on release, nothing on Escape.
@@ -53,6 +71,68 @@ pub(crate) struct ObjectDrag {
     end: Option<(kition_office_core::connect::EndDrag, Xfrm)>,
     /// A shape from Insert › Shapes being drawn (instead of `gesture`), and its frame now.
     create: Option<(kition_office_core::connect::CreateDrag, Xfrm)>,
+    /// The object is a picture: its corners keep the ratio unless Shift is held.
+    picture: bool,
+    /// The object is inline: moved, it lands at a place in the text (`to`: page and place),
+    /// resized, it stays where it is.
+    inline: bool,
+    to: Option<(usize, Pos)>,
+}
+
+impl ObjectDrag {
+    fn new(gesture: Gesture, page: usize, uid: u32) -> ObjectDrag {
+        ObjectDrag { gesture, preview: Preview { frames: Vec::new() }, page, uid, end: None, create: None, picture: false, inline: false, to: None }
+    }
+}
+
+/// The handle of `frame` under `p` (page points; `zoom` screen pixels a point): the rotation
+/// handle when `turns` and within [`ROTATE_REACH_PX`], else the nearest resize handle within
+/// [`HANDLE_REACH_PX`]. The handles are where `box_handles` (the kits' shared geometry) puts them.
+pub(crate) fn handle_at(frame: &Xfrm, p: Point, zoom: f64, turns: bool) -> Option<HandleHit> {
+    let zoom = zoom.max(0.05);
+    let (pts, rot) = box_handles(frame);
+    if turns && (rot - p).hypot() * zoom <= ROTATE_REACH_PX {
+        return Some(HandleHit::Rotate);
+    }
+    pts.iter()
+        .enumerate()
+        .map(|(i, q)| (i, (*q - p).hypot() * zoom))
+        .filter(|(_, d)| *d <= HANDLE_REACH_PX)
+        .min_by(|a, b| a.1.total_cmp(&b.1))
+        .and_then(|(i, _)| u8::try_from(i).ok())
+        .map(HandleHit::Resize)
+}
+
+/// How far above the top edge the rotation handle is, points (the kits' shared geometry).
+#[cfg(test)]
+pub(crate) fn kition_office_core_offset() -> f64 {
+    kition_office_core::edit::ROTATE_OFFSET
+}
+
+/// The pointer on resize handle `index` (NW, N, NE, E, SE, S, SW, W) of `frame`: the double arrow
+/// along the way it pulls, turned with the object and its flips.
+pub(crate) fn resize_cursor(frame: &Xfrm, index: u8) -> &'static str {
+    let (dx, dy) = match index {
+        0 => (-1.0, -1.0),
+        1 => (0.0, -1.0),
+        2 => (1.0, -1.0),
+        3 => (1.0, 0.0),
+        4 => (1.0, 1.0),
+        5 => (0.0, 1.0),
+        6 => (-1.0, 1.0),
+        _ => (-1.0, 0.0),
+    };
+    let (dx, dy) = (if frame.flip_h { -dx } else { dx }, if frame.flip_v { -dy } else { dy });
+    let turn = frame.rot.to_radians();
+    let (sx, sy) = (dx * turn.cos() - dy * turn.sin(), dx * turn.sin() + dy * turn.cos());
+    // The way it points, in eighths of a turn (the screen's y grows downwards), folded to a half turn.
+    let eighth = ((sy.atan2(sx).to_degrees() / 45.0).round() as i64).rem_euclid(4);
+    match eighth {
+        0 => "ew-resize",
+        1 => "nwse-resize",
+        2 => "ns-resize",
+        _ => "nesw-resize",
+    }
 }
 
 fn frame_of(hit: &ObjectHit) -> Xfrm {
@@ -79,8 +159,8 @@ impl DocDocument {
         let o = session.doc.para_at(&a)?.object_at(a.off)?;
         o.frame()?;
         let uid = o.object_uid().unwrap_or(0);
-        // A shape turns; a chart, picture or other object does not.
-        let turns = uid > 0 && matches!(o, InlineObject::Shape { .. });
+        // A shape and a picture turn; a chart or another object does not.
+        let turns = (uid > 0 && matches!(o, InlineObject::Shape { .. })) || matches!(o, InlineObject::Image { .. });
         Some((layout.object(&a, session.page_hint)?, uid, turns))
     }
 
@@ -233,6 +313,42 @@ impl DocDocument {
         }
     }
 
+    /// The inline picture just before the caret (none with a selection), selected: the first
+    /// Backspace after a picture (WPS W-F4). Answers whether it was.
+    pub(crate) fn select_picture_before_caret(&self) -> bool {
+        let at = {
+            let session = self.session.borrow();
+            if !session.sel.is_collapsed() || session.math.is_some() {
+                return false;
+            }
+            let focus = &session.sel.focus;
+            let Some(off) = focus.off.checked_sub(OBJ.len_utf8()) else { return false };
+            let at = Pos { off, ..focus.clone() };
+            let inline_picture = session
+                .doc
+                .para_at(&at)
+                .and_then(|para| para.object_at(off))
+                .is_some_and(|o| matches!(o, InlineObject::Image { .. }) && o.frame().is_some_and(|(_, _, float)| float.wrap == Wrap::Inline));
+            if !inline_picture {
+                return false;
+            }
+            at
+        };
+        self.select_object(&at);
+        true
+    }
+
+    /// With a picture selected, the caret goes just before it (what is typed then goes there, and
+    /// the picture stays: WPS W-O6).
+    pub(crate) fn caret_before_selected_picture(&self) {
+        let Some((hit, _, _)) = self.selected_object() else { return };
+        if !self.object_is_picture(&hit.pos()) {
+            return;
+        }
+        let start = self.session.borrow().sel.ordered().0;
+        self.session().sel = kition_doc_engine::Selection::caret(start);
+    }
+
     fn select_object(&self, pos: &Pos) {
         let end = Pos { off: pos.off + OBJ.len_utf8(), ..pos.clone() };
         self.session().sel = kition_doc_engine::Selection { anchor: pos.clone(), focus: end };
@@ -244,8 +360,10 @@ impl DocDocument {
         if let Some(handled) = self.ink_pointer(event, page, p)? {
             return Ok(handled);
         }
-        let tol = REACH_PX / event.zoom.max(0.05);
-        let mods = Mods { shift: event.mods.shift, alt: event.mods.alt };
+        let zoom = event.zoom.max(0.05);
+        let tol = REACH_PX / zoom;
+        // Cmd sizes about the centre (WPS W-O3), as Alt does.
+        let mods = Mods { shift: event.mods.shift, alt: event.mods.alt || event.mods.command };
         match event.action {
             PointerAction::Down => {
                 // A shape chosen in Insert › Shapes: this drag draws it.
@@ -253,9 +371,7 @@ impl DocDocument {
                 if let Some(preset) = armed {
                     let drag = kition_office_core::connect::CreateDrag::start(&preset, p, &self.objects_on(page), tol * 1.5);
                     let frame = drag.frame();
-                    let gesture = Gesture::moving(Vec::new(), p);
-                    self.object_drag =
-                        Some(ObjectDrag { gesture, preview: Preview { frames: Vec::new() }, page, uid: 0, end: None, create: Some((drag, frame)) });
+                    self.object_drag = Some(ObjectDrag { create: Some((drag, frame)), ..ObjectDrag::new(Gesture::moving(Vec::new(), p), page, 0) });
                     return Ok(true);
                 }
                 // A selected connector's end: drag it onto another shape's site, or off.
@@ -265,9 +381,7 @@ impl DocDocument {
                 {
                     let drag = kition_office_core::connect::EndDrag::start(&connector, end, &objects);
                     let frame = drag.frame();
-                    let gesture = Gesture::moving(Vec::new(), p);
-                    self.object_drag =
-                        Some(ObjectDrag { gesture, preview: Preview { frames: Vec::new() }, page, uid, end: Some((drag, frame)), create: None });
+                    self.object_drag = Some(ObjectDrag { end: Some((drag, frame)), ..ObjectDrag::new(Gesture::moving(Vec::new(), p), page, uid) });
                     return Ok(true);
                 }
                 if let Some((hit, uid, _)) = self.selected_object().filter(|(h, _, _)| h.page == page)
@@ -275,11 +389,11 @@ impl DocDocument {
                     && let Some(index) = hit_adjust(&frame_of(&hit), &geometry, p, tol)
                 {
                     let gesture = Gesture::adjusting(uid.to_string(), frame_of(&hit), geometry, index);
-                    self.object_drag = Some(ObjectDrag { gesture, preview: Preview { frames: Vec::new() }, page, uid, end: None, create: None });
+                    self.object_drag = Some(ObjectDrag::new(gesture, page, uid));
                     return Ok(true);
                 }
                 if let Some((hit, uid, turns)) = self.selected_object().filter(|(h, _, _)| h.page == page)
-                    && let Some(h) = hit_handle(&frame_of(&hit), p, tol, turns)
+                    && let Some(h) = handle_at(&frame_of(&hit), p, zoom, turns)
                 {
                     let id = uid.to_string();
                     let frame = frame_of(&hit);
@@ -287,7 +401,8 @@ impl DocDocument {
                         HandleHit::Resize(i) => Gesture::resizing(id, i, frame, p),
                         HandleHit::Rotate => Gesture::rotating(vec![(id, frame)], &frame, p),
                     };
-                    self.object_drag = Some(ObjectDrag { gesture, preview: Preview { frames: Vec::new() }, page, uid, end: None, create: None });
+                    let picture = self.object_is_picture(&hit.pos());
+                    self.object_drag = Some(ObjectDrag { picture, inline: hit.wrap == Wrap::Inline, ..ObjectDrag::new(gesture, page, uid) });
                     return Ok(true);
                 }
                 let layout = self.layout();
@@ -311,14 +426,11 @@ impl DocDocument {
                     session.doc.para_at(&hit.pos()).and_then(|para| para.object_at(hit.off)).and_then(InlineObject::object_uid).unwrap_or(0)
                 };
                 self.select_object(&hit.pos());
-                self.object_drag = Some(ObjectDrag {
-                    gesture: Gesture::moving(vec![(uid.to_string(), frame_of(&hit))], p),
-                    preview: Preview { frames: Vec::new() },
-                    page,
-                    uid,
-                    end: None,
-                    create: None,
-                });
+                let picture = self.object_is_picture(&hit.pos());
+                // An inline picture moves in the text (WPS W-O5); a drawing object as it did.
+                let inline = hit.wrap == Wrap::Inline && uid == 0;
+                self.object_drag =
+                    Some(ObjectDrag { picture, inline, ..ObjectDrag::new(Gesture::moving(vec![(uid.to_string(), frame_of(&hit))], p), page, uid) });
                 Ok(true)
             }
             PointerAction::Drag => {
@@ -331,7 +443,19 @@ impl DocDocument {
                     *frame = create.drag(p, tol * 1.5, mods.shift);
                     return Ok(true);
                 }
+                // A picture's corner keeps its ratio, and Shift lets it go (WPS W-O3; Word, R-O20).
+                let mods = match drag.gesture {
+                    Gesture::Resize { handle, .. } if drag.picture && matches!(handle, 0 | 2 | 4 | 6) => Mods { shift: !mods.shift, ..mods },
+                    _ => mods,
+                };
                 drag.preview = drag.gesture.drag(p, mods, tol, None);
+                let dropping = drag.inline && matches!(drag.gesture, Gesture::Move { .. }) && !drag.preview.frames.is_empty();
+                if dropping {
+                    let to = self.drop_place(event);
+                    if let Some(drag) = self.object_drag.as_mut() {
+                        drag.to = to;
+                    }
+                }
                 Ok(true)
             }
             PointerAction::Up => {
@@ -361,6 +485,22 @@ impl DocDocument {
                     }
                     return Ok(true);
                 }
+                // An inline picture let go in the text: it moves there, still inline (one step).
+                if drag.inline && matches!(drag.gesture, Gesture::Move { .. }) {
+                    if drag.preview.frames.is_empty() {
+                        return Ok(true);
+                    }
+                    let to = self.drop_place(event).or(drag.to.clone()).map(|(_, to)| to);
+                    let onto_itself = {
+                        let session = self.session.borrow();
+                        let (a, b) = session.sel.ordered();
+                        to.as_ref().is_none_or(|to| *to >= a && *to <= b)
+                    };
+                    if let Some(to) = to.filter(|_| !onto_itself) {
+                        self.session().run("text.move", &json!({ "to": kition_doc_engine::cmd::pos_json(&to) })).map_err(|e| e.to_string())?;
+                    }
+                    return Ok(true);
+                }
                 let frames = match drag.gesture.release(&drag.preview) {
                     Some(DrawingOp::Transform(FrameChange::Set(frames))) => frames,
                     Some(DrawingOp::Format { ids, format }) => {
@@ -373,16 +513,95 @@ impl DocDocument {
                 let moved = drag.gesture.frames().first().is_some_and(|(_, o)| (o.x, o.y) != (f.x, f.y));
                 let result = if drag.uid > 0 {
                     self.session().run("drawing.transform", &json!({ "ids": [drag.uid.to_string()], "frame": f }))
-                } else if moved {
+                } else if matches!(drag.gesture, Gesture::Rotate { .. }) {
+                    // A picture turned by its handle: its angle (one step).
+                    self.session().run("arrange.rotation", &json!({ "degrees": f.rot }))
+                } else if moved && !drag.inline {
                     self.session().run("arrange.bounds", &json!({ "x": f.x, "y": f.y, "width": f.w, "height": f.h, "page": drag.page }))
                 } else {
+                    // Resized: an inline picture keeps its place in the text.
                     self.session().run("arrange.bounds", &json!({ "width": f.w, "height": f.h }))
                 };
                 result.map_err(|e| e.to_string())?;
                 Ok(true)
             }
+            // A double click on an object keeps it selected (the editor shows its tab, WPS W-W4);
+            // it does not select the word under it.
+            PointerAction::DoubleClick => match self.layout().object_at(page, px as f32, py as f32, tol as f32) {
+                Some(hit) => {
+                    self.select_object(&hit.pos());
+                    Ok(true)
+                }
+                None => Ok(false),
+            },
             _ => Ok(false),
         }
+    }
+
+    /// The selected picture's box on the canvas (around it as turned), its wrapping and its angle,
+    /// for the editor's Layout Options button beside it, its tab and its Size dialog: session state.
+    pub(crate) fn picture_box(&self, areas: &[PageArea]) -> Option<serde_json::Value> {
+        let (hit, _, _) = self.selected_object()?;
+        if !self.object_is_picture(&hit.pos()) {
+            return None;
+        }
+        let area = areas.get(hit.page)?;
+        let b = frame_of(&hit).bounds();
+        Some(
+            json!({ "page": hit.page, "x": area.x + b.x0, "y": area.y + b.y0, "width": b.width(), "height": b.height(), "wrap": hit.wrap, "rotation": hit.spin.deg }),
+        )
+    }
+
+    /// Whether the object at `pos` is a picture.
+    fn object_is_picture(&self, pos: &Pos) -> bool {
+        let session = self.session.borrow();
+        matches!(session.doc.para_at(pos).and_then(|para| para.object_at(pos.off)), Some(InlineObject::Image { .. }))
+    }
+
+    /// Where in the text an inline picture dragged to the pointer of `event` would land: the
+    /// place under the pointer in the picture's story, on the page under it.
+    fn drop_place(&self, event: &ToolPointer) -> Option<(usize, Pos)> {
+        let layout = self.layout();
+        let areas = Self::areas(&layout);
+        let page = Self::page_at(&areas, event.y);
+        let area = areas.get(page)?;
+        let story = self.session.borrow().sel.focus.story;
+        layout.hit(page, (event.x - area.x) as f32, (event.y - area.y) as f32, story).map(|pos| (page, pos))
+    }
+
+    /// The pointer over objects, or `None` to leave it to the text: during a gesture, its own; on
+    /// a selected object's handle, the arrow along it (the turning arrow on the rotation handle);
+    /// over an object, move.
+    pub(crate) fn object_cursor(&self, areas: &[PageArea]) -> Option<String> {
+        if let Some(drag) = &self.object_drag {
+            if drag.end.is_some() || drag.create.is_some() {
+                return Some("crosshair".into());
+            }
+            return Some(match &drag.gesture {
+                Gesture::Resize { handle, orig, .. } => resize_cursor(orig, *handle).into(),
+                Gesture::Rotate { .. } => ROTATE_CURSOR.into(),
+                Gesture::Adjust { .. } => "pointer".into(),
+                Gesture::Move { .. } => "move".into(),
+            });
+        }
+        let (x, y, _, zoom) = self.text_tool.at?;
+        let page = Self::page_at(areas, y);
+        let area = areas.get(page)?;
+        let p = Point::new(x - area.x, y - area.y);
+        if let Some((hit, _, turns)) = self.selected_object().filter(|(h, _, _)| h.page == page) {
+            let frame = frame_of(&hit);
+            if let Some(geometry) = self.selected_geometry()
+                && hit_adjust(&frame, &geometry, p, REACH_PX / zoom).is_some()
+            {
+                return Some("pointer".into());
+            }
+            match handle_at(&frame, p, zoom, turns) {
+                Some(HandleHit::Resize(i)) => return Some(resize_cursor(&frame, i).into()),
+                Some(HandleHit::Rotate) => return Some(ROTATE_CURSOR.into()),
+                None => {}
+            }
+        }
+        self.layout().object_at(page, p.x as f32, p.y as f32, (REACH_PX / zoom) as f32).map(|_| "move".into())
     }
 
     /// A key for objects; `true` when it was theirs: Escape drops a gesture, arrows nudge a
@@ -469,16 +688,28 @@ impl DocDocument {
         out.push(ToolOverlay::Path { d: quad(&frame), color: ACCENT, width: 1.0, dashed: preview.is_some() });
         if let Some(f) = preview {
             out.push(ToolOverlay::Path { d: quad(&f), color: ACCENT, width: 1.5, dashed: false });
+            // An inline picture being moved: a dashed bar where in the text it lands (as dragged
+            // text shows, `text_tool.rs`).
+            if let Some((page, to)) = self.object_drag.as_ref().and_then(|d| d.to.clone())
+                && let Some(caret) = self.layout().caret_on(&to, page)
+                && let Some(area) = areas.get(caret.page)
+            {
+                let x = area.x + f64::from(caret.x);
+                let top = area.y + f64::from(caret.top);
+                out.push(ToolOverlay::Line { ax: x, ay: top, bx: x, by: top + f64::from(caret.height), color: crate::CARET, dashed: true });
+            }
             return;
         }
         let (pts, rot) = box_handles(&frame);
+        if turns {
+            // The rotation handle on a stem from the top edge's middle.
+            let ([x0, y0], [x1, y1]) = (to(pts[1]), to(rot));
+            out.push(ToolOverlay::Path { d: format!("M{x0:.1},{y0:.1} L{x1:.1},{y1:.1}"), color: ACCENT, width: 1.0, dashed: false });
+            out.push(ToolOverlay::Anchor { x: x1, y: y1, color: ACCENT, filled: false, size: HANDLE_PX });
+        }
         for q in pts {
             let [x, y] = to(q);
-            out.push(ToolOverlay::Anchor { x, y, color: HANDLE, filled: true, size: 8.0 });
-        }
-        if turns {
-            let [x, y] = to(rot);
-            out.push(ToolOverlay::Anchor { x, y, color: ACCENT, filled: true, size: 8.0 });
+            out.push(ToolOverlay::Anchor { x, y, color: ACCENT, filled: false, size: HANDLE_PX });
         }
         // Objects added with Shift: their frames.
         let also: Vec<Pos> = self.session.borrow().also_selected.clone();
@@ -797,6 +1028,281 @@ mod tests {
         let st = doc.inspect().unwrap();
         assert_eq!(st["shape"], g["id"]);
         doc.pointer(&ev(PointerAction::Move, on_page(&doc, 500.0, 500.0))).unwrap();
+    }
+
+    /// A document of three paragraphs with a 160 × 100 pt picture inline in the second (after
+    /// "Before "), the caret at the first's start.
+    fn with_picture() -> DocDocument {
+        let mut doc = DocDocument::create("Doc.docx", 0, 0).unwrap();
+        doc.execute("file.setText", json!({ "text": "The first paragraph of text.\nBefore \nThe third paragraph, where it lands." })).unwrap();
+        let picture = image::RgbaImage::from_pixel(16, 10, image::Rgba([30, 150, 70, 255]));
+        let mut bytes = std::io::Cursor::new(Vec::new());
+        picture.write_to(&mut bytes, image::ImageFormat::Png).unwrap();
+        let data = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, bytes.into_inner());
+        doc.execute("select.range", json!({ "anchor": at(1, 7), "focus": at(1, 7) })).unwrap();
+        doc.execute("image.insert", json!({ "data": data })).unwrap();
+        doc.execute("select.range", json!({ "anchor": at(1, 7), "focus": at(1, 10) })).unwrap();
+        doc.execute("image.size", json!({ "width": 160, "height": 100, "lockAspect": false })).unwrap();
+        doc.execute("caret.docStart", json!({})).unwrap();
+        doc
+    }
+
+    fn at(block: u32, off: usize) -> serde_json::Value {
+        json!({ "story": "body", "path": [block], "off": off })
+    }
+
+    /// The picture's frame on the canvas (x, y, w, h) and its wrapping, from `inspect()` with it selected.
+    fn picture(doc: &mut DocDocument) -> (f64, f64, f64, f64, String) {
+        let p = doc.inspect().unwrap()["picture"].clone();
+        (
+            p["x"].as_f64().unwrap(),
+            p["y"].as_f64().unwrap(),
+            p["width"].as_f64().unwrap(),
+            p["height"].as_f64().unwrap(),
+            p["wrap"].as_str().unwrap().to_string(),
+        )
+    }
+
+    /// The picture's size in the document (first object of paragraph `block`).
+    fn size_of(doc: &mut DocDocument, block: u32) -> Option<(f64, f64)> {
+        let p = doc.execute("file.paragraph", json!({ "path": [block] })).unwrap();
+        let o = p["paragraph"]["objects"].get(0)?.clone();
+        Some((o["w"].as_f64()?, o["h"].as_f64()?))
+    }
+
+    fn with(mut e: ToolPointer, mods: ToolMods) -> ToolPointer {
+        e.mods = mods;
+        e
+    }
+
+    fn drag(doc: &mut DocDocument, from: (f64, f64), to: (f64, f64), mods: ToolMods) -> kition_kit::tools::ToolResponse {
+        doc.pointer(&with(ev(PointerAction::Down, from), mods)).unwrap();
+        let mid = ((from.0 + to.0) / 2.0, (from.1 + to.1) / 2.0);
+        doc.pointer(&with(ev(PointerAction::Drag, mid), mods)).unwrap();
+        let r = doc.pointer(&with(ev(PointerAction::Drag, to), mods)).unwrap();
+        doc.pointer(&with(ev(PointerAction::Up, to), mods)).unwrap();
+        r
+    }
+
+    fn click(doc: &mut DocDocument, p: (f64, f64)) {
+        doc.pointer(&ev(PointerAction::Down, p)).unwrap();
+        doc.pointer(&ev(PointerAction::Up, p)).unwrap();
+    }
+
+    #[test]
+    fn a_selected_picture_shows_eight_ringed_handles_and_a_rotation_handle_and_no_tint() {
+        use kition_kit::tools::ToolOverlay;
+        let mut doc = with_picture();
+        assert!(doc.inspect().unwrap()["picture"].is_null(), "no picture selected yet");
+        doc.execute("select.range", json!({ "anchor": at(1, 7), "focus": at(1, 10) })).unwrap();
+        let (x, y, w, h, wrap) = picture(&mut doc);
+        assert_eq!(wrap, "inline");
+        assert!((w - 160.0).abs() < 0.5 && (h - 100.0).abs() < 0.5, "{w} {h}");
+        doc.execute("caret.docStart", json!({})).unwrap();
+        click(&mut doc, (x + w / 2.0, y + h / 2.0));
+        assert!(doc.selected_object().is_some(), "a click selects it");
+        let r = doc.state(0.0, 0.0, ToolMods::default(), 1.0);
+        let rings: Vec<_> = r
+            .overlays
+            .iter()
+            .filter_map(|o| match o {
+                ToolOverlay::Anchor { x, y, color, filled: false, size } if *color == super::ACCENT && *size == super::HANDLE_PX => Some((*x, *y)),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(rings.len(), 9, "eight handles and the rotation handle: {:?}", r.overlays);
+        assert!(rings.contains(&(x + w, y + h)) && rings.contains(&(x, y)), "{rings:?}");
+        assert!(rings.iter().any(|(rx, ry)| (*rx - (x + w / 2.0)).abs() < 0.01 && *ry < y - 10.0), "the rotation handle is above: {rings:?}");
+        assert!(!r.overlays.iter().any(|o| matches!(o, ToolOverlay::Highlight { .. })), "no selection tint over it");
+        assert!(!r.overlays.iter().any(|o| matches!(o, ToolOverlay::Anchor { color: [255, 255, 255, 255], .. })), "no white-on-white handles");
+    }
+
+    #[test]
+    fn the_pointer_shows_what_a_press_on_a_picture_does() {
+        let mut doc = with_picture();
+        doc.execute("select.range", json!({ "anchor": at(1, 7), "focus": at(1, 10) })).unwrap();
+        let (x, y, w, h, _) = picture(&mut doc);
+        let cursor = |doc: &mut DocDocument, p: (f64, f64)| doc.pointer(&ev(PointerAction::Move, p)).unwrap().cursor;
+        assert_eq!(cursor(&mut doc, (x + w, y + h)), "nwse-resize");
+        assert_eq!(cursor(&mut doc, (x + w + 4.0, y + h + 4.0)), "nwse-resize", "near the handle");
+        assert_eq!(cursor(&mut doc, (x, y)), "nwse-resize");
+        assert_eq!(cursor(&mut doc, (x + w, y)), "nesw-resize");
+        assert_eq!(cursor(&mut doc, (x + w, y + h / 2.0)), "ew-resize");
+        assert_eq!(cursor(&mut doc, (x + w / 2.0, y + h)), "ns-resize");
+        assert_eq!(cursor(&mut doc, (x + w / 2.0, y + h / 2.0)), "move");
+        assert!(cursor(&mut doc, (x + w / 2.0, y - super::kition_office_core_offset())).contains("svg"), "the turning arrow on the rotation handle");
+        // Turned a quarter, the corner's arrow turns with it.
+        doc.execute("arrange.rotation", json!({ "degrees": 90 })).unwrap();
+        let (hit, _, _) = doc.selected_object().unwrap();
+        let (pts, _) = kition_office_core::edit::box_handles(&super::frame_of(&hit));
+        let area = DocDocument::areas(&doc.layout())[hit.page];
+        assert_eq!(cursor(&mut doc, (area.x + pts[2].x, area.y + pts[2].y)), "nwse-resize", "NE turned a quarter points SE");
+        assert_eq!(cursor(&mut doc, (area.x + pts[3].x, area.y + pts[3].y)), "ns-resize");
+        // A picture not selected: move over it; the text beside it the I-beam.
+        doc.execute("caret.docStart", json!({})).unwrap();
+        let (hx, hy) = (area.x + f64::from(hit.rect.x + hit.rect.w / 2.0), area.y + f64::from(hit.rect.y + hit.rect.h / 2.0));
+        assert_eq!(cursor(&mut doc, (hx, hy)), "move");
+        let text = on_page(&doc, 100.0, 80.0);
+        assert_eq!(cursor(&mut doc, text), "text");
+    }
+
+    #[test]
+    fn a_handle_is_taken_seven_pixels_from_its_centre_at_any_zoom() {
+        for zoom in [1.0, 2.0] {
+            let mut doc = with_picture();
+            doc.execute("select.range", json!({ "anchor": at(1, 7), "focus": at(1, 10) })).unwrap();
+            let (x, y, w, h, _) = picture(&mut doc);
+            // 6 screen pixels out from the corner, along its diagonal.
+            let d = 6.0 / 2f64.sqrt() / zoom;
+            let mut down = ev(PointerAction::Down, (x + w + d, y + h + d));
+            down.zoom = zoom;
+            doc.pointer(&down).unwrap();
+            let mut up = ev(PointerAction::Up, (x + w + d + 30.0, y + h + d + 30.0));
+            up.zoom = zoom;
+            let mut mv = ev(PointerAction::Drag, (x + w + d + 30.0, y + h + d + 30.0));
+            mv.zoom = zoom;
+            doc.pointer(&mv).unwrap();
+            doc.pointer(&up).unwrap();
+            let (nw, nh) = size_of(&mut doc, 1).unwrap();
+            assert!(nw > 170.0 && nh > 105.0, "zoom {zoom}: the corner was taken: {nw} {nh}");
+            assert!(doc.selected_object().is_some(), "still selected");
+            // 9 pixels out takes nothing of the picture: the press goes to the text.
+            let (x, y, w, h, _) = picture(&mut doc);
+            let far = 9.0 / zoom;
+            let mut down = ev(PointerAction::Down, (x + w + far, y + h + far));
+            down.zoom = zoom;
+            doc.pointer(&down).unwrap();
+            let mut up = ev(PointerAction::Up, (x + w + far, y + h + far));
+            up.zoom = zoom;
+            doc.pointer(&up).unwrap();
+            assert_eq!(size_of(&mut doc, 1).unwrap(), (nw, nh), "zoom {zoom}");
+            assert!(doc.selected_object().is_none(), "zoom {zoom}: a press off it lets it go");
+        }
+    }
+
+    #[test]
+    fn a_pictures_corner_keeps_its_ratio_unless_shift_and_cmd_sizes_about_its_centre() {
+        let shift = ToolMods { shift: true, ..ToolMods::default() };
+        let cmd = ToolMods { command: true, ..ToolMods::default() };
+        let mut doc = with_picture();
+        doc.execute("select.range", json!({ "anchor": at(1, 7), "focus": at(1, 10) })).unwrap();
+        let (x, y, w, h, _) = picture(&mut doc);
+        drag(&mut doc, (x + w, y + h), (x + w + 60.0, y + h + 40.0), ToolMods::default());
+        let (nw, nh) = size_of(&mut doc, 1).unwrap();
+        assert!((nw / nh - 1.6).abs() < 0.01 && nw > 200.0, "the ratio stays: {nw} × {nh}");
+        assert_eq!(picture(&mut doc).4, "inline", "resizing leaves it inline");
+        doc.execute("edit.undo", json!({})).unwrap();
+        assert_eq!(size_of(&mut doc, 1).unwrap(), (160.0, 100.0), "one undo step");
+        // Shift lets the ratio go.
+        doc.execute("select.range", json!({ "anchor": at(1, 7), "focus": at(1, 10) })).unwrap();
+        drag(&mut doc, (x + w, y + h), (x + w + 60.0, y + h + 10.0), shift);
+        let (nw, nh) = size_of(&mut doc, 1).unwrap();
+        assert!((nw - 220.0).abs() < 0.5 && (nh - 110.0).abs() < 0.5, "free: {nw} × {nh}");
+        doc.execute("edit.undo", json!({})).unwrap();
+        // An edge's middle changes one way only.
+        doc.execute("select.range", json!({ "anchor": at(1, 7), "focus": at(1, 10) })).unwrap();
+        drag(&mut doc, (x + w, y + h / 2.0), (x + w + 40.0, y + h / 2.0 + 25.0), ToolMods::default());
+        assert_eq!(size_of(&mut doc, 1).unwrap(), (200.0, 100.0));
+        doc.execute("edit.undo", json!({})).unwrap();
+        // Cmd: about the centre, both sides grow, the ratio kept.
+        doc.execute("select.range", json!({ "anchor": at(1, 7), "focus": at(1, 10) })).unwrap();
+        drag(&mut doc, (x + w, y + h), (x + w + 20.0, y + h + 20.0), cmd);
+        let (nw, nh) = size_of(&mut doc, 1).unwrap();
+        // Both sides of each way grow by the drag (100 + 2 × 20 high), the ratio kept: 224 × 140.
+        assert!((nw - 224.0).abs() < 0.5 && (nh - 140.0).abs() < 0.5, "about the centre: {nw} × {nh}");
+        assert_eq!(picture(&mut doc).4, "inline");
+    }
+
+    #[test]
+    fn an_inline_picture_dragged_into_other_text_stays_inline_in_one_step() {
+        use kition_kit::tools::ToolOverlay;
+        let mut doc = with_picture();
+        doc.execute("select.range", json!({ "anchor": at(1, 7), "focus": at(1, 10) })).unwrap();
+        let (x, y, w, h, _) = picture(&mut doc);
+        // Where "where" of the third paragraph is: its caret.
+        doc.execute("select.range", json!({ "anchor": at(2, 21), "focus": at(2, 21) })).unwrap();
+        let c = doc.inspect().unwrap()["caret"].clone();
+        let target = (c["x"].as_f64().unwrap() + 1.0, c["top"].as_f64().unwrap() + c["height"].as_f64().unwrap() / 2.0);
+        doc.execute("caret.docStart", json!({})).unwrap();
+        let from = (x + w / 2.0, y + h / 2.0);
+        doc.pointer(&ev(PointerAction::Down, from)).unwrap();
+        doc.pointer(&ev(PointerAction::Drag, (from.0 + 30.0, from.1 + 30.0))).unwrap();
+        let r = doc.pointer(&ev(PointerAction::Drag, target)).unwrap();
+        let bar = r.overlays.iter().find_map(|o| match o {
+            ToolOverlay::Line { ax, dashed: true, .. } => Some(*ax),
+            _ => None,
+        });
+        assert!(bar.is_some_and(|ax| (ax - c["x"].as_f64().unwrap()).abs() < 1.0), "the dashed bar where it lands: {:?}", r.overlays);
+        assert_eq!(r.cursor, "move");
+        assert!(size_of(&mut doc, 1).is_some(), "nothing moves before the release");
+        doc.pointer(&ev(PointerAction::Up, target)).unwrap();
+        assert!(size_of(&mut doc, 1).is_none(), "it left its paragraph");
+        let text = doc.execute("file.paragraph", json!({ "path": [2] })).unwrap()["paragraph"]["text"].as_str().unwrap().to_string();
+        assert_eq!(text, "The third paragraph, \u{FFFC}where it lands.");
+        assert_eq!(picture(&mut doc).4, "inline", "still inline, and still selected");
+        doc.execute("edit.undo", json!({})).unwrap();
+        assert!(size_of(&mut doc, 1).is_some() && size_of(&mut doc, 2).is_none(), "one undo step");
+        // Dropped on itself it stays.
+        doc.execute("select.range", json!({ "anchor": at(1, 7), "focus": at(1, 10) })).unwrap();
+        drag(&mut doc, from, (from.0 + 10.0, from.1), ToolMods::default());
+        assert!(size_of(&mut doc, 1).is_some());
+        // A floating picture is dragged freely.
+        doc.execute("arrange.wrap", json!({ "wrap": "square" })).unwrap();
+        let (fx, fy, fw, fh, _) = picture(&mut doc);
+        drag(&mut doc, (fx + fw / 2.0, fy + fh / 2.0), (fx + fw / 2.0 + 40.0, fy + fh / 2.0 + 20.0), ToolMods::default());
+        let (gx, gy, _, _, wrap) = picture(&mut doc);
+        assert_eq!(wrap, "square");
+        assert!((gx - fx - 40.0).abs() < 1.0 && (gy - fy - 20.0).abs() < 1.0, "{gx},{gy} from {fx},{fy}");
+    }
+
+    #[test]
+    fn a_pictures_rotation_handle_turns_it_in_one_step() {
+        let mut doc = with_picture();
+        doc.execute("select.range", json!({ "anchor": at(1, 7), "focus": at(1, 10) })).unwrap();
+        let (x, y, w, h, _) = picture(&mut doc);
+        let (cx, cy) = (x + w / 2.0, y + h / 2.0);
+        drag(&mut doc, (cx, y - super::kition_office_core_offset()), (cx + 200.0, cy), ToolMods::default());
+        let rot = doc.execute("file.paragraph", json!({ "path": [1] })).unwrap()["paragraph"]["objects"][0]["float"]["rot"].as_f64().unwrap_or(0.0);
+        assert!((rot - 90.0).abs() < 0.5, "{rot}");
+        doc.execute("edit.undo", json!({})).unwrap();
+        let rot = doc.execute("file.paragraph", json!({ "path": [1] })).unwrap()["paragraph"]["objects"][0]["float"]["rot"].as_f64().unwrap_or(0.0);
+        assert_eq!(rot, 0.0);
+    }
+
+    #[test]
+    fn backspace_after_a_picture_selects_it_first_and_typing_on_it_goes_before_it() {
+        let mut doc = with_picture();
+        let text =
+            |doc: &mut DocDocument| doc.execute("file.paragraph", json!({ "path": [1] })).unwrap()["paragraph"]["text"].as_str().unwrap().to_string();
+        doc.execute("select.range", json!({ "anchor": at(1, 10), "focus": at(1, 10) })).unwrap();
+        doc.key("Backspace", ToolMods::default(), 1.0).unwrap();
+        assert!(doc.selected_object().is_some(), "the first Backspace selects the picture");
+        assert_eq!(text(&mut doc), "Before \u{FFFC}");
+        doc.key("Backspace", ToolMods::default(), 1.0).unwrap();
+        assert_eq!(text(&mut doc), "Before ", "the second deletes it");
+        doc.execute("edit.undo", json!({})).unwrap();
+        assert_eq!(text(&mut doc), "Before \u{FFFC}", "the selecting was no step");
+        // Typed on the selected picture: the letters go before it, and it stays.
+        doc.execute("select.range", json!({ "anchor": at(1, 7), "focus": at(1, 10) })).unwrap();
+        KitTools::text(&mut doc, "ab", 1.0).unwrap();
+        assert_eq!(text(&mut doc), "Before ab\u{FFFC}");
+        // An agent's text.backspace still deletes it at once.
+        doc.execute("select.range", json!({ "anchor": at(1, 12), "focus": at(1, 12) })).unwrap();
+        doc.execute("text.backspace", json!({})).unwrap();
+        assert_eq!(text(&mut doc), "Before ab");
+    }
+
+    #[test]
+    fn a_double_click_on_a_picture_keeps_it_selected() {
+        let mut doc = with_picture();
+        doc.execute("select.range", json!({ "anchor": at(1, 7), "focus": at(1, 10) })).unwrap();
+        let (x, y, w, h, _) = picture(&mut doc);
+        doc.execute("caret.docStart", json!({})).unwrap();
+        let p = (x + w / 2.0, y + h / 2.0);
+        click(&mut doc, p);
+        doc.pointer(&ev(PointerAction::DoubleClick, p)).unwrap();
+        assert!(doc.selected_object().is_some());
+        assert!(doc.inspect().unwrap()["picture"].is_object());
     }
 
     #[test]

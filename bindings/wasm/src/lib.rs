@@ -337,6 +337,8 @@ impl DocDocument {
         let layout = self.layout();
         let areas = Self::areas(&layout);
         let preedit = self.preedit_overlays();
+        // A selected picture or shape shows its own frame and handles, not the text's tint (R-D43).
+        let object = self.selected_object().is_some();
         let session = self.session.borrow();
         let mut out = Vec::new();
         let at = |page: usize, x: f32, y: f32| areas.get(page).map(|area| (area.x + f64::from(x), area.y + f64::from(y)));
@@ -349,12 +351,12 @@ impl DocDocument {
                 let (Some((x0, y0)), Some((x1, y1))) = (at(page, x0, y0), at(page, x1, y1)) else { continue };
                 out.push(ToolOverlay::Highlight { quad: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], color: SELECTION });
             }
-        } else if !session.sel.is_collapsed() {
+        } else if !session.sel.is_collapsed() && !object {
             for (page, rect) in layout.selection_rects(&session.doc, &a, &b, session.page_hint) {
                 let (Some((x0, y0)), Some((x1, y1))) = (at(page, rect.x, rect.y), at(page, rect.x + rect.w, rect.y + rect.h)) else { continue };
                 out.push(ToolOverlay::Highlight { quad: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], color: SELECTION });
             }
-        } else if let Some(caret) = layout.caret_on(&session.sel.focus, session.page_hint)
+        } else if let Some(caret) = layout.caret_on(&session.sel.focus, session.page_hint).filter(|_| session.sel.is_collapsed())
             && let (Some((ax, ay)), Some((bx, by))) = (at(caret.page, caret.x, caret.top), at(caret.page, caret.x, caret.top + caret.height))
         {
             out.push(ToolOverlay::Line { ax, ay, bx, by, color: CARET, dashed: false });
@@ -609,6 +611,7 @@ impl KitDocument for DocDocument {
             .map(|(index, area)| json!({ "index": index, "area": { "x": area.x, "y": area.y, "width": area.w, "height": area.h } }))
             .collect();
         let gesture = self.object_drag_page().is_some();
+        let picture = self.picture_box(&areas);
         // What an input method composes, and where a composition starts (the editor puts the
         // input method's text input there): session state, never in the file.
         let preedit = self.preedit_info();
@@ -688,6 +691,8 @@ impl KitDocument for DocDocument {
             "equation": session.math.is_some(),
             "shape": shape,
             "shapes": shapes,
+            // The selected picture: where it is on the canvas and how text wraps it (stage 5A).
+            "picture": picture,
             "chart": chart,
             "escape": escape,
             "all": all,
@@ -897,6 +902,9 @@ impl KitTools for DocDocument {
         // What an input method chose ends its composition, a step of its own (`composing`).
         let committed = self.commit_preedit();
         if !text.is_empty() && text.chars().all(|c| !c.is_control()) {
+            // Typed on a selected picture, the text goes in before it and the picture stays (WPS
+            // W-O6; stage 5A item 6; an agent's `text.insert` replaces the selection as before).
+            self.caret_before_selected_picture();
             self.session().run("text.insert", &json!({ "text": text })).map_err(|error| error.to_string())?;
         }
         if committed {
@@ -941,6 +949,11 @@ impl DocDocument {
         // 11; an agent's edit.selectAll is the whole story still).
         if name == "A" && (mods.command || mods.control) && !mods.alt && !mods.shift && self.selects_table_first() {
             self.session().run("table.selectTable", &json!({})).map_err(|error| error.to_string())?;
+            return Ok(self.respond());
+        }
+        // Backspace just after an inline picture selects it first, the next deletes it (WPS W-F4;
+        // stage 5A item 6; the command, an agent's, still deletes it at once).
+        if name == "Backspace" && plain && self.select_picture_before_caret() {
             return Ok(self.respond());
         }
         let registry = self.session.borrow().registry.clone();

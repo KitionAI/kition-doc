@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-hand-p8-wrap-options
+feature: doc.editor.picture-by-hand
+intent: "The Layout Options button beside a selected picture opens In Line with Text and the six wrappings; Square makes the picture wrap Square, Escape closes the panel and keeps the picture selected, and Picture Format's Wrap Text opens the same panel (walkthrough P8; WPS W-O7)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/picture.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/picture.mjs, chromium, p8-wrap-options]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 180
+since: "2026-11-28"

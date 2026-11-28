@@ -40,6 +40,8 @@ export type AskContext = {
   comment: () => void
   /** Shows or hides the comments pane. */
   commentsPane: () => void
+  /** The Layout Options panel by the selected picture (its wrapping); the command's parameters for another object. */
+  layoutOptions: () => void
 }
 
 /** Every request the engine's commands make (`s.ui_requests.push` in `crates/engine/engine/src/cmd`), and the command that makes it. */
@@ -107,6 +109,8 @@ export const OWN_WINDOWS: Record<string, { open: (context: AskContext) => void; 
   'table.properties': { open: (c) => c.dialog('tableProperties'), fills: ['align', 'width', 'widthPct', 'indent', 'rowHeight', 'rowHeightRule', 'allowBreak', 'headerRow', 'columnWidth', 'cellWidth', 'valign'] },
   'table.cellMargins': { open: (c) => c.dialog('tableProperties'), fills: ['top', 'left', 'bottom', 'right'] },
   'image.size': { open: (c) => c.dialog('pictureSize'), fills: ['width', 'height', 'scale'] },
+  // Picture Format's and Layout's Wrap Text: the panel beside the picture (stage 5A item 4).
+  'arrange.wrap': { open: (c) => c.layoutOptions(), fills: ['wrap'] },
   'edit.find': { open: (c) => c.find(false), fills: ['text'] },
   'edit.advancedFind': { open: (c) => c.find(false), fills: ['text', 'highlight'] },
   'edit.replace': { open: (c) => c.find(true), fills: ['text', 'with'] },

@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.picture-by-hand/binding-pointer
+feature: doc.editor.picture-by-hand
+intent: "The cursor on each handle of a picture (turned with it), move over a picture, the I-beam on text."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/objects.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: the_pointer_shows_what_a_press_on_a_picture_does
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 180
+since: "2026-11-28"

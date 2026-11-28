@@ -1,0 +1,22 @@
+format: 1
+id: doc.editor.picture-by-hand/handle-reach
+feature: doc.editor.picture-by-hand
+intent: "A press 6 screen pixels outside a selected picture's corner takes the corner's handle (walkthrough P5)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/picture.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/picture.mjs, chromium, p5-handle-reach]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 180
+since: "2026-11-28"

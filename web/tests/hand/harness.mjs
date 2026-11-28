@@ -14,7 +14,7 @@ import { createServer } from 'vite'
  * canvas's CSS pixels. Read with `caretDrawn()`.
  */
 const CARET_INIT = () => {
-  const drawn = (window.__caret = { cur: null, dashed: null, under: [], fills: [], path: [], frames: 0 })
+  const drawn = (window.__caret = { cur: null, dashed: null, under: [], fills: [], path: [], circles: [], arc: null, frames: 0 })
   const P = window.CanvasRenderingContext2D?.prototype
   if (!P) return
   const surface = (canvas) => canvas?.classList?.contains('kui-canvas-surface')
@@ -38,13 +38,26 @@ const CARET_INIT = () => {
     drawn.under = []
     drawn.fills = []
     drawn.path = []
+    drawn.circles = []
+    drawn.arc = null
     drawn.frames += 1
   })
   wrap('beginPath', () => {
     drawn.path = []
+    drawn.arc = null
+  })
+  // Round marks (stage 5A: a selected picture's handles): each circle's middle, radius, fill and ring.
+  wrap('arc', (ctx, [x, y, r]) => {
+    const [cx, cy] = at(ctx, x, y)
+    const m = ctx.getTransform()
+    drawn.arc = { x: cx, y: cy, r: (r * Math.hypot(m.a, m.b)) / (window.devicePixelRatio || 1) }
   })
   // A filled shape of four corners or more: a selection's highlight (stage 4: cells shaded whole).
   wrap('fill', (ctx, [path]) => {
+    if (drawn.arc && !(path && typeof path === 'object')) {
+      drawn.circles.push({ ...drawn.arc, fill: String(ctx.fillStyle), ring: null })
+      return
+    }
     const points = path && typeof path === 'object' ? [] : drawn.path
     if (points.length < 4) return
     const xs = points.map((p) => p[0])
@@ -59,6 +72,13 @@ const CARET_INIT = () => {
   wrap('moveTo', (ctx, [x, y]) => drawn.path.push(at(ctx, x, y)))
   wrap('lineTo', (ctx, [x, y]) => drawn.path.push(at(ctx, x, y)))
   wrap('stroke', (ctx, [path]) => {
+    if (drawn.arc && !path) {
+      const arc = drawn.arc
+      const same = drawn.circles.find((c) => Math.abs(c.x - arc.x) < 0.5 && Math.abs(c.y - arc.y) < 0.5 && c.ring == null)
+      if (same) same.ring = String(ctx.strokeStyle)
+      else drawn.circles.push({ ...arc, fill: null, ring: String(ctx.strokeStyle) })
+      return
+    }
     const points = path ? [] : drawn.path
     if (points.length === 2 && Math.abs(points[0][0] - points[1][0]) < 0.6 && Math.abs(points[0][1] - points[1][1]) > 4 && ctx.getLineDash().length === 0 && !drawn.cur) {
       drawn.cur = { x: points[0][0], y: Math.min(points[0][1], points[1][1]), height: Math.abs(points[1][1] - points[0][1]) }
@@ -179,6 +199,12 @@ export async function open({ which = process.argv[2] ?? 'chromium', query = 'loc
     const box = await surface()
     return fills.map((f) => ({ ...f, x0: box.x + f.x0, x1: box.x + f.x1, y0: box.y + f.y0, y1: box.y + f.y1 }))
   }
+  /** The circles drawn now over the pages (a selected object's handles), on the page (`{x, y, r, fill, ring}`). */
+  const circlesDrawn = async () => {
+    const circles = await frame().evaluate(() => window.__caret?.circles ?? [])
+    const box = await surface()
+    return circles.map((c) => ({ ...c, x: box.x + c.x, y: box.y + c.y }))
+  }
   /** The lines drawn now under what an input method composes, on the page (`{x0, x1, y}`). */
   const underDrawn = async () => {
     const lines = await frame().evaluate(() => window.__caret?.under ?? [])
@@ -262,7 +288,7 @@ export async function open({ which = process.argv[2] ?? 'chromium', query = 'loc
     await browser.close().catch(() => undefined)
     await server.close().catch(() => undefined)
   }
-  return { which, page, kit, frame, wait, until, agent, ask, details, read, setup, selection, paragraphs, paragraph, zoom, surface, view, caretDrawn, dashedDrawn, underDrawn, toScreen, cursor, caretRect, caretInView, textPoint, pathPoint, fillsDrawn, pagesOf, active, clipboardText, errors, close }
+  return { which, page, kit, frame, wait, until, agent, ask, details, read, setup, selection, paragraphs, paragraph, zoom, surface, view, caretDrawn, dashedDrawn, underDrawn, toScreen, cursor, caretRect, caretInView, textPoint, pathPoint, fillsDrawn, circlesDrawn, pagesOf, active, clipboardText, errors, close }
 }
 
 /**

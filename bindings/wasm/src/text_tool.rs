@@ -286,8 +286,8 @@ impl DocDocument {
         out.push(ToolOverlay::Line { ax: x, ay: top, bx: x, by: top + f64::from(caret.height), color: CARET, dashed: true });
     }
 
-    /// The pointer's shape for what a press there would do (the one place that decides it): the
-    /// I-beam over text; the selection bar's arrow; the arrow over the selected text (it can be
+    /// The pointer's shape for what a press there would do (the one place that decides it): an
+    /// object's (`objects.rs`: its handles' arrows, move over it); the I-beam over text; the selection bar's arrow; the arrow over the selected text (it can be
     /// dragged) and off the pages; `copy` while the format painter is held or a Cmd drag copies;
     /// the crosshair while a pen, the eraser or a shape to draw is held.
     pub(crate) fn text_cursor(&self, layout: &DocLayout, areas: &[PageArea]) -> String {
@@ -309,6 +309,10 @@ impl DocDocument {
             Some(Gesture::Select { unit: Unit::Line | Unit::All, .. }) => return BAR_CURSOR.into(),
             Some(Gesture::Select { .. }) => return "text".into(),
             None => {}
+        }
+        // Pictures and shapes: their handles' arrows, move over them (stage 5A).
+        if let Some(cursor) = self.object_cursor(areas) {
+            return cursor;
         }
         if let Some(cursor) = self.table_cursor(layout, areas) {
             return cursor;

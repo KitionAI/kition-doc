@@ -1,0 +1,22 @@
+format: 1
+id: doc.editor.picture-by-hand/tab-follows
+feature: doc.editor.picture-by-hand
+intent: "Selecting a picture shows Picture Format; a click in the text brings back the tab it came from (Insert); a double click on the picture shows Picture Format again (walkthrough P9; WPS W-W4)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/picture.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/picture.mjs, chromium, p9-tab-follows]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 180
+since: "2026-11-28"

@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.picture-by-hand/binding-rotation
+feature: doc.editor.picture-by-hand
+intent: "A picture's rotation handle turns it a quarter in one arrange.rotation step."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/objects.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: a_pictures_rotation_handle_turns_it_in_one_step
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 180
+since: "2026-11-28"

@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.picture-by-hand/binding-corner-ratio
+feature: doc.editor.picture-by-hand
+intent: "A picture's corner keeps the ratio, Shift lets it go, an edge changes one way, Cmd sizes about the centre; each one undo step, inline kept."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/objects.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: a_pictures_corner_keeps_its_ratio_unless_shift_and_cmd_sizes_about_its_centre
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 180
+since: "2026-11-28"

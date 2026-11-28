@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.picture-by-hand/binding-double-click
+feature: doc.editor.picture-by-hand
+intent: "A double click on a picture keeps it selected (not the word under it)."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/objects.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: a_double_click_on_a_picture_keeps_it_selected
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 180
+since: "2026-11-28"
