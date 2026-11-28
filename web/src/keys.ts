@@ -31,6 +31,8 @@ export type KeyContext = {
   page: (direction: 1 | -1, extend: boolean, screen: boolean) => void
   /** Opens the right-click menu for the selection as it is (Shift+F10, the menu key; stage 2A). */
   contextMenu: () => void
+  /** Cmd+A: the table the caret is in first, everything at the second (stage 4; WPS W-N6). */
+  selectAll: () => void
 }
 
 export type KeyEvent = { key: string; code: string; shiftKey: boolean; altKey: boolean; metaKey: boolean; ctrlKey: boolean; keyCode?: number; isComposing?: boolean; nativeEvent?: { isComposing?: boolean } }
@@ -80,8 +82,10 @@ export const KEYS: KeyRow[] = [
   { keys: ['Cmd+Shift+PageDown'], act: (c) => c.page(1, true, false) },
   { keys: ['Cmd+PageUp'], act: (c) => c.page(-1, false, false) },
   { keys: ['Cmd+Shift+PageUp'], act: (c) => c.page(-1, true, false) },
-  // Ctrl+A selects all as Cmd+A does (WPS W-D10); elsewhere Ctrl is Cmd already.
-  { keys: ['Ctrl+A'], when: onMac, act: (c) => c.run('edit.selectAll') },
+  // Cmd+A, and Ctrl+A on a Mac (WPS W-D10): in a table its table first, then everything (W-N6;
+  // the engine says which, `selectsTable`); an agent's edit.selectAll is everything still.
+  { keys: ['Cmd+A'], act: (c) => c.selectAll() },
+  { keys: ['Ctrl+A'], when: onMac, act: (c) => c.selectAll() },
   // The system clipboard: written while the key press is still the person's.
   { keys: ['Cmd+C'], act: (c) => c.clipboard('copy') },
   { keys: ['Cmd+X'], act: (c) => c.clipboard('cut') },

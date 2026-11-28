@@ -1,0 +1,22 @@
+format: 1
+id: doc.editor.table-by-hand/resize-zoomed-and-fit
+feature: doc.editor.table-by-hand
+intent: "At 150% a dragged column border moves by the drag in points (30 screen pixels, 20 points), and a double click on it fits the column to its text."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/table-resize.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/table-resize.mjs, chromium, h6-drag-at-150, double-click-fits]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 180
+since: "2026-11-28"

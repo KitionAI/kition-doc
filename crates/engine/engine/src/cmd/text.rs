@@ -330,6 +330,26 @@ fn back_tab(s: &mut Session, _: &Value) -> CmdResult {
     super::para::outdent(s, &Value::Null)
 }
 
+/// Whether Backspace at the caret would only step back into the table before its paragraph (the
+/// caret at the start of a paragraph right after a table, nothing else to undo there first: no
+/// number, list indent or first-line indent). A person's Backspace key does nothing there (WPS
+/// W-F2; plan "Doc usable by hand", stage 4 item 3); the command keeps going into the last cell.
+pub fn backspace_enters_table(s: &Session) -> bool {
+    let f = &s.sel.focus;
+    if !s.sel.is_collapsed() || f.off != 0 || s.column_segments().is_some() {
+        return false;
+    }
+    let Some(para) = s.doc.para_at(f) else { return false };
+    if para.props.numbering.is_some_and(|n| n.num != 0)
+        || para.props.style.as_deref() == Some("ListParagraph")
+        || para.props.indent_first.is_some_and(|x| x > 0.0)
+    {
+        return false;
+    }
+    let i = f.path.last();
+    i > 0 && matches!(s.doc.block(f.story, &f.path.with_last(i - 1)), Some(Block::Table(_)))
+}
+
 fn backspace(s: &mut Session, _: &Value) -> CmdResult {
     s.goal_x = None;
     s.pending = None;

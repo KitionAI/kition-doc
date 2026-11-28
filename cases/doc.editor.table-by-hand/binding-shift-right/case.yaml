@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.table-by-hand/binding-shift-right
+feature: doc.editor.table-by-hand
+intent: "Shift+Right at a cell's end selects the cell's content, then grows into the next cell as a block (WPS W-N7)."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: shift_right_from_a_cells_end_grows_by_cells
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 180
+since: "2026-11-28"

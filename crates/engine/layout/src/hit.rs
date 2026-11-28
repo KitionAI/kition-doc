@@ -8,6 +8,24 @@ use kition_doc_geom::{Point, Rect};
 use crate::para::ParaLayout;
 use crate::{DocLayout, Page, Placed};
 
+/// A table's handle: a square this many points on a side outside its top-left corner.
+pub const HANDLE: f32 = 8.0;
+
+/// What a press on a table takes (see [`DocLayout::table_zone`]).
+#[derive(Clone, Debug, PartialEq)]
+pub enum TableZone {
+    /// The right border of cell `cell` of row `row` (page x `x`).
+    ColumnBorder { story: StoryRef, table: Path, row: usize, cell: usize, x: f32 },
+    /// The bottom border of row `row` (page y `y`).
+    RowBorder { story: StoryRef, table: Path, row: usize, y: f32 },
+    /// The margin left of row `row`: selects it.
+    Row { story: StoryRef, table: Path, row: usize },
+    /// Over the top edge, above cell `cell` of the first row: selects its column.
+    Column { story: StoryRef, table: Path, cell: usize },
+    /// The handle: selects the table.
+    Handle { story: StoryRef, table: Path },
+}
+
 /// Caret geometry on a page: a bar from (`x`, `top`) to (`x + width`, `top + height`). It is
 /// upright (`width` 0) except in turned text (a table cell's text direction), where it lies
 /// across the page (`height` 0).
@@ -617,6 +635,102 @@ impl DocLayout {
     /// Page index for a body position (first page showing its line).
     pub fn page_of(&self, pos: &Pos) -> Option<usize> {
         self.caret(pos).map(|c| c.page)
+    }
+
+    /// The cells of the table at `table` laid out on `pages`: `(page, row, cell, rect)`, page by
+    /// page (plan "Doc usable by hand", stage 4: a block of cells is shaded whole, a dragged
+    /// border is read from where the columns are).
+    pub fn table_cells(&self, story: StoryRef, table: &Path, pages: std::ops::RangeInclusive<usize>) -> Vec<(usize, usize, usize, Rect)> {
+        let mut out = Vec::new();
+        for pi in pages {
+            let Some(p) = self.pages.get(pi) else { break };
+            for it in items_of(p, story) {
+                if let Placed::Cell { rect, table: t, row, cell, story: st } = it
+                    && *st == story
+                    && t == table
+                {
+                    out.push((pi, *row, *cell, *rect));
+                }
+            }
+        }
+        out
+    }
+
+    /// What a press at page point (`x`, `y`) on `page` would take of a table of `story` (stage 4;
+    /// the order and the sizes as in section 2's notes, WPS W-N8, W-N9, W-N12): a column border
+    /// within `reach` points (a cell's right edge, the innermost table's first), then a row's
+    /// bottom border, then a top-level table's handle (8 points square, 2 out from its top-left
+    /// corner), the band over its top edge (6 points above to 1.5 below: a column), and the margin
+    /// left of it (a row). `None`: no table's.
+    pub fn table_zone(&self, page: usize, x: f32, y: f32, reach: f32, story: StoryRef) -> Option<TableZone> {
+        let p = self.pages.get(page)?;
+        if !x.is_finite() || !y.is_finite() {
+            return None;
+        }
+        let reach = if reach.is_finite() { reach.clamp(0.0, 72.0) } else { 0.0 };
+        let mut cells: Vec<(&Path, usize, usize, Rect)> = items_of(p, story)
+            .filter_map(|it| match it {
+                Placed::Cell { rect, table, row, cell, story: st } if *st == story => Some((table, *row, *cell, *rect)),
+                _ => None,
+            })
+            .collect();
+        // The innermost tables first (their borders are on top).
+        cells.sort_by_key(|(t, ..)| std::cmp::Reverse(t.0.len()));
+        for (t, row, cell, r) in &cells {
+            if y >= r.y && y <= r.y + r.h && (x - (r.x + r.w)).abs() <= reach {
+                return Some(TableZone::ColumnBorder { story, table: (*t).clone(), row: *row, cell: *cell, x: r.x + r.w });
+            }
+        }
+        for (t, row, _, r) in &cells {
+            if x >= r.x && x <= r.x + r.w && (y - (r.y + r.h)).abs() <= reach {
+                return Some(TableZone::RowBorder { story, table: (*t).clone(), row: *row, y: r.y + r.h });
+            }
+        }
+        // Top-level tables: their frame on this page.
+        let mut tables: Vec<(&Path, Rect, bool)> = Vec::new();
+        for (t, row, _, r) in cells.iter().filter(|(t, ..)| t.0.len() == 1) {
+            match tables.iter_mut().find(|(q, ..)| q == t) {
+                Some((_, frame, first)) => {
+                    *frame = frame.union(r);
+                    *first |= *row == 0;
+                }
+                None => tables.push((t, *r, *row == 0)),
+            }
+        }
+        for (t, frame, first) in &tables {
+            let handle = Rect::new(frame.x - 2.0 - HANDLE, frame.y - 2.0 - HANDLE, HANDLE, HANDLE);
+            if *first && handle.contains(Point::new(x, y)) {
+                return Some(TableZone::Handle { story, table: (*t).clone() });
+            }
+            if *first && x >= frame.x && x <= frame.x + frame.w && y >= frame.y - 6.0 && y <= frame.y + 1.5 {
+                let cell =
+                    cells.iter().filter(|(q, row, ..)| q == t && *row == 0).find(|(.., r)| x >= r.x && x <= r.x + r.w).map(|(_, _, c, _)| *c)?;
+                return Some(TableZone::Column { story, table: (*t).clone(), cell });
+            }
+            if x < frame.x && x >= 0.0 && y >= frame.y && y <= frame.y + frame.h && (x < p.body.x || x >= frame.x - 24.0) {
+                let row = cells.iter().filter(|(q, ..)| q == t).find(|(.., r)| y >= r.y && y <= r.y + r.h).map(|(_, row, ..)| *row)?;
+                return Some(TableZone::Row { story, table: (*t).clone(), row });
+            }
+        }
+        None
+    }
+
+    /// The frame of the top-level table at `table` on `page` and whether its first row is there.
+    pub fn table_frame(&self, page: usize, story: StoryRef, table: &Path) -> Option<(Rect, bool)> {
+        let p = self.pages.get(page)?;
+        let mut frame: Option<(Rect, bool)> = None;
+        for it in items_of(p, story) {
+            if let Placed::Cell { rect, table: t, row, story: st, .. } = it
+                && *st == story
+                && t == table
+            {
+                frame = Some(match frame {
+                    Some((f, first)) => (f.union(rect), first || *row == 0),
+                    None => (*rect, *row == 0),
+                });
+            }
+        }
+        frame
     }
 
     /// Table cell under a point: (story, table path, row, cell).

@@ -2,6 +2,7 @@
 
 pub mod anchors;
 pub mod caret;
+pub mod cells;
 pub mod citations;
 pub mod column;
 pub mod design;

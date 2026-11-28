@@ -14,7 +14,7 @@ import { createServer } from 'vite'
  * canvas's CSS pixels. Read with `caretDrawn()`.
  */
 const CARET_INIT = () => {
-  const drawn = (window.__caret = { cur: null, dashed: null, under: [], path: [], frames: 0 })
+  const drawn = (window.__caret = { cur: null, dashed: null, under: [], fills: [], path: [], frames: 0 })
   const P = window.CanvasRenderingContext2D?.prototype
   if (!P) return
   const surface = (canvas) => canvas?.classList?.contains('kui-canvas-surface')
@@ -36,11 +36,25 @@ const CARET_INIT = () => {
     drawn.cur = null
     drawn.dashed = null
     drawn.under = []
+    drawn.fills = []
     drawn.path = []
     drawn.frames += 1
   })
   wrap('beginPath', () => {
     drawn.path = []
+  })
+  // A filled shape of four corners or more: a selection's highlight (stage 4: cells shaded whole).
+  wrap('fill', (ctx, [path]) => {
+    const points = path && typeof path === 'object' ? [] : drawn.path
+    if (points.length < 4) return
+    const xs = points.map((p) => p[0])
+    const ys = points.map((p) => p[1])
+    drawn.fills.push({ x0: Math.min(...xs), y0: Math.min(...ys), x1: Math.max(...xs), y1: Math.max(...ys), style: String(ctx.fillStyle) })
+  })
+  wrap('fillRect', (ctx, [x, y, w, h]) => {
+    const [x0, y0] = at(ctx, x, y)
+    const [x1, y1] = at(ctx, x + w, y + h)
+    drawn.fills.push({ x0: Math.min(x0, x1), y0: Math.min(y0, y1), x1: Math.max(x0, x1), y1: Math.max(y0, y1), style: String(ctx.fillStyle), rect: true })
   })
   wrap('moveTo', (ctx, [x, y]) => drawn.path.push(at(ctx, x, y)))
   wrap('lineTo', (ctx, [x, y]) => drawn.path.push(at(ctx, x, y)))
@@ -159,6 +173,12 @@ export async function open({ which = process.argv[2] ?? 'chromium', query = 'loc
     const box = await surface()
     return { x: box.x + drawn.x, y: box.y + drawn.y, height: drawn.height }
   }
+  /** The filled shapes drawn now over the pages (highlights), on the page (`{x0, y0, x1, y1, style}`). */
+  const fillsDrawn = async () => {
+    const fills = await frame().evaluate(() => window.__caret?.fills ?? [])
+    const box = await surface()
+    return fills.map((f) => ({ ...f, x0: box.x + f.x0, x1: box.x + f.x1, y0: box.y + f.y0, y1: box.y + f.y1 }))
+  }
   /** The lines drawn now under what an input method composes, on the page (`{x0, x1, y}`). */
   const underDrawn = async () => {
     const lines = await frame().evaluate(() => window.__caret?.under ?? [])
@@ -181,7 +201,11 @@ export async function open({ which = process.argv[2] ?? 'chromium', query = 'loc
   const textPoint = async (index, ch = 0) => {
     const text = (await paragraph(index))?.paragraph?.text ?? ''
     const off = Buffer.from([...text].slice(0, ch).join(''), 'utf8').length
-    await setup('caret.set', { pos: { story: 'body', path: [index], off } })
+    return pathPoint([index], off)
+  }
+  /** As `textPoint`, for the paragraph at `path` (a table cell's: `[block, row, cell, 0]`), byte `off`. */
+  const pathPoint = async (path, off = 0) => {
+    await setup('caret.set', { pos: { story: 'body', path, off } })
     // The caret drawn there, not the one drawn before the canvas showed the new place: it is where
     // the engine reports the caret, on the screen.
     let drawn = null
@@ -238,7 +262,7 @@ export async function open({ which = process.argv[2] ?? 'chromium', query = 'loc
     await browser.close().catch(() => undefined)
     await server.close().catch(() => undefined)
   }
-  return { which, page, kit, frame, wait, until, agent, ask, details, read, setup, selection, paragraphs, paragraph, zoom, surface, view, caretDrawn, dashedDrawn, underDrawn, toScreen, cursor, caretRect, caretInView, textPoint, pagesOf, active, clipboardText, errors, close }
+  return { which, page, kit, frame, wait, until, agent, ask, details, read, setup, selection, paragraphs, paragraph, zoom, surface, view, caretDrawn, dashedDrawn, underDrawn, toScreen, cursor, caretRect, caretInView, textPoint, pathPoint, fillsDrawn, pagesOf, active, clipboardText, errors, close }
 }
 
 /**

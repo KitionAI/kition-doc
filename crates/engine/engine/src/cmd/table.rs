@@ -96,7 +96,7 @@ pub fn specs() -> Vec<CommandSpec> {
         .params(r#"{"value": "topLeft|topCenter|…|bottomRight"}"#)),
         t(CommandSpec::new("table.textDirection", "Text Direction", "Table Layout › Alignment", text_direction)
             .params(r#"{"value"?: "horizontal|down|up"} (default: the next direction after the caret cell's, like Word's button)"#)),
-        t(CommandSpec::new("table.autofit", "AutoFit", "Table Layout › Cell Size", autofit).params(r#"{"mode": "contents|window|fixed"}"#)),
+        t(CommandSpec::new("table.autofit", "AutoFit", "Table Layout › Cell Size", autofit).params(r#"{"mode": "contents|window|fixed", "column"?: n} (`column` with contents: only that grid column fits its text, the others keep their laid-out widths)"#)),
         t(CommandSpec::new("table.distributeColumns", "Distribute Columns", "Table Layout › Cell Size", |s, _| {
             with_table(s, |t| {
                 let total: f32 = t.grid.iter().sum();
@@ -113,12 +113,9 @@ pub fn specs() -> Vec<CommandSpec> {
                 }
             })
         })),
-        t(CommandSpec::new("table.columnWidth", "Table Column Width", "Table Layout › Cell Size", |s, v| {
-            let w = p::req_f32(v, "width")?.clamp(6.0, 1584.0);
-            let (_, r, c) = cell(s)?;
-            with_table(s, |t| set_column_width(t, r, c, w))
-        })
-        .params(r#"{"width": pt} (the caret cell's column; the table's preferred width is cleared so the column gets exactly this)"#)),
+        t(CommandSpec::new("table.columnWidth", "Table Column Width", "Table Layout › Cell Size", column_width).params(
+            r#"{"width": pt} | {"by": pt, "column"?: n, "next"?: bool} (the caret cell's column; the table's preferred width is cleared so the column gets exactly this. `by` moves the right border of grid column `column` (the caret cell's last) by that many points, the columns as laid out: with `next` the column after it gives up what it gains, so the table keeps its width (a dragged border))"#,
+        )),
         t(CommandSpec::new("table.rowHeight", "Table Row Height", "Table Layout › Cell Size", |s, v| {
             let h = p::req_f32(v, "height")?.clamp(1.0, 1584.0);
             let rule = match p::str(v, "rule") {
@@ -126,9 +123,21 @@ pub fn specs() -> Vec<CommandSpec> {
                 Some("exact") => HeightRule::Exact,
                 Some(x) => return Err(CmdError::Params(format!("unknown height rule `{x}`"))),
             };
-            let (_, r, _) = cell(s)?;
-            // Every selected row (the whole table when it is selected), else the caret's.
-            let rows: Vec<usize> = selected_cells(s).into_iter().map(|(r, _)| r).chain(std::iter::once(r)).collect();
+            let (tp, r, _) = cell(s)?;
+            // Row `row` (a dragged border: an exact height stays exact), else every selected row
+            // (the whole table when it is selected), else the caret's.
+            let (rows, rule): (Vec<usize>, HeightRule) = match v.get("row") {
+                Some(_) => {
+                    let row = p::u64(v, "row").and_then(|r| usize::try_from(r).ok()).ok_or_else(|| CmdError::Params("`row` is a row index".into()))?;
+                    let t = s.doc.table(s.sel.focus.story, &tp).ok_or_else(|| CmdError::Disabled("the cursor isn't in a table".into()))?;
+                    let Some(current) = t.rows.get(row).map(|x| x.props.height_rule) else {
+                        return Err(CmdError::Params(format!("the table has no row {row}")));
+                    };
+                    let rule = if p::str(v, "rule").is_none() && current == HeightRule::Exact { HeightRule::Exact } else { rule };
+                    (vec![row], rule)
+                }
+                None => (selected_cells(s).into_iter().map(|(r, _)| r).chain(std::iter::once(r)).collect(), rule),
+            };
             with_table(s, |t| {
                 for &r in &rows {
                     if let Some(row) = t.rows.get_mut(r) {
@@ -138,7 +147,7 @@ pub fn specs() -> Vec<CommandSpec> {
                 }
             })
         })
-        .params(r#"{"height": pt, "rule"?: "atLeast|exact"} (the selected rows, or the caret's)"#)),
+        .params(r#"{"height": pt, "rule"?: "atLeast|exact", "row"?: n} (row `row` of the caret's table, else the selected rows, or the caret's)"#)),
         t(CommandSpec::new("table.repeatHeader", "Repeat Header Rows", "Table Layout › Data", |s, v| {
             let (_, r, _) = cell(s)?;
             let on = p::bool(v, "value");
@@ -187,6 +196,26 @@ fn autofit(s: &mut Session, v: &Value) -> CmdResult {
         "contents" => {
             let t = s.doc.table(story, &tp).ok_or_else(|| CmdError::Disabled("the cursor isn't in a table".into()))?;
             let avail = (tw - t.props.indent.filter(|i| i.is_finite()).unwrap_or(0.0).max(0.0)).max(72.0);
+            if v.get("column").is_some() {
+                // One column fits its text (a double click on its right border); the others keep
+                // the widths they are laid out with, so the table's width changes.
+                let g = p::u64(v, "column").and_then(|g| usize::try_from(g).ok()).filter(|g| *g < t.grid.len());
+                let g = g.ok_or_else(|| CmdError::Params("`column` is a grid column of the table".into()))?;
+                let fit = kition_doc_layout::measure_table_columns(&s.doc, t).get(g).map(|(_, most)| *most).unwrap_or(0.0);
+                let grid = laid_out_grid(s, &tp);
+                return with_table(s, |t| {
+                    if let Some(grid) = grid.as_ref().filter(|grid| grid.len() == t.grid.len()) {
+                        t.grid.clone_from(grid);
+                    }
+                    if let Some(w) = t.grid.get_mut(g) {
+                        *w = fit.clamp(6.0, avail.max(6.0));
+                    }
+                    t.props.fixed = false;
+                    t.props.width = None;
+                    t.props.width_pct = None;
+                    sync_cell_widths(t);
+                });
+            }
             let widths = kition_doc_layout::autofit_widths(&kition_doc_layout::measure_table_columns(&s.doc, t), avail);
             with_table(s, |t| {
                 t.props.fixed = false;
@@ -221,6 +250,77 @@ pub(crate) fn sync_cell_widths(t: &mut Table) {
             g += span;
         }
     }
+}
+
+/// Table Layout › Width, or a dragged column border (`by`; see the command's params).
+fn column_width(s: &mut Session, v: &Value) -> CmdResult {
+    let (tp, r, c) = cell(s)?;
+    if v.get("by").is_none() {
+        let w = p::req_f32(v, "width")?.clamp(6.0, 1584.0);
+        return with_table(s, |t| set_column_width(t, r, c, w));
+    }
+    let by = p::f32(v, "by").filter(|b| b.is_finite()).ok_or_else(|| CmdError::Params("`by` is a number of points".into()))?.clamp(-1584.0, 1584.0);
+    let next = p::bool(v, "next").unwrap_or(false);
+    let t = s.doc.table(s.sel.focus.story, &tp).ok_or_else(|| CmdError::Disabled("the cursor isn't in a table".into()))?;
+    let g = match v.get("column") {
+        Some(_) => p::u64(v, "column").and_then(|g| usize::try_from(g).ok()),
+        None => {
+            let span = t.rows.get(r).and_then(|row| row.cells.get(c)).map_or(1, |cell| cell.span().max(1));
+            Some(t.grid_col(r, c) + span - 1)
+        }
+    };
+    let g = g.filter(|g| *g < t.grid.len()).ok_or_else(|| CmdError::Params("`column` is a grid column of the table".into()))?;
+    let grid = laid_out_grid(s, &tp);
+    with_table(s, |t| {
+        if let Some(grid) = grid.as_ref().filter(|grid| grid.len() == t.grid.len()) {
+            t.grid.clone_from(grid);
+        }
+        let Some(w) = t.grid.get(g).copied() else { return };
+        // Neither column gets narrower than 6 points, nor wider than 22 inches.
+        let mut d = by.max(MIN_COLUMN - w).min(MAX_COLUMN - w);
+        if next && let Some(n) = t.grid.get(g + 1).copied() {
+            d = d.min(n - MIN_COLUMN).max(n - MAX_COLUMN);
+            if let Some(x) = t.grid.get_mut(g + 1) {
+                *x = n - d;
+            }
+        }
+        if let Some(x) = t.grid.get_mut(g) {
+            *x = w + d;
+        }
+        t.props.width = None;
+        t.props.width_pct = None;
+        sync_cell_widths(t);
+    })
+}
+
+/// The narrowest and the widest a column gets by hand (points).
+const MIN_COLUMN: f32 = 6.0;
+const MAX_COLUMN: f32 = 1584.0;
+
+/// The widths of the table's grid columns as its first row is laid out (they can differ from the
+/// stored grid: a preferred table width, automatic fitting), when every grid column has a cell
+/// edge on both sides somewhere in the rows on that page.
+fn laid_out_grid(s: &mut Session, tp: &Path) -> Option<Vec<f32>> {
+    let story = s.sel.focus.story;
+    let l = s.layout();
+    let t = s.doc.table(story, tp)?;
+    let n = t.grid.len();
+    let (start, _) = super::cells::cell_ends(&s.doc, story, tp, 0, 0)?;
+    let page = l.caret_on(&start, s.page_hint)?.page;
+    let mut edges: Vec<Option<f32>> = vec![None; n + 1];
+    for (_, r, c, rect) in l.table_cells(story, tp, page..=page) {
+        let g = t.grid_col(r, c);
+        let span = t.rows.get(r).and_then(|row| row.cells.get(c)).map_or(1, |cell| cell.span().max(1));
+        if let Some(e) = edges.get_mut(g) {
+            e.get_or_insert(rect.x);
+        }
+        if let Some(e) = edges.get_mut(g + span) {
+            e.get_or_insert(rect.x + rect.w);
+        }
+    }
+    let edges: Vec<f32> = edges.into_iter().collect::<Option<_>>()?;
+    let widths: Vec<f32> = edges.windows(2).filter_map(|w| Some(w.get(1)? - w.first()?)).collect();
+    (widths.len() == n && widths.iter().all(|w| w.is_finite() && *w > 0.0)).then_some(widths)
 }
 
 /// Set the width of the grid column cell `c` of row `r` starts in. The table's preferred width

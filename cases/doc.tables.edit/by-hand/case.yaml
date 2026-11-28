@@ -1,0 +1,22 @@
+format: 1
+id: doc.tables.edit/by-hand
+feature: doc.tables.edit
+intent: "Tables by hand in the editor: a click in a cell, then Cmd+A selects the whole table, and a second Cmd+A everything (WPS W-N6)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/table-select.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/table-select.mjs, chromium, cmd-a-table-then-all]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 180
+since: "2026-11-28"

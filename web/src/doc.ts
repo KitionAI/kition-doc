@@ -29,6 +29,8 @@ export type DocInfo = {
   all: boolean
   /** The format painter held: for one selection, or until put down (double-clicked); `null` when not. */
   painter: 'once' | 'sticky' | null
+  /** Whether Cmd+A selects the table the caret is in first (WPS W-N6), not yet everything. */
+  selectsTable: boolean
 }
 
 type Area = { x: number; y: number; width: number; height: number }
@@ -46,7 +48,7 @@ const preeditOf = (preedit: unknown): { text: string; cursor: number } | null =>
 }
 
 export function describe(info: KitEngineInfo): DocInfo {
-  const inspected = info.inspected as { page?: number; caret?: CaretRect | null; preedit?: unknown; inputAt?: unknown; pages?: Array<{ area?: Area }>; words?: number; selected?: number; story?: unknown; equation?: boolean; shape?: string | null; shapes?: string[]; chart?: string | null; escape?: boolean; all?: boolean; painter?: unknown }
+  const inspected = info.inspected as { page?: number; caret?: CaretRect | null; preedit?: unknown; inputAt?: unknown; pages?: Array<{ area?: Area }>; words?: number; selected?: number; story?: unknown; equation?: boolean; shape?: string | null; shapes?: string[]; chart?: string | null; escape?: boolean; all?: boolean; painter?: unknown; selectsTable?: boolean }
   return {
     page: inspected.page ?? 0,
     caret: caretOf(inspected.caret),
@@ -63,6 +65,7 @@ export function describe(info: KitEngineInfo): DocInfo {
     escape: inspected.escape === true,
     all: inspected.all === true,
     painter: inspected.painter === 'once' || inspected.painter === 'sticky' ? inspected.painter : null,
+    selectsTable: inspected.selectsTable === true,
   }
 }
 

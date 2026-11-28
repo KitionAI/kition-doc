@@ -1304,6 +1304,7 @@ fn hostile_params_never_panic() {
         json!({"distance": 1e308, "extend": "yes"}),
         json!({"pos": {"block": 0, "off": 3}, "extend": true, "unit": 7, "start": {"block": 9999, "off": 99999}, "end": "x"}),
         json!({"pos": {"block": 0, "off": 1}, "unit": "line", "to": {"block": 9999, "off": 99999}, "copy": "yes"}),
+        json!({"by": 1e308, "column": 1e9, "next": "x", "row": -5, "height": f64::MAX, "mode": "contents", "width": -1}),
     ];
     for spec in reg.all() {
         // These reach outside the session (files). Read Aloud (`readAloud.open`, `readAloud.*`)

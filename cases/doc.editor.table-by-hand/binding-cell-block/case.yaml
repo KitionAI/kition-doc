@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.table-by-hand/binding-cell-block
+feature: doc.editor.table-by-hand
+intent: "Pointer events: a drag and a Shift+click across cells select the block (inspect().cells), four whole-cell highlights, no revision; typing changes only the first cell; Delete empties the block."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: a_drag_across_cells_selects_a_block_of_cells
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 180
+since: "2026-11-28"

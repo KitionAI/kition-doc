@@ -1115,7 +1115,7 @@ impl Session {
         let sel_before = self.sel.clone();
         let return_before = self.body_return.clone();
         let run = spec.run;
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| crate::cmd::column::dispatch(self, id, mutates, run, params)));
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| crate::cmd::cells::dispatch(self, id, mutates, run, params)));
         let result = match result {
             Ok(r) => r,
             Err(p) => {

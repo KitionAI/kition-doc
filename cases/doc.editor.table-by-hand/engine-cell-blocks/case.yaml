@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.table-by-hand/engine-cell-blocks
+feature: doc.editor.table-by-hand
+intent: "The engine's rules on a block of cells: the rectangle between the ends, typing into the first cell only, Backspace and Delete emptying it, Delete removing a whole table, whole rows kept, formatting only its cells, copying a table of its cells, the border and row commands, junk parameters never panicking."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: crates/engine/engine/src/tests_cells.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: tests_cells
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 180
+since: "2026-11-28"

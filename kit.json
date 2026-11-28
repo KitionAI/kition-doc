@@ -13,7 +13,7 @@
     "class": "DocDocument",
     "contract": 2,
     "crate": "kition-doc-kit",
-    "editorState": ["/page", "/caret", "/preedit", "/inputAt", "/selected", "/story", "/equation", "/shape", "/shapes", "/chart", "/escape", "/all", "/painter"]
+    "editorState": ["/page", "/caret", "/preedit", "/inputAt", "/selected", "/story", "/equation", "/shape", "/shapes", "/chart", "/escape", "/all", "/painter", "/cells", "/selectsTable"]
   },
   "formats": [
     {

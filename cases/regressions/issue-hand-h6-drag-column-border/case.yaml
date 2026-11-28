@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-hand-h6-drag-column-border
+feature: doc.editor.table-by-hand
+intent: "A column border takes the pointer within 4 screen pixels (left and right arrows); dragged 40 pixels to the right, a dashed line runs down the page and the table waits; let go, the left column is wider by the drag and its right neighbour narrower by as much, the table as wide as before, one Undo taking it back (walkthrough H6; WPS W-N12)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/table-resize.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/table-resize.mjs, chromium, h6-drag-column-border]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 180
+since: "2026-11-28"

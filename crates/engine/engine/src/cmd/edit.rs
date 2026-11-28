@@ -117,7 +117,7 @@ fn copy(s: &mut Session, _: &Value) -> CmdResult {
 /// `frag` as an HTML document, with the session document's styles, lists and pictures (the
 /// HTML export of `formats`). Empty for a copy with no text (a picture alone pastes as the
 /// engine's own copy).
-fn copied_html(s: &Session, frag: &Fragment) -> String {
+pub(crate) fn copied_html(s: &Session, frag: &Fragment) -> String {
     if s.clipboard_text.trim().is_empty() {
         return String::new();
     }
@@ -211,7 +211,7 @@ impl ClipHistory {
         self.items.is_empty()
     }
 
-    fn push(&mut self, f: &Fragment, text: &str) {
+    pub(crate) fn push(&mut self, f: &Fragment, text: &str) {
         // Text plus per-paragraph overhead; pictures are references into the document.
         let paras = text.matches('\n').count().saturating_add(f.blocks.len()).saturating_add(f.parts.len()).saturating_add(1);
         let bytes = text.len().saturating_mul(2).saturating_add(paras.saturating_mul(256));

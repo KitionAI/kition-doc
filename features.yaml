@@ -435,6 +435,17 @@ features:
     gap: "Driven by Chromium's DevTools input method (WebKit checks the field's place and the commit only); no real input method (macOS Pinyin, Sogou, Microsoft Pinyin, Japanese, Korean) has been tried by hand, so the candidate window's real place and the first key are for a person to confirm. A Japanese conversion's segments are one underline (no thicker clause). Composing in an equation, with a column selection or while commenting only shows nothing until the commit."
     cases: [regressions/issue-hand-d16-ime-composition, regressions/issue-hand-d16-ime-keys, doc.editor.input-method/selection-replaced-on-commit, doc.editor.input-method/zoomed-other-page, doc.editor.input-method/table-cell, doc.editor.input-method/other-edit, doc.editor.input-method/sink-at-caret, doc.editor.input-method/binding-no-document-change, doc.editor.input-method/binding-commit-undo-step, doc.editor.input-method/binding-selection, doc.editor.input-method/binding-moves-on, doc.editor.input-method/binding-hostile]
     since: "2026-11-28"
+  - id: doc.editor.table-by-hand
+    title: "Tables by hand, as WPS has them: a drag or Shift+click across cells selects the block of cells between them (session state read from the selection, shaded whole); typing on a block replaces the first cell's content only, Backspace and Delete empty its cells, Delete on the whole table removes it while Backspace only empties it, whole rows emptied stay; formatting applies to the block's cells; copy takes a table of them; Shift+Right at a cell's end selects the cell, then grows by cells; Cmd+A in a cell selects the table, then everything; Backspace at the start of the paragraph after a table changes nothing; a column border within 4 screen pixels shows its arrows and drags with a dashed line, one command and one undo step on release (the right neighbour gives up what the left column gains; Shift and the last border change one column; Escape drops it; a double click fits the column); a row's bottom border sets its height; the margin left of a row selects rows, the band over the top edge columns, the handle by the corner the table; a caret in a table shows its tabs without switching to them, a table made from Insert switches to Table Design"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [caret.set, caret.right, text.insert, text.backspace, text.delete, edit.copy, edit.cut, table.selectTable, table.columnWidth, table.rowHeight, table.autofit]
+    paths: [crates/engine/engine/src/cmd/cells.rs, crates/engine/engine/src/cmd/table.rs, crates/engine/engine/src/cmd/text.rs, crates/engine/engine/src/cmd/format.rs, crates/engine/layout/src/hit.rs, bindings/wasm/src/table_tool.rs, bindings/wasm/src/text_tool.rs, bindings/wasm/src/lib.rs, bindings/wasm/src/place.rs, web/src/keys.ts, web/src/App.tsx, web/src/doc.ts, web/tests/hand/table-select.mjs, web/tests/hand/table-resize.mjs]
+    target: "WPS Office for Mac (black-box, plan 2026-11-28 section 2 rows 11, 21-25; W-N6-W-N12, W-F2)"
+    gap: "Not yet: the dragged border of selected cells only, Cmd+drag sharing among the right columns, the table's left border and its top border, the handle's move, the '+' buttons, cells not next to each other. Typing on a block keeps the other cells (WPS untested; the cautious choice). With one end outside the table the selection stays a text selection. Shift+Right in an empty cell goes on to the next cell at once. Copied cells paste as a table outside a table; pasted into a table they nest."
+    cases: [regressions/issue-hand-h6-drag-column-border, regressions/issue-hand-h7-cell-block-selection, regressions/issue-hand-h8-select-row-column-table, regressions/issue-hand-d10-backspace-after-table, regressions/issue-hand-d13-delete-whole-table, doc.editor.table-by-hand/resize-zoomed-and-fit, doc.editor.table-by-hand/tabs-show-without-switching, doc.editor.table-by-hand/binding-cell-block, doc.editor.table-by-hand/binding-zones-and-keys, doc.editor.table-by-hand/binding-border-drag, doc.editor.table-by-hand/binding-shift-right, doc.editor.table-by-hand/engine-cell-blocks]
+    since: "2026-11-28"
   - id: doc.layout.east-asian-spacing
     title: Mixed East Asian text honors automatic Latin and numeric spacing
     dimension: [fidelity]
@@ -785,7 +796,7 @@ features:
     paths: [crates/engine/engine/src/cmd/table.rs, crates/engine/engine/src/cmd/table_style.rs, crates/engine/engine/src/cmd/tools.rs, crates/engine/engine/src/cmd/table_draw.rs, crates/engine/engine/src/cmd/table_formula.rs, crates/engine/layout/src/table.rs]
     target: "Word 16.113.4 (Mac)"
     gap: Save and reopen as .docx is proven by command for inserting a table, typing in cells, inserting rows and columns, and cell formatting; the feature's other commands are covered by engine tests only.
-    cases: [doc.tables.edit/save-reopen, regressions/issue-10, regressions/issue-turned-at-least]
+    cases: [doc.tables.edit/save-reopen, doc.tables.edit/by-hand, regressions/issue-10, regressions/issue-turned-at-least]
     since: "2026-11-17"
   - id: doc.insert.objects
     title: "Insert pages, tables, pictures, shapes, text boxes, links, bookmarks, fields, symbols, art text, charts, objects and Quick Parts"

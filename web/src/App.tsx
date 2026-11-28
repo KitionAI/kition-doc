@@ -99,12 +99,16 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   // Select All keeps the view where it is (walkthrough C10; WPS W-D10): the caret it leaves at the
   // end of the document does not bring the last page into view, until the person's next key or press.
   const holdView = useRef(false)
+  // A table just made from Insert: the ribbon goes to its Table Design tab once it shows (WPS
+  // W-N2; stage 4 item 7). A caret only moved into a table leaves the tab where it is.
+  const tableMade = useRef(false)
   // The editor's own runs (the ribbon, the keys table, dialogs) are the person's moves: the view
   // follows the caret after them (followCaret.ts).
   const personActed = useRef<() => void>(() => undefined)
   const editor = useMemo(() => {
     const run: typeof ownEditor.run = (id, params, options) => {
       if (id === 'edit.selectAll') holdView.current = true
+      if (id === 'table.insert' || id === 'table.quick' || id === 'table.fromText') tableMade.current = true
       personActed.current()
       if (id !== NEW_COMMENT || !hosted.on) return ownEditor.run(id, params, options)
       if (hostCreates) startHosted()
@@ -345,6 +349,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
       void editor.run(command, { extend, distance })
     },
     contextMenu: () => openMenu(null),
+    selectAll: () => void editor.run(state?.selectsTable ? 'table.selectTable' : 'edit.selectAll'),
   }
   const keyDown = (event: KeyboardEvent<HTMLDivElement>) => pressKey(event, keyContext)
 
@@ -381,6 +386,18 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     })),
   ]
   const activeTab = tabs.some((item) => item.id === tab) ? tab : 'home'
+  const tableTabShown = contextTabs.some((context) => context.id === 'tableDesign')
+  useEffect(() => {
+    if (tableMade.current && tableTabShown) {
+      tableMade.current = false
+      setTab('tableDesign')
+    }
+  }, [tableTabShown, state])
+  // A contextual tab that went (the caret left the table, the picture was let go) gives the ribbon
+  // back to Home, so coming back in later does not switch to it.
+  useEffect(() => {
+    if (state && tab !== activeTab) setTab(activeTab)
+  }, [state, tab, activeTab])
 
   return (
     <KitEditorProvider editor={editor} tools={tools}>

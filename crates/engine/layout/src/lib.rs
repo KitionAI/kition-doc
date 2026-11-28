@@ -38,7 +38,7 @@ use kition_doc_doc::{Block, Blocks, Document, Paragraph, Path, StoryRef};
 use kition_doc_geom::{Point, Rect, Spin};
 
 pub use fields::FieldCtx;
-pub use hit::VisualStep;
+pub use hit::{TableZone, VisualStep};
 pub use para::{LineEnd, ParaLayout};
 pub use table::{autofit_widths, measure_table_columns};
 

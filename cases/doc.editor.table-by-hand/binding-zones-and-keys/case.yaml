@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.table-by-hand/binding-zones-and-keys
+feature: doc.editor.table-by-hand
+intent: "Pointer events and keys: the margin selects a row, a drag there more rows, the band over the top edge a column, the handle the table; Backspace empties it, Delete removes it; Backspace after the table does nothing; Cmd+A selects the table, then everything."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: rows_the_handle_and_the_keys_on_a_table
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 180
+since: "2026-11-28"

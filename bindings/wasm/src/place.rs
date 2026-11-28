@@ -461,6 +461,12 @@ impl DocDocument {
             // A step with no `on` and no position acts on the selection the call started with
             // (C8-doc-2 item 3): that range is held exactly as an explicit one by index.
             found = vec![(session.sel.anchor.clone(), true), (session.sel.focus.clone(), true)];
+            // A block of cells (stage 4) reaches past its ends' text: its first and last cell.
+            if let Some(block) = kition_doc_engine::cmd::cells::block(&session) {
+                let ranges = block.ranges(doc);
+                found.extend(ranges.first().map(|(a, _)| (a.clone(), true)));
+                found.extend(ranges.last().map(|(_, b)| (b.clone(), true)));
+            }
         }
         if found.is_empty() {
             return None;

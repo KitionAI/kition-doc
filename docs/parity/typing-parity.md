@@ -18,6 +18,8 @@ format fidelity is in [`file-format-parity.md`](file-format-parity.md).
 | `* ` Enter (nothing typed) | list cancelled, Normal paragraph | `enter_right_after_starting_a_list_cancels_it` |
 | Tab / Shift+Tab at the start of an item | demote / promote | `shift_tab_and_tab_change_list_levels` |
 | Tab / Shift+Tab in a table cell (not the last) | goes to the next / previous cell; **no undo step** (the typing in each cell is its own); the last cell's Tab adds a row, one step (WPS W-X7 alike) | `tab_between_table_cells_is_no_undo_step` |
+| Typing, Backspace, Delete on a block of cells (a drag or Shift+click from one cell into another) | typing replaces the **first cell's** content only, the others keep theirs (WPS untested; Word empties them); Backspace and Delete empty the cells, which stay selected; on the whole table **Delete removes it, Backspace only empties it** (WPS W-N10, the reverse of Word); whole rows emptied by Backspace stay (W-N11; Word deletes them) | `tests_cells.rs`: `typing_on_a_block_replaces_only_the_first_cell`, `delete_removes_a_whole_table_backspace_only_empties_it`, `backspace_on_whole_rows_empties_them_and_keeps_the_rows` |
+| Backspace key at the start of the paragraph after a table | nothing (WPS W-F2; Word puts the caret in the last cell). The key only: `text.backspace`, an agent's, still steps into the last cell | `rows_the_handle_and_the_keys_on_a_table` (bindings) |
 | Backspace at the start of an item | 1st: number removed, indent kept; 2nd: Normal paragraph — **not** joined to the one above | `backspace_at_the_start_of_an_item_removes_the_number_then_the_indent` |
 | Enter mid-item / at item start | splits the item / inserts an empty item above | `enter_in_the_middle_or_at_the_start_of_an_item` |
 | Shift+Enter in an item | line break inside the same item | `shift_enter_stays_inside_the_list_item` |
@@ -102,3 +104,4 @@ editor with Chromium's DevTools input method (`web/tests/hand/ime.mjs`).
 | 2026-11-17 | major | First public version |
 | 2026-11-28 | minor | Tab between table cells is no undo step (plan "Doc usable by hand", stage 0B) |
 | 2026-11-28 | minor | Input methods: composing at the caret, each commit one undo step (stage 3) |
+| 2026-11-28 | minor | Tables by hand: typing and deleting on a block of cells, Backspace after a table (stage 4) |

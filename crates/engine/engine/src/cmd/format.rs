@@ -165,9 +165,13 @@ fn target(s: &Session) -> Option<(Pos, Pos)> {
     None
 }
 
-/// The non-empty rows of a column selection, if one is active.
+/// The non-empty rows of a column selection, if one is active; each cell's content of a block of
+/// table cells (stage 4).
 fn column_rows(s: &Session) -> Option<Vec<(Pos, Pos)>> {
-    let segs = s.column_segments()?;
+    let Some(segs) = s.column_segments() else {
+        // Empty cells give nothing to format (the text between the block's ends is not its).
+        return Some(super::cells::block(s)?.ranges(&s.doc).into_iter().filter(|(a, b)| a != b).collect());
+    };
     let rows: Vec<(Pos, Pos)> = segs
         .iter()
         .map(|(a, b)| (s.doc.clamp(a), s.doc.clamp(b)))

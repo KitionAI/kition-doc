@@ -1,4 +1,5 @@
 use super::*;
+use kition_doc_engine::doc::StoryRef;
 use kition_kit::testing::check_contract;
 use kition_kit::tools::PointerAction;
 
@@ -1015,4 +1016,235 @@ fn hostile_compositions_never_panic() {
     assert!(!doc.set_preedit("ni", 2), "commenting only: none");
     doc.set_comment_only(false);
     assert_eq!(text(&doc).chars().count(), text(&paragraphs(2)).chars().count());
+}
+
+/// A paragraph, a 3x3 table (cells A1..C3) and a paragraph after it.
+fn table_doc() -> DocDocument {
+    let mut doc = DocDocument::create("Table.docx", 0, 0).unwrap();
+    KitTools::text(&mut doc, "Before", 1.0).unwrap();
+    doc.execute("text.newParagraph", json!({})).unwrap();
+    KitTools::text(&mut doc, "After", 1.0).unwrap();
+    doc.execute("caret.set", json!({ "pos": { "story": "body", "path": [1], "off": 0 } })).unwrap();
+    doc.execute("table.insert", json!({ "rows": 3, "cols": 3 })).unwrap();
+    for r in 0..3u32 {
+        for c in 0..3u32 {
+            doc.execute("caret.set", json!({ "pos": { "story": "body", "path": [1, r, c, 0], "off": 0 } })).unwrap();
+            let name = format!("{}{}", ["A", "B", "C"][c as usize], r + 1);
+            doc.execute("text.insert", json!({ "text": name, "raw": true })).unwrap();
+        }
+    }
+    doc.execute("caret.docStart", json!({})).unwrap();
+    doc
+}
+
+/// Cell `(r, c)`'s rectangle on the canvas: `(x0, y0, x1, y1)`.
+fn cell_box(doc: &DocDocument, r: usize, c: usize) -> (f64, f64, f64, f64) {
+    let layout = doc.layout();
+    let areas = DocDocument::areas(&layout);
+    let table = kition_doc_engine::doc::Path(vec![1]);
+    let (page, _, _, rect) = layout.table_cells(StoryRef::Body, &table, 0..=0).into_iter().find(|(_, rr, cc, _)| (*rr, *cc) == (r, c)).unwrap();
+    let area = areas[page];
+    (area.x + f64::from(rect.x), area.y + f64::from(rect.y), area.x + f64::from(rect.x + rect.w), area.y + f64::from(rect.y + rect.h))
+}
+
+fn cell_text(doc: &DocDocument, r: u32, c: u32) -> String {
+    doc.session.borrow().doc.para(StoryRef::Body, &kition_doc_engine::doc::Path(vec![1, r, c, 0])).map(|p| p.text.clone()).unwrap_or_default()
+}
+
+fn grid(doc: &DocDocument) -> Vec<f32> {
+    doc.session.borrow().doc.table(StoryRef::Body, &kition_doc_engine::doc::Path(vec![1])).unwrap().grid.clone()
+}
+
+fn highlights(doc: &DocDocument) -> usize {
+    doc.overlays().into_iter().filter(|o| matches!(o, ToolOverlay::Highlight { color, .. } if *color == SELECTION)).count()
+}
+
+fn dashed(doc: &DocDocument) -> Vec<(f64, f64, f64, f64)> {
+    doc.overlays()
+        .into_iter()
+        .filter_map(|o| match o {
+            ToolOverlay::Line { ax, ay, bx, by, dashed: true, .. } => Some((ax, ay, bx, by)),
+            _ => None,
+        })
+        .collect()
+}
+
+fn at_zoom(action: PointerAction, (x, y): (f64, f64), zoom: f64, shift: bool) -> ToolPointer {
+    ToolPointer { action, x, y, mods: ToolMods { shift, ..ToolMods::default() }, pressure: 1.0, zoom }
+}
+
+/// Dragging from one cell into another selects the block of cells between them, shaded whole; a
+/// letter typed goes into the first cell alone, Delete empties the four (walkthrough H7; WPS W-N7).
+#[test]
+fn a_drag_across_cells_selects_a_block_of_cells() {
+    let mut doc = table_doc();
+    let a1 = cell_box(&doc, 0, 0);
+    let b2 = cell_box(&doc, 1, 1);
+    let revision = doc.revision();
+    doc.text_tool.clock = Some(0.0);
+    doc.pointer(&event(PointerAction::Down, a1.0 + 8.0, (a1.1 + a1.3) / 2.0, false)).unwrap();
+    doc.pointer(&event(PointerAction::Drag, (b2.0 + b2.2) / 2.0, (b2.1 + b2.3) / 2.0, false)).unwrap();
+    doc.pointer(&event(PointerAction::Up, (b2.0 + b2.2) / 2.0, (b2.1 + b2.3) / 2.0, false)).unwrap();
+    let cells = doc.inspect().unwrap()["cells"].clone();
+    assert_eq!(cells["rows"], json!([0, 1]), "{cells}");
+    assert_eq!(cells["cols"], json!([0, 1]));
+    assert_eq!(cells["count"], json!(4), "C1 is not in it");
+    assert_eq!(highlights(&doc), 4, "each cell shaded whole");
+    assert_eq!(doc.revision(), revision, "selecting is no edit");
+    KitTools::text(&mut doc, "Z", 1.0).unwrap();
+    assert_eq!(
+        (cell_text(&doc, 0, 0), cell_text(&doc, 0, 1), cell_text(&doc, 1, 1), cell_text(&doc, 0, 2)),
+        ("Z".into(), "B1".into(), "B2".into(), "C1".into())
+    );
+    doc.execute("edit.undo", json!({})).unwrap();
+    // Shift+click B2 from A1, then Delete: the four cells empty, C1 and the third row keep theirs.
+    doc.execute("caret.set", json!({ "pos": { "story": "body", "path": [1, 0, 0, 0], "off": 0 } })).unwrap();
+    doc.text_tool.clock = Some(5000.0);
+    click(&mut doc, (b2.0 + b2.2) / 2.0, (b2.1 + b2.3) / 2.0, true);
+    assert_eq!(doc.inspect().unwrap()["cells"]["count"], json!(4));
+    doc.key("Delete", ToolMods::default(), 1.0).unwrap();
+    assert_eq!(
+        (cell_text(&doc, 0, 0), cell_text(&doc, 1, 1), cell_text(&doc, 0, 2), cell_text(&doc, 2, 0)),
+        (String::new(), String::new(), "C1".into(), "A3".into())
+    );
+}
+
+/// The margin left of a row selects the row; the handle the table: Backspace empties it and keeps
+/// it, Delete removes it (WPS W-N8, W-N9, W-N10); Backspace after the table changes nothing (W-F2);
+/// Cmd+A in it selects the table, then everything (W-N6).
+#[test]
+fn rows_the_handle_and_the_keys_on_a_table() {
+    let mut doc = table_doc();
+    let a2 = cell_box(&doc, 1, 0);
+    let left = a2.0 - 30.0;
+    doc.text_tool.clock = Some(0.0);
+    doc.state(left, (a2.1 + a2.3) / 2.0, ToolMods::default(), 1.0);
+    click(&mut doc, left, (a2.1 + a2.3) / 2.0, false);
+    let cells = doc.inspect().unwrap()["cells"].clone();
+    assert_eq!((cells["rows"].clone(), cells["whole"].clone()), (json!([1, 1]), json!("rows")), "{cells}");
+    // A drag down the margin: more rows.
+    let a3 = cell_box(&doc, 2, 0);
+    doc.text_tool.clock = Some(5000.0);
+    doc.pointer(&event(PointerAction::Down, left, (a2.1 + a2.3) / 2.0, false)).unwrap();
+    doc.pointer(&event(PointerAction::Drag, left, (a3.1 + a3.3) / 2.0, false)).unwrap();
+    doc.pointer(&event(PointerAction::Up, left, (a3.1 + a3.3) / 2.0, false)).unwrap();
+    assert_eq!(doc.inspect().unwrap()["cells"]["rows"], json!([1, 2]));
+    // The band over the top edge: a column (B), down to the last row.
+    let b1 = cell_box(&doc, 0, 1);
+    doc.text_tool.clock = Some(7000.0);
+    click(&mut doc, (b1.0 + b1.2) / 2.0, b1.1 - 3.0, false);
+    let cells = doc.inspect().unwrap()["cells"].clone();
+    assert_eq!((cells["rows"].clone(), cells["cols"].clone()), (json!([0, 2]), json!([1, 1])), "{cells}");
+    // The handle shows while the caret is in the table, and selects it.
+    let a1 = cell_box(&doc, 0, 0);
+    let handle = (a1.0 - 6.0, a1.1 - 6.0);
+    doc.text_tool.clock = Some(10_000.0);
+    click(&mut doc, handle.0, handle.1, false);
+    assert_eq!(doc.inspect().unwrap()["cells"]["whole"], json!("table"));
+    let blocks = |doc: &DocDocument| doc.inspect().unwrap()["blocks"].as_array().unwrap().len();
+    doc.key("Backspace", ToolMods::default(), 1.0).unwrap();
+    assert_eq!(blocks(&doc), 3, "Backspace keeps the table");
+    assert_eq!(cell_text(&doc, 2, 2), "");
+    doc.execute("edit.undo", json!({})).unwrap();
+    assert_eq!(cell_text(&doc, 2, 2), "C3");
+    doc.execute("table.selectTable", json!({})).unwrap();
+    doc.key("Delete", ToolMods::default(), 1.0).unwrap();
+    assert_eq!(blocks(&doc), 2, "Delete removes it");
+    doc.execute("edit.undo", json!({})).unwrap();
+    assert_eq!(blocks(&doc), 3);
+    // Backspace at the start of the paragraph after it: nothing, twice.
+    doc.execute("caret.set", json!({ "pos": { "story": "body", "path": [2], "off": 0 } })).unwrap();
+    let text_before = text(&doc);
+    for _ in 0..2 {
+        doc.key("Backspace", ToolMods::default(), 1.0).unwrap();
+        assert_eq!(doc.session.borrow().sel.focus.path.0, vec![2], "the caret stays");
+    }
+    assert_eq!(text(&doc), text_before);
+    // Cmd+A in a cell: the table, then everything.
+    doc.execute("caret.set", json!({ "pos": { "story": "body", "path": [1, 1, 1, 0], "off": 1 } })).unwrap();
+    let cmd = ToolMods { command: true, ..ToolMods::default() };
+    doc.key("a", cmd, 1.0).unwrap();
+    assert_eq!(doc.inspect().unwrap()["cells"]["whole"], json!("table"));
+    assert_eq!(doc.inspect().unwrap()["all"], json!(false));
+    doc.key("a", cmd, 1.0).unwrap();
+    assert_eq!(doc.inspect().unwrap()["all"], json!(true));
+}
+
+/// A column border, at any zoom: the pointer shows its arrows within 4 screen pixels; a drag shows
+/// a dashed line and leaves the table as it is until let go; then the left column gains what its
+/// neighbour gives up, one undo step; Shift moves only the left column; Escape drops the drag;
+/// a double click fits the column (walkthrough H6; WPS W-N12).
+#[test]
+fn a_column_border_dragged_moves_between_two_columns() {
+    let mut doc = table_doc();
+    let a1 = cell_box(&doc, 0, 0);
+    let border = (a1.2, (a1.1 + a1.3) / 2.0);
+    for zoom in [1.0, 1.5] {
+        let cursor = doc.pointer(&at_zoom(PointerAction::Move, (border.0 + 2.5 / zoom, border.1), zoom, false)).unwrap().cursor;
+        assert_eq!(cursor, "col-resize", "zoom {zoom}");
+        let cursor = doc.pointer(&at_zoom(PointerAction::Move, (border.0 + 6.0 / zoom, border.1), zoom, false)).unwrap().cursor;
+        assert_eq!(cursor, "text", "zoom {zoom}: 6 screen pixels off is the cell's text");
+    }
+    let before = grid(&doc);
+    let depth = doc.session.borrow().undo_depth();
+    let revision = doc.revision();
+    doc.pointer(&event(PointerAction::Down, border.0, border.1, false)).unwrap();
+    doc.pointer(&event(PointerAction::Drag, border.0 + 40.0, border.1, false)).unwrap();
+    let lines = dashed(&doc);
+    assert_eq!(lines.len(), 1, "{lines:?}");
+    assert!((lines[0].0 - (border.0 + 40.0)).abs() < 0.01 && lines[0].3 - lines[0].1 > 700.0, "across the page: {lines:?}");
+    assert_eq!(doc.revision(), revision, "the table waits for the release");
+    doc.pointer(&event(PointerAction::Up, border.0 + 40.0, border.1, false)).unwrap();
+    let after = grid(&doc);
+    assert!((after[0] - before[0] - 40.0).abs() < 0.6 && (after[1] - before[1] + 40.0).abs() < 0.6, "{before:?} -> {after:?}");
+    assert!((after.iter().sum::<f32>() - before.iter().sum::<f32>()).abs() < 0.6, "the table keeps its width");
+    assert_eq!(doc.session.borrow().undo_depth(), depth + 1);
+    assert_eq!(doc.session.borrow().sel.focus.path.0, vec![0], "the caret stays where it was");
+    doc.execute("edit.undo", json!({})).unwrap();
+    assert_eq!(grid(&doc), before);
+    // At 150%: 30 screen pixels are 20 points.
+    doc.pointer(&at_zoom(PointerAction::Down, border, 1.5, false)).unwrap();
+    doc.pointer(&at_zoom(PointerAction::Drag, (border.0 + 20.0, border.1), 1.5, false)).unwrap();
+    doc.pointer(&at_zoom(PointerAction::Up, (border.0 + 20.0, border.1), 1.5, false)).unwrap();
+    assert!((grid(&doc)[0] - before[0] - 20.0).abs() < 0.6);
+    doc.execute("edit.undo", json!({})).unwrap();
+    // Shift: only the left column, the table grows.
+    doc.pointer(&event(PointerAction::Down, border.0, border.1, true)).unwrap();
+    doc.pointer(&event(PointerAction::Drag, border.0 + 30.0, border.1, true)).unwrap();
+    doc.pointer(&event(PointerAction::Up, border.0 + 30.0, border.1, true)).unwrap();
+    let shifted = grid(&doc);
+    assert!((shifted[0] - before[0] - 30.0).abs() < 0.6 && (shifted[1] - before[1]).abs() < 0.6, "{shifted:?}");
+    doc.execute("edit.undo", json!({})).unwrap();
+    // Escape: no step.
+    let depth = doc.session.borrow().undo_depth();
+    doc.pointer(&event(PointerAction::Down, border.0, border.1, false)).unwrap();
+    doc.pointer(&event(PointerAction::Drag, border.0 + 50.0, border.1, false)).unwrap();
+    doc.key("Escape", ToolMods::default(), 1.0).unwrap();
+    doc.pointer(&event(PointerAction::Up, border.0 + 50.0, border.1, false)).unwrap();
+    assert_eq!(grid(&doc), before);
+    assert_eq!(doc.session.borrow().undo_depth(), depth);
+    assert!(dashed(&doc).is_empty());
+    // A double click fits the first column to A1..A3.
+    doc.pointer(&event(PointerAction::DoubleClick, border.0, border.1, false)).unwrap();
+    assert!(grid(&doc)[0] < before[0] - 20.0, "{:?}", grid(&doc));
+    // A row's bottom border: up and down arrows, a dragged height.
+    let row = (a1.0 + 20.0, a1.3);
+    assert_eq!(doc.pointer(&event(PointerAction::Move, row.0, row.1 + 1.0, false)).unwrap().cursor, "row-resize");
+    doc.pointer(&event(PointerAction::Down, row.0, row.1, false)).unwrap();
+    doc.pointer(&event(PointerAction::Drag, row.0, row.1 + 25.0, false)).unwrap();
+    doc.pointer(&event(PointerAction::Up, row.0, row.1 + 25.0, false)).unwrap();
+    let height = doc.session.borrow().doc.table(StoryRef::Body, &kition_doc_engine::doc::Path(vec![1])).unwrap().rows[0].props.height;
+    assert!(height.is_some_and(|h| (h - (a1.3 - a1.1) as f32 - 25.0).abs() < 0.6), "{height:?}");
+}
+
+/// Typed on a whole cell's content, Shift+Right at its end grows into the next cell: a block.
+#[test]
+fn shift_right_from_a_cells_end_grows_by_cells() {
+    let mut doc = table_doc();
+    doc.execute("caret.set", json!({ "pos": { "story": "body", "path": [1, 0, 0, 0], "off": 2 } })).unwrap();
+    let shift = ToolMods { shift: true, ..ToolMods::default() };
+    doc.key("ArrowRight", shift, 1.0).unwrap();
+    assert_eq!(selected(&doc), "A1", "the cell first");
+    doc.key("ArrowRight", shift, 1.0).unwrap();
+    assert_eq!(doc.inspect().unwrap()["cells"]["cols"], json!([0, 1]));
 }

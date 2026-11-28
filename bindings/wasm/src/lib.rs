@@ -25,6 +25,7 @@ mod objects;
 mod params;
 mod place;
 mod settle;
+mod table_tool;
 mod text_tool;
 
 use std::cell::{RefCell, RefMut};
@@ -73,6 +74,8 @@ pub struct DocDocument {
     session: RefCell<Session>,
     /// The text tool's press under way, last press and pointer place (`text_tool`).
     text_tool: text_tool::TextTool,
+    /// A table's border dragged or its rows or columns selected by hand (`table_tool`).
+    table_tool: table_tool::TableTool,
     cache: RefCell<HashMap<usize, (u64, kition_doc_render::Rendered)>>,
     /// The canvas around the pages (an editor's canvas color).
     pasteboard: [u8; 4],
@@ -174,6 +177,7 @@ impl DocDocument {
         Self {
             session: RefCell::new(session),
             text_tool: text_tool::TextTool::default(),
+            table_tool: table_tool::TableTool::default(),
             cache: RefCell::new(HashMap::new()),
             pasteboard: PASTEBOARD,
             object_drag: None,
@@ -318,6 +322,12 @@ impl DocDocument {
         let (a, b) = session.sel.ordered();
         if let Some(preedit) = preedit {
             out.extend(preedit);
+        } else if let Some(block) = kition_doc_engine::cmd::cells::block(&session) {
+            // A block of cells is shaded whole, empty cells too (stage 4; walkthrough H7).
+            for (page, [x0, y0, x1, y1]) in Self::block_rects(&layout, &session, &block) {
+                let (Some((x0, y0)), Some((x1, y1))) = (at(page, x0, y0), at(page, x1, y1)) else { continue };
+                out.push(ToolOverlay::Highlight { quad: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], color: SELECTION });
+            }
         } else if !session.sel.is_collapsed() {
             for (page, rect) in layout.selection_rects(&session.doc, &a, &b, session.page_hint) {
                 let (Some((x0, y0)), Some((x1, y1))) = (at(page, rect.x, rect.y), at(page, rect.x + rect.w, rect.y + rect.h)) else { continue };
@@ -330,6 +340,7 @@ impl DocDocument {
         }
         drop(session);
         self.text_tool_overlays(&layout, &areas, &mut out);
+        self.table_overlays(&layout, &areas, &mut out);
         margin_guides::append(&layout, &areas, &mut out);
         self.object_overlays(&areas, &mut out);
         self.ink_overlays(&areas, &mut out);
@@ -553,6 +564,7 @@ impl KitDocument for DocDocument {
         // input method's text input there): session state, never in the file.
         let preedit = self.preedit_info();
         let input_at = self.input_at(&layout, &areas);
+        let selects_table = self.selects_table_first();
         let session = self.session.borrow();
         let caret = layout.caret_on(&session.sel.focus, session.page_hint);
         let page = caret.as_ref().map_or(session.page_hint, |caret| caret.page);
@@ -576,6 +588,16 @@ impl KitDocument for DocDocument {
             let (a, b) = session.sel.ordered();
             a == session.doc.start_of(a.story) && b == session.doc.end_of(a.story)
         };
+        // A block of whole table cells selected (stage 4): editor state, read from the selection.
+        let cells = kition_doc_engine::cmd::cells::block(&session).map(|block| {
+            json!({
+                "table": block.table.0,
+                "rows": [block.rows.0, block.rows.1],
+                "cols": [block.cols.0, block.cols.1],
+                "count": block.cells(&session.doc).len(),
+                "whole": if block.whole_table(&session.doc) { Some("table") } else if block.whole_rows(&session.doc) { Some("rows") } else { None },
+            })
+        });
         // The format painter held: once, or until put down (double-clicked).
         let painter = session.painter.as_ref().map(|(_, _, sticky)| if *sticky { "sticky" } else { "once" });
         // The body's blocks with their tool ids (C8-land-14-doc): what `on`, `doc_query` and a
@@ -621,6 +643,9 @@ impl KitDocument for DocDocument {
             "escape": escape,
             "all": all,
             "painter": painter,
+            "cells": cells,
+            // What Cmd+A selects first: the table the caret is in (WPS W-N6), else everything.
+            "selectsTable": selects_table,
             "canUndo": session.can_undo(),
             "canRedo": session.can_redo(),
         }))
@@ -801,6 +826,11 @@ impl KitTools for DocDocument {
                 return Ok(self.respond());
             }
         }
+        // A table's borders, handle and selection zones before the text in and around it (stage 4).
+        if self.text_tool.gesture.is_none() && self.table_pointer(event, &layout, &areas)? {
+            self.settle_preedit();
+            return Ok(self.respond());
+        }
         self.text_pointer(event, &layout, &areas)?;
         self.settle_preedit();
         Ok(self.respond())
@@ -830,16 +860,38 @@ impl KitTools for DocDocument {
 }
 
 impl DocDocument {
+    /// Whether Cmd+A selects the table the caret is in (not yet the whole table selected).
+    fn selects_table_first(&self) -> bool {
+        let session = self.session.borrow();
+        let Some((table, ..)) = session.sel.focus.path.cell() else { return false };
+        session.doc.table(session.sel.focus.story, &table).is_some()
+            && !kition_doc_engine::cmd::cells::block(&session).is_some_and(|block| block.whole_table(&session.doc))
+            && session.column_segments().is_none()
+            && session.math.is_none()
+    }
+
     /// A key for the text tool (see `KitTools::key`).
     fn key_press(&mut self, key: &str, mods: ToolMods, _zoom: f64) -> Result<ToolResponse, String> {
         if self.object_key(key, mods)? {
             return Ok(self.respond());
         }
         // Escape drops a press under way (the text stays put), then puts down the format painter.
-        if key == "Escape" && (self.cancel_text_gesture() || self.session().painter.take().is_some()) {
+        if key == "Escape" && (self.cancel_table_gesture() || self.cancel_text_gesture() || self.session().painter.take().is_some()) {
             return Ok(self.respond());
         }
         let Some(name) = Self::key_name(key) else { return Ok(self.respond()) };
+        let plain = !mods.command && !mods.control && !mods.alt && !mods.shift;
+        // Backspace at the start of the paragraph after a table changes nothing (WPS W-F2; stage 4
+        // item 3; the command, an agent's, still steps into the last cell).
+        if name == "Backspace" && plain && kition_doc_engine::cmd::text::backspace_enters_table(&self.session.borrow()) {
+            return Ok(self.respond());
+        }
+        // Cmd+A in a table selects the table first, all at the second (WPS W-N6; section 2 row
+        // 11; an agent's edit.selectAll is the whole story still).
+        if name == "A" && (mods.command || mods.control) && !mods.alt && !mods.shift && self.selects_table_first() {
+            self.session().run("table.selectTable", &json!({})).map_err(|error| error.to_string())?;
+            return Ok(self.respond());
+        }
         let registry = self.session.borrow().registry.clone();
         if let Some(spec) = registry.by_shortcut_on(&Self::combo(mods, &name, true), self.platform) {
             self.session().run(spec.id, &json!({})).map_err(|error| error.to_string())?;

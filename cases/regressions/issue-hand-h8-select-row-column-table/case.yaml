@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-hand-h8-select-row-column-table
+feature: doc.editor.table-by-hand
+intent: "A click in the margin left of a row selects that row whole (Backspace then empties it and the row stays); the handle by the table's top-left corner shows the move pointer and selects the whole table (walkthrough H8; WPS W-N8, W-N9, W-N11)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/table-select.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/table-select.mjs, chromium, h8-row-from-the-margin, d13-handle-backspace-then-delete]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 180
+since: "2026-11-28"

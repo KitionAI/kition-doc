@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-hand-h7-cell-block-selection
+feature: doc.editor.table-by-hand
+intent: "A drag from A1 into B2 selects the 2x2 block of cells (C1 not among them), each shaded whole; a letter typed then changes only A1, and Delete empties the four cells and no other (walkthrough H7; WPS W-N7)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/table-select.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/table-select.mjs, chromium, h7-cell-block]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 180
+since: "2026-11-28"

@@ -8,6 +8,7 @@
 //! Pictures, shapes and ink take their presses first (`objects.rs`); tables' own gestures come
 //! later (stage 4).
 
+use kition_doc_engine::cmd::cells;
 use kition_doc_engine::cmd::draw::DrawMode;
 use kition_doc_engine::doc::Pos;
 use kition_doc_engine::layout::DocLayout;
@@ -27,7 +28,7 @@ const DRAG_PX: f64 = 3.0;
 
 /// The pointer in the selection bar: an arrow leaning right, drawn here (CSS has none), the
 /// usual arrow where an image cursor is not shown.
-const BAR_CURSOR: &str = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='24' viewBox='0 0 20 24'%3E%3Cpath d='M16 2v16l-4-4-3 7-2.2-1 3-7H5z' fill='black' stroke='white' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E\") 16 2, default";
+pub(crate) const BAR_CURSOR: &str = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='24' viewBox='0 0 20 24'%3E%3Cpath d='M16 2v16l-4-4-3 7-2.2-1 3-7H5z' fill='black' stroke='white' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E\") 16 2, default";
 
 /// What a press selects, and the drag after it grows by.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -87,7 +88,7 @@ pub(crate) struct TextTool {
     /// The last press: when (ms), where (document pixels), and its click count.
     last: Option<(f64, f64, f64, u32)>,
     /// The pointer's last place (document pixels), its keys and the zoom.
-    at: Option<(f64, f64, ToolMods, f64)>,
+    pub(crate) at: Option<(f64, f64, ToolMods, f64)>,
     /// The clock a test sets (ms); the wall clock otherwise.
     pub(crate) clock: Option<f64>,
 }
@@ -144,7 +145,13 @@ impl DocDocument {
                 self.session().page_hint = page;
                 let mods = event.mods;
                 // A press on the selected text may carry it away (WPS W-K1); it decides on the drag.
-                if bar.is_none() && clicks == 1 && !mods.shift && !mods.command && self.on_selection(layout, page, x, y) {
+                if bar.is_none()
+                    && clicks == 1
+                    && !mods.shift
+                    && !mods.command
+                    && cells::block(&self.session.borrow()).is_none()
+                    && self.on_selection(layout, page, x, y)
+                {
                     self.text_tool.gesture = Some(Gesture::Text { from: (event.x, event.y), press: pos, moved: false, to: None });
                     return Ok(());
                 }
@@ -256,6 +263,12 @@ impl DocDocument {
         if session.sel.is_collapsed() {
             return false;
         }
+        // A block of cells: its cells, whole (stage 4).
+        if let Some(block) = cells::block(&session) {
+            return Self::block_rects(layout, &session, &block)
+                .into_iter()
+                .any(|(p, [x0, y0, x1, y1])| p == page && x >= x0 && x <= x1 && y >= y0 && y <= y1);
+        }
         let (a, b) = session.sel.ordered();
         layout
             .selection_rects(&session.doc, &a, &b, session.page_hint)
@@ -296,6 +309,9 @@ impl DocDocument {
             Some(Gesture::Select { unit: Unit::Line | Unit::All, .. }) => return BAR_CURSOR.into(),
             Some(Gesture::Select { .. }) => return "text".into(),
             None => {}
+        }
+        if let Some(cursor) = self.table_cursor(layout, areas) {
+            return cursor;
         }
         let Some((x, y, _, zoom)) = self.text_tool.at else { return "text".into() };
         if self.session.borrow().painter.is_some() {
