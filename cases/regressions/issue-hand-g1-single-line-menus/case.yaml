@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-hand-g1-single-line-menus
+feature: doc.editor.keyboard-and-zoom
+intent: "In the default Single line mode each of the sixteen menus a row button opens (Paste, Highlight, Font Color, Bullets, Numbering, Table, Chart, Shapes, Symbol, Header, Page Number, Margins, Orientation, Size, Columns, Breaks) shows its items, the first bullet makes a list and the table grid inserts a 3 x 3 table (they opened as empty boxes; walkthrough G1, the timed task's second and third stops)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/menus.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/menus.mjs, chromium, g1-single-line-menus, g1-bullets-from-the-row, g1-table-from-the-row]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 60
+since: "2026-11-28"

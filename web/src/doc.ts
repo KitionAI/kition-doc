@@ -38,13 +38,6 @@ export function describe(info: KitEngineInfo): DocInfo {
   }
 }
 
-/** The top of a page at full width, for the explicit Page Width view command. */
-export function pageWidthArea(page: RasterRect | undefined): RasterRect | null {
-  if (!page) return null
-  const width = page.x1 - page.x0
-  return { x0: page.x0 - 24, y0: page.y0 - 24, x1: page.x1 + 24, y1: page.y0 + width * 0.55 }
-}
-
 /** `format.state`: the formatting at the selection. */
 export type FormatState = {
   font?: string

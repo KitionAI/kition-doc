@@ -1,0 +1,22 @@
+format: 1
+id: doc.editor.system-clipboard/copy-keeps-bold
+feature: doc.editor.system-clipboard
+intent: "A bold word copied and pasted inside the document is still bold: the system clipboard's text is the engine's own copy, so its formatted fragment pastes (walkthrough J3)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/clipboard.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/clipboard.mjs, chromium, j3-copy-keeps-bold]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 60
+since: "2026-11-28"

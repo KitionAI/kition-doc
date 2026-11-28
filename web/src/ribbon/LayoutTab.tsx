@@ -28,21 +28,21 @@ export function LayoutTab() {
   return (
     <>
       <RibbonGroup label={p('Page Setup')} icon={Ruler}>
-        <RibbonMenu icon={Ruler} label={p('Margins')} size="large" primary>
+        <RibbonMenu icon={Ruler} label={p('Margins')} size="large" testId="doc-margins" primary>
           {MARGINS.map(([label, preset]) => (
             <CommandItem key={preset} command="page.margins" params={{ preset }} label={p(label)} />
           ))}
         </RibbonMenu>
-        <RibbonMenu icon={RectangleHorizontal} label={p('Orientation')} size="large" primary>
+        <RibbonMenu icon={RectangleHorizontal} label={p('Orientation')} size="large" testId="doc-orientation" primary>
           <CommandItem command="page.orientation" params={{ value: 'portrait' }} label={p('Portrait')} />
           <CommandItem command="page.orientation" params={{ value: 'landscape' }} label={p('Landscape')} />
         </RibbonMenu>
-        <RibbonMenu icon={Scaling} label={p('Size')} size="large" primary>
+        <RibbonMenu icon={Scaling} label={p('Size')} size="large" testId="doc-page-size" primary>
           {SIZES.map((name) => (
             <CommandItem key={name} command="page.size" params={{ name }} label={name} />
           ))}
         </RibbonMenu>
-        <RibbonMenu icon={Columns2} label={p('Columns')} size="large" primary>
+        <RibbonMenu icon={Columns2} label={p('Columns')} size="large" testId="doc-columns" primary>
           <CommandItem command="page.columns" params={{ count: 1 }} label={p('One')} />
           <CommandItem command="page.columns" params={{ count: 2 }} label={p('Two')} />
           <CommandItem command="page.columns" params={{ count: 3 }} label={p('Three')} />
@@ -50,7 +50,7 @@ export function LayoutTab() {
           <CommandItem command="page.columns" params={{ preset: 'right' }} label={p('Right')} />
         </RibbonMenu>
         <RibbonStack>
-          <RibbonMenu icon={SeparatorHorizontal} label={p('Breaks')} primary>
+          <RibbonMenu icon={SeparatorHorizontal} label={p('Breaks')} testId="doc-breaks" primary>
             {BREAKS.map(([label, kind]) => (
               <CommandItem key={kind} command="page.break" params={{ kind }} label={p(label)} />
             ))}

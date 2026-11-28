@@ -2,9 +2,13 @@ import { useId, useLayoutEffect, useRef, useState, type ComponentProps, type Rea
 import { KitDocumentCanvas, useKitEditor, type KitCanvasView, type RasterRect, type RasterView } from '@kition/sdk/editor'
 import { Scrollbar } from '@kition/tessera/ui'
 import { initialPageView } from './pageView'
+import { useDocWheel } from './useDocWheel'
 
-/** Place the first page at reading scale before mounting the canvas; retain later user views. */
-/** `overlay` draws controls over the pages (comment markers), placed from the canvas's current view. */
+/**
+ * Place the first page at reading scale before mounting the canvas; retain later user views.
+ * `overlay` draws controls over the pages (comment markers), placed from the canvas's current view.
+ * Ctrl or Cmd with the wheel zooms 10 points a notch (`useDocWheel.ts`).
+ */
 export function DocumentCanvas({ page, viewMemory, canvas, panBounds, onView, overlay, ...props }: Omit<ComponentProps<typeof KitDocumentCanvas>, 'viewMemory'> & {
   page: RasterRect | undefined
   viewMemory: RefObject<RasterView | null>
@@ -15,6 +19,7 @@ export function DocumentCanvas({ page, viewMemory, canvas, panBounds, onView, ov
   const [view, setView] = useState<KitCanvasView | null>(null)
   const { session, t } = useKitEditor()
   const viewportId = useId()
+  useDocWheel(region, canvas)
   const horizontalPage = view ? view.width / view.zoom : 0
   const verticalPage = view ? view.height / view.zoom : 0
   const horizontalMax = panBounds ? Math.max(0, panBounds.x1 - panBounds.x0 - horizontalPage) : 0

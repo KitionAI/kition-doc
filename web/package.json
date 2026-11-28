@@ -21,6 +21,8 @@
     "test:host-comments": "node tests/host-comments.mjs chromium && node tests/host-comments.mjs webkit",
     "test:replica-merge": "node tests/replica-merge.mjs chromium && node tests/replica-merge.mjs webkit",
     "test:drafts": "node tests/drafts.mjs chromium && node tests/drafts.mjs webkit",
+    "test:hand-keys": "node tests/hand/focus.mjs chromium && node tests/hand/zoom.mjs chromium && node tests/hand/clipboard.mjs chromium && node tests/hand/keys.mjs chromium && node tests/hand/focus.mjs webkit && node tests/hand/zoom.mjs webkit && node tests/hand/clipboard.mjs webkit && node tests/hand/keys.mjs webkit",
+    "test:hand-ui": "node tests/hand/menus.mjs chromium && node tests/hand/menus.mjs webkit",
     "test:contract": "node ../../kition-sdk/tools/check-manifest.mjs ../kit.json --module public/engine"
   },
   "dependencies": {

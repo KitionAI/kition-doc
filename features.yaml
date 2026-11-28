@@ -1,6 +1,6 @@
 format: 1
 kit: doc
-updated: "2026-11-20"
+updated: "2026-11-28"
 gate_budget_s: 600
 protected: []
 features:
@@ -336,6 +336,28 @@ features:
     paths: [web/src/DocumentCanvas.tsx, web/src/pageView.ts, bindings/wasm/src/margin_guides.rs, bindings/wasm/src/lib.rs]
     cases: [regressions/issue-page-view-scale, doc.editor.page-view/margin-guides, regressions/issue-page-toolbar-gap, regressions/issue-3]
     since: "2026-11-17"
+  - id: doc.editor.keyboard-and-zoom
+    title: "The editor by hand, as WPS works: typing goes in at the caret from the first key after opening, and the keyboard comes back to the text when the find bar or a dialog closes; the menus of Single line's rows show their items and a style chosen closes the Styles panel; the caret going on to another page brings it into view at the same zoom, and an agent's edit or Select All leaves the view; the zoom goes 10 points a wheel notch about the pointer and 10 a button step within 10%-500%, with 200%, 100%, 75%, Page Width, One Page and a typed percentage under the status bar's percentage, and Fit shows the current page; Cmd+0 is the space before the paragraph, Cmd+= Subscript, Cmd+Shift+= Superscript and Cmd+- nothing; the find bar's Enter and Shift+Enter, Cmd+G, F3 and Cmd+Shift+G (opening the bar on the text searched for), Match Case and Whole Words; Ctrl+H Replace, Cmd+8 Show/Hide, Cmd+K Link, F5 and Ctrl+G Go To, Ctrl+A Select All, Cmd+Y Redo"
+    dimension: [function]
+    priority: P1
+    status: has
+    commands: [paragraph.addSpaceBefore, format.subscript, format.superscript, edit.find, edit.findNext, edit.findPrevious, edit.goto, view.marks, link.insert, edit.selectAll, edit.redo]
+    paths: [web/src/focus.ts, web/src/keys.ts, web/src/zoom.ts, web/src/ZoomControl.tsx, web/src/useDocWheel.ts, web/src/App.tsx, web/src/FindBar.tsx, web/src/DocumentCanvas.tsx, web/src/ribbon/HomeTab.tsx, web/src/ribbon/InsertTab.tsx, web/src/ribbon/LayoutTab.tsx, web/src/ribbon/ViewTab.tsx, web/src/strings.ts, web/tests/hand/harness.mjs, web/tests/hand/focus.mjs, web/tests/hand/zoom.mjs, web/tests/hand/keys.mjs, web/tests/hand/menus.mjs]
+    target: "WPS Office for Mac (black-box, plan 2026-11-28 section 2)"
+    gap: "Checked in the development host only: whether Kition Desktop gives the editor the keyboard as a file opens is the host's part. The percentage counts CSS pixels per point, so the page opens at 133% (a CSS pixel per point is 100%, WPS's own 100%); showing the opening size as 100% waits for a maintainer (the page-view tests assert 133%). The view brings the caret's page into view, not the caret's line (stage 0B). Show/Hide ¶ turns over but the marks are not drawn yet (stage 6A). Cmd+K and Go To open the generic parameters until their dialogs (stage 6A). A real mouse notch's delta and a trackpad pinch are checked with synthetic wheel events only."
+    cases: [regressions/issue-hand-k1-first-key, regressions/issue-hand-k2-focus-after-find, regressions/issue-hand-g1-single-line-menus, regressions/issue-hand-a9-page-change-keeps-zoom, regressions/issue-hand-a5-cmd-0, regressions/issue-hand-a8-wheel-zoom-step, regressions/issue-hand-c10-select-all-keeps-view, regressions/issue-hand-q4-find-keys, doc.editor.keyboard-and-zoom/status-bar-zoom, doc.editor.keyboard-and-zoom/agent-push-keeps-view, doc.editor.keyboard-and-zoom/editor-keys, doc.editor.keyboard-and-zoom/styles-panel-closes]
+    since: "2026-11-28"
+  - id: doc.editor.system-clipboard
+    title: "The system clipboard by hand: Cmd+C and Cmd+X put the selected text on it (paragraphs CR LF apart), with nothing selected Cmd+C keeps it; Cmd+V pastes what another application put there, plain text a paragraph a line, HTML with its formatting and lists, a picture as a picture, and the editor's own copy with its formatting; Cmd+Alt+Shift+V pastes the text only, Ctrl+Cmd+V opens Paste Special, and Home's Cut, Copy and Paste menu do the same"
+    dimension: [function]
+    priority: P1
+    status: has
+    commands: [edit.copy, edit.cut, edit.paste, edit.pasteText, edit.pasteSpecial, image.insert]
+    paths: [web/src/clipboard.ts, web/src/keys.ts, web/src/App.tsx, web/src/ribbon/HomeTab.tsx, web/tests/hand/harness.mjs, web/tests/hand/clipboard.mjs]
+    target: "WPS Office for Mac (black-box, plan 2026-11-28 section 2 row 14)"
+    gap: "The copy puts plain text only; the HTML of a copy comes with the engine's answer in stage 0B, so another application pastes it unformatted. Paste Special opens the generic parameters until its dialog. Checked with Chromium's clipboard in the development host; WebKit gives the tests no clipboard permission, so there only copying and pasting inside the document is checked, and a browser that refuses the clipboard API leaves Home's Paste the editor's own copy and a notice. Copying between real applications and Kition Desktop's frame (`allow=clipboard-read; clipboard-write`) are for a person to confirm."
+    cases: [regressions/issue-hand-j1-system-clipboard, regressions/issue-hand-j2-paste-from-outside, doc.editor.system-clipboard/copy-keeps-bold, doc.editor.system-clipboard/copy-picture]
+    since: "2026-11-28"
   - id: doc.layout.east-asian-spacing
     title: Mixed East Asian text honors automatic Latin and numeric spacing
     dimension: [fidelity]

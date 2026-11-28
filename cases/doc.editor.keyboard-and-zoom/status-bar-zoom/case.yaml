@@ -1,0 +1,22 @@
+format: 1
+id: doc.editor.keyboard-and-zoom/status-bar-zoom
+feature: doc.editor.keyboard-and-zoom
+intent: "The status bar's percentage opens 200%, 100%, 75%, Page Width, One Page and a field (113% typed, then + gives 120% and 130%, 85% typed, 5% stops at 10%), and Fit shows the current page whole (WPS W-U2, W-U3; walkthrough A6)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/zoom.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/zoom.mjs, chromium, a6-status-bar-steps]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 60
+since: "2026-11-28"

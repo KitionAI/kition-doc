@@ -1,8 +1,10 @@
 import { BookOpenIcon as BookOpen, FileTextIcon as FileText, GlobeIcon as Globe, Grid3x3Icon as Grid3x3, ListTreeIcon as ListTree, MaximizeIcon as Maximize, PanelLeftIcon as PanelLeft, RulerIcon as Ruler, ScanSearchIcon as ScanSearch, StretchHorizontalIcon as StretchHorizontal, FileIcon as File, NotebookTextIcon as NotebookText } from '@kition/tessera/icons/react'
 import { CommandButton, RibbonButton, RibbonGroup, RibbonStack, useEngineQuery, useKitEditor } from '@kition/sdk/editor'
 import type { ViewState } from '../doc'
+import type { ZoomActions } from '../ZoomControl'
 
-export function ViewTab({ onZoom }: { onZoom: (to: 'pageWidth' | 'onePage' | number) => void }) {
+/** View › Zoom runs the status bar's zoom (ZoomControl.tsx): 100%, the current page whole, its width. */
+export function ViewTab({ zoom }: { zoom: ZoomActions }) {
   const { phrase: p, t } = useKitEditor()
   const view = useEngineQuery<ViewState>('view.state') ?? {}
   return (
@@ -27,10 +29,10 @@ export function ViewTab({ onZoom }: { onZoom: (to: 'pageWidth' | 'onePage' | num
         </RibbonStack>
       </RibbonGroup>
       <RibbonGroup label={p('Zoom')} icon={ScanSearch}>
-        <RibbonButton icon={ScanSearch} size="large" label={t('zoom100')} onClick={() => onZoom(1)} data-testid="doc-zoom-100" primary />
+        <RibbonButton icon={ScanSearch} size="large" label={t('zoom100')} onClick={() => zoom.zoomTo(1)} data-testid="doc-zoom-100" primary />
         <RibbonStack>
-          <RibbonButton icon={File} label={t('onePage')} onClick={() => onZoom('onePage')} data-testid="doc-zoom-page" primary />
-          <RibbonButton icon={StretchHorizontal} label={t('pageWidth')} onClick={() => onZoom('pageWidth')} data-testid="doc-zoom-width" primary />
+          <RibbonButton icon={File} label={t('onePage')} onClick={zoom.onePage} data-testid="doc-zoom-page" primary />
+          <RibbonButton icon={StretchHorizontal} label={t('pageWidth')} onClick={zoom.pageWidth} data-testid="doc-zoom-width" primary />
         </RibbonStack>
       </RibbonGroup>
     </>

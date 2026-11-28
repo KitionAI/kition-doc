@@ -104,3 +104,30 @@
   padding: 6px 8px;
   border-bottom: 1px solid var(--kit-border);
 }
+
+/* The status bar's zoom (ZoomControl.tsx): the percentage opens the zoom choices. */
+.doc-zoom-value {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0 4px;
+  border-radius: var(--kit-radius-control);
+  cursor: pointer;
+}
+
+.doc-zoom-value:hover,
+.doc-zoom-value[aria-expanded='true'] {
+  background: var(--kui-hover);
+}
+
+.doc-zoom-custom {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+}
+
+.doc-zoom-field {
+  width: 52px;
+}

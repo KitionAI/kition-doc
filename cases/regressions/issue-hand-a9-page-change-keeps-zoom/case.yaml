@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-hand-a9-page-change-keeps-zoom
+feature: doc.editor.keyboard-and-zoom
+intent: "The arrows taking the caret from page 1 to page 3 keep the zoom and bring the page into view (a caret on a page out of view zoomed the window to the page's width, 133% to 221%; walkthrough A9)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/zoom.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/zoom.mjs, chromium, a9-page-change-keeps-zoom]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 60
+since: "2026-11-28"

@@ -3,6 +3,7 @@ import {
   ColorGrid,
   CommandButton,
   CommandItem,
+  MenuItem,
   MenuSeparator,
   RibbonButton,
   RibbonGroup,
@@ -14,6 +15,10 @@ import {
   useKitEditor,
 } from '@kition/sdk/editor'
 import { FONTS, SIZES, type FormatState, type StyleEntry, type ViewState } from '../doc'
+import { closeLinePanels } from '../focus'
+
+/** What the clipboard's buttons do: the system clipboard (`clipboard.ts`), as the keys do. */
+export type ClipboardAction = 'copy' | 'cut' | 'paste' | 'pasteText' | 'pasteSpecial'
 
 const hex = (color: string) => color.replace(/^#/, '').toUpperCase()
 
@@ -35,7 +40,7 @@ const HIGHLIGHTS: Array<[string, string]> = [
   ['black', '#000000'],
 ]
 
-export function HomeTab({ onFind }: { onFind: (replace: boolean) => void }) {
+export function HomeTab({ onFind, onClipboard }: { onFind: (replace: boolean) => void; onClipboard: (action: ClipboardAction) => void }) {
   const { run, enabled, phrase: p, testId } = useKitEditor()
   const format = useEngineQuery<FormatState>('format.state') ?? {}
   const view = useEngineQuery<ViewState>('view.state') ?? {}
@@ -47,13 +52,13 @@ export function HomeTab({ onFind }: { onFind: (replace: boolean) => void }) {
     <>
       <RibbonGroup label={p('Clipboard')} icon={ClipboardPaste}>
         <RibbonMenu icon={ClipboardPaste} label={p('Paste')} size="large" testId={`${testId}-paste`} primary>
-          <CommandItem command="edit.paste" label={p('Paste')} />
-          <CommandItem command="edit.pasteText" label={p('Keep Text Only')} />
-          <CommandItem command="edit.pasteMerge" label={p('Merge Formatting')} />
+          <MenuItem label={p('Paste')} disabled={!enabled('edit.paste')} onSelect={() => onClipboard('paste')} testId="doc-paste-keep" />
+          <MenuItem label={p('Keep Text Only')} disabled={!enabled('edit.pasteText')} onSelect={() => onClipboard('pasteText')} testId="doc-paste-text" />
+          <MenuItem label={p('Paste Special')} disabled={!enabled('edit.pasteSpecial')} onSelect={() => onClipboard('pasteSpecial')} testId="doc-paste-special" />
         </RibbonMenu>
         <RibbonStack>
-          <CommandButton command="edit.cut" icon={Scissors} label={p('Cut')} />
-          <CommandButton command="edit.copy" icon={Copy} label={p('Copy')} />
+          <RibbonButton icon={Scissors} label={p('Cut')} disabled={!enabled('edit.cut')} onClick={() => onClipboard('cut')} data-testid="doc-cmd-edit.cut" />
+          <RibbonButton icon={Copy} label={p('Copy')} disabled={!enabled('edit.copy')} onClick={() => onClipboard('copy')} data-testid="doc-cmd-edit.copy" />
           <CommandButton command="edit.formatPainter" icon={Paintbrush} label={p('Format Painter')} />
         </RibbonStack>
       </RibbonGroup>
@@ -145,7 +150,7 @@ export function HomeTab({ onFind }: { onFind: (replace: boolean) => void }) {
               <MenuSeparator />
               <CommandItem command="paragraph.bullets" params={{ off: true }} label={p('None')} />
             </RibbonMenu>
-            <RibbonMenu icon={ListOrdered} label={p('Numbering')} size="icon" primary>
+            <RibbonMenu icon={ListOrdered} label={p('Numbering')} size="icon" testId="doc-numbering" primary>
               {[
                 ['1. 2. 3.', 'numbered'],
                 ['1) 2) 3)', 'numberedParen'],
@@ -220,7 +225,11 @@ export function HomeTab({ onFind }: { onFind: (replace: boolean) => void }) {
               data-style={style.id}
               aria-pressed={format.styleName === style.name}
               disabled={!enabled('paragraph.style')}
-              onClick={() => void run('paragraph.style', { style: style.id })}
+              onClick={() => {
+                void run('paragraph.style', { style: style.id })
+                // In Single line the gallery is a panel: a choice closes it, as a menu's does.
+                closeLinePanels()
+              }}
               data-testid={`doc-style-${style.id}`}
             >
               {p(style.name)}

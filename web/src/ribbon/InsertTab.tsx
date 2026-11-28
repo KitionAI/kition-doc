@@ -73,7 +73,7 @@ export function InsertTab() {
       </RibbonGroup>
 
       <RibbonGroup label={p('Header & Footer')} icon={PanelTop}>
-        <RibbonMenu icon={PanelTop} label={p('Header')} size="large" primary>
+        <RibbonMenu icon={PanelTop} label={p('Header')} size="large" testId="doc-header" primary>
           <CommandItem command="header.insert" params={{ preset: 'blank' }} label={p('Blank')} />
           <CommandItem command="header.insert" params={{ preset: 'blankThree' }} label={p('Blank (Three Columns)')} />
           <CommandItem command="header.insert" params={{ preset: 'title' }} label={p('Document Title')} />
@@ -89,7 +89,7 @@ export function InsertTab() {
           <CommandItem command="footer.edit" label={p('Edit Footer')} />
           <CommandItem command="footer.remove" label={p('Remove Footer')} />
         </RibbonMenu>
-        <RibbonMenu icon={Hash} label={p('Page Number')} size="large" primary>
+        <RibbonMenu icon={Hash} label={p('Page Number')} size="large" testId="doc-page-number" primary>
           <CommandItem command="pageNumber.insert" params={{ position: 'top', align: 'right' }} label={p('Top of Page')} />
           <CommandItem command="pageNumber.insert" params={{ position: 'bottom', align: 'center' }} label={p('Bottom of Page')} />
           <CommandItem command="pageNumber.insert" params={{ position: 'bottom', format: 'x of y' }} label={p('Page X of Y')} />

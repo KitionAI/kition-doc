@@ -23,8 +23,8 @@ import {
 import { engineManifest } from './engine'
 import { useEngineBackdrop } from './backdrop'
 import { CATALOGS } from './strings'
-import { CONTEXT_TABS, EXPORT_COMMANDS, HOST_FILE_COMMANDS, DOC_PRIMARY, describe, pageWidthArea } from './doc'
-import { FindBar } from './FindBar'
+import { CONTEXT_TABS, EXPORT_COMMANDS, HOST_FILE_COMMANDS, DOC_PRIMARY, describe } from './doc'
+import { FindBar, type FindRequest } from './FindBar'
 import { CommentsPane, commenting, markerDecoration, useCommentMarkers, type CommentThread } from './Comments'
 import { HostCommentLayer, hostHighlightDecoration, useHostComments } from './HostComments'
 import { bothDecorations, peerMarks, placesOf, presenceDecoration, sharedPresence, type PlacedCaret, type SharedCaret } from './presence'
@@ -36,6 +36,11 @@ import { ViewTab } from './ribbon/ViewTab'
 import { ExportGroup } from './ribbon/ExportGroup'
 import { DocumentCanvas } from './DocumentCanvas'
 import { pagePanBounds } from './pageView'
+import { focusText, takeKeyboardOnOpen, textInput, useKeyboardFallback } from './focus'
+import { pressKey, type KeyContext } from './keys'
+import { clipOf, copySelection, pasteClip, pasteFromClipboard, type ClipboardEditor } from './clipboard'
+import { pageWidthArea, wholePage, zoomKeepingMiddle } from './zoom'
+import { ZoomControl, type ZoomActions } from './ZoomControl'
 
 const NO_PAGES: RasterRect[] = []
 /** Word's New Comment: in a host that keeps comment threads, the host's new thread instead. */
@@ -62,10 +67,11 @@ function useCommentThreadsOf(editor: { query: <R>(id: string, params?: Record<st
 }
 
 /**
- * The engine binds Escape to Collapse Selection; the text tool runs it when there is a selection,
+ * Cmd+H is the system's Hide on a Mac, so the engine's Replace key runs nothing; Replace is
+ * Ctrl+H (keys.ts). The engine binds Escape to Collapse Selection; the text tool runs it when there is a selection,
  * and as a frame shortcut it would take every Escape, so Escape could never leave Focus.
  */
-const hiddenShortcut = (command: string) => command === 'select.collapse'
+const hiddenShortcut = (command: string) => command === 'select.collapse' || command === 'edit.replace'
 
 const TABS = ['file', 'home', 'insert', 'draw', 'design', 'layout', 'references', 'mailings', 'review', 'view'] as const
 const TAB_MENUS: Record<string, string> = { file: 'File', home: 'Home', insert: 'Insert', draw: 'Draw', design: 'Design', layout: 'Layout', references: 'References', mailings: 'Mailings', review: 'Review', view: 'View' }
@@ -86,28 +92,66 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   const hosted = useHostComments({ host, query: ownEditor.query, doc, revision, pages: state?.pages ?? NO_PAGES, label: commentLabel })
   const { create: createHosted, canCreate: hostCreates, selection: hostSelection } = hosted
   const startHosted = useCallback(() => void createHosted({ selectFirst: t('commentSelectFirst'), failed: t('commentFailed') }), [createHosted, t])
+  // Select All keeps the view where it is (walkthrough C10; WPS W-D10): the caret it leaves at the
+  // end of the document does not bring the last page into view, until the person's next key or press.
+  const holdView = useRef(false)
   const editor = useMemo(() => {
-    if (!hosted.on) return ownEditor
-    const run: typeof ownEditor.run = (id, params) => {
-      if (id !== NEW_COMMENT) return ownEditor.run(id, params)
+    const run: typeof ownEditor.run = (id, params, options) => {
+      if (id === 'edit.selectAll') holdView.current = true
+      if (id !== NEW_COMMENT || !hosted.on) return ownEditor.run(id, params, options)
       if (hostCreates) startHosted()
       return Promise.resolve(null)
     }
+    if (!hosted.on) return { ...ownEditor, run }
     const enabled = (id: string) => (id === NEW_COMMENT ? hostCreates && hostSelection != null : ownEditor.enabled(id))
     return { ...ownEditor, run, enabled }
   }, [hostCreates, hostSelection, hosted.on, ownEditor, startHosted])
+  // Whether the person pressed a key or the pointer since the caret's page last changed: only
+  // their own moves bring a page into view (below).
+  const acted = useRef(false)
+  useEffect(() => {
+    const release = (event: Event) => {
+      acted.current = true
+      if (event instanceof KeyboardEvent && (event.key === 'a' || event.key === 'A' || event.code === 'KeyA') && (event.metaKey || event.ctrlKey)) return
+      holdView.current = false
+    }
+    document.addEventListener('keydown', release, true)
+    document.addEventListener('pointerdown', release, true)
+    return () => {
+      document.removeEventListener('keydown', release, true)
+      document.removeEventListener('pointerdown', release, true)
+    }
+  }, [])
   // Escape cancels first (KitPointer 4.4): the text tool takes Escape only while the engine has
   // something for it to cancel (`escape`: a gesture, a shape chosen to draw, a selection). Any
   // other Escape is left untaken, so in Focus it leaves Focus.
   const tools = useEngineTools(session.tool, doc != null, change, { initial: 'text', hostTools: {}, escapable: () => state?.escape === true })
   const canvas = useRef<KitCanvasHandle>(null)
   useEngineBackdrop(doc, canvas)
+  // The keyboard is the text's from the moment the document opens (walkthrough K1), and comes back
+  // to it when what had it goes away (the find bar, a dialog; K2): focus.ts.
+  useKeyboardFallback()
+  useEffect(() => {
+    if (!doc) return undefined
+    let frame = 0
+    let tries = 0
+    const take = () => {
+      if (textInput()) takeKeyboardOnOpen()
+      else if (tries++ < 120) frame = window.requestAnimationFrame(take)
+    }
+    take()
+    return () => window.cancelAnimationFrame(frame)
+  }, [doc])
   const viewMemory = useRef<RasterView | null>(null)
   const [zoom, setZoom] = useState(1)
   const [canvasHeight, setCanvasHeight] = useState(0)
   const lastCanvasView = useRef<KitCanvasView | null>(null)
   const [tab, setTab] = useState('home')
-  const [find, setFind] = useState<{ replacing: boolean } | null>(null)
+  // The find bar: open (on the replace field or not), the step the keys asked for, and a counter
+  // that puts the keyboard back in its field; the text last searched for is shown when it opens again.
+  const [find, setFind] = useState<{ replacing: boolean; request?: FindRequest; focus: number } | null>(null)
+  const findText = useRef('')
+  const findAsks = useRef(0)
   const [commentsOpen, setCommentsOpen] = useState(false)
   const [activeThread, setActiveThread] = useState<string | null>(null)
 
@@ -152,44 +196,100 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     [overlays, hostMarks, markers, marks],
   )
 
-  // A page made current some other way than on the canvas (Page Down, Go To) comes into view; a
-  // page the caret was pushed to by an agent's or the host's edit (text inserted before it) does
-  // not move the person's view.
+  // A page the person's own key or press made current (Page Down, Go To, a find) comes into view
+  // at the same zoom (walkthrough A9): scrolled so its top shows, or its bottom when the caret went
+  // up into the page before. A page the caret was pushed to by an agent's or the host's edit (text
+  // inserted before it) does not move the person's view, nor does Select All.
   const page = state?.pages[state.page]
-  const shown = useRef({ page: -1, revision: -1 })
+  const shown = useRef<{ page: number; editedBy: unknown }>({ page: -1, editedBy: null })
   const editedBy = session.editedBy
   useEffect(() => {
     if (!state || !page) return
-    const revision = change.revision
-    if (shown.current.page === state.page) {
-      shown.current.revision = revision
-      return
-    }
-    const first = shown.current.page < 0
-    const pushed = editedBy != null && revision !== shown.current.revision
-    shown.current = { page: state.page, revision }
-    if (first || pushed) return
-    const view = viewMemory.current
-    const box = canvas.current
-    if (!view || !box) return
-    const height = window.innerHeight / view.zoom
-    if (page.y1 < view.y || page.y0 > view.y + height) canvas.current?.show(pageWidthArea(page)!)
-  }, [change.revision, editedBy, page, state])
+    // An agent's or the host's edit comes with an edit of its own (`editedBy`): what the person
+    // did before it is not what moved the caret.
+    if (editedBy != null && editedBy !== shown.current.editedBy) acted.current = false
+    const before = shown.current.page
+    shown.current = { page: state.page, editedBy }
+    if (before === state.page || before < 0) return
+    const mine = acted.current
+    acted.current = false
+    if (!mine || holdView.current) return
+    const handle = canvas.current
+    const view = handle?.view()
+    if (!handle || !view) return
+    const height = view.height / view.zoom
+    if (page.y1 > view.y && page.y0 < view.y + height) return
+    const gap = 20 / view.zoom
+    const upOne = state.page === before - 1
+    handle.panTo(view.x, upOne ? page.y1 + gap - height : page.y0 - gap)
+  }, [editedBy, page, state])
 
-  const zoomTo = (to: 'pageWidth' | 'onePage' | number) => {
-    const current = state?.pages[state.page]
-    if (typeof to === 'number') canvas.current?.zoomTo(to)
-    else if (current) canvas.current?.show(to === 'onePage' ? { x0: current.x0 - 24, y0: current.y0 - 24, x1: current.x1 + 24, y1: current.y1 + 24 } : pageWidthArea(current)!)
+  // The zoom (zoom.ts, ZoomControl.tsx): the status bar, View › Zoom, and the frame's Fit.
+  const zoomActions: ZoomActions = {
+    zoom,
+    zoomTo: (to) => {
+      if (canvas.current) zoomKeepingMiddle(canvas.current, to)
+    },
+    pageWidth: () => {
+      if (page) canvas.current?.show(pageWidthArea(page))
+    },
+    onePage: () => {
+      if (page) canvas.current?.show(wholePage(page))
+    },
   }
 
-  const keyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const command = event.metaKey || event.ctrlKey
-    if (command && (event.key === 'f' || event.key === 'h')) {
-      setFind({ replacing: event.key === 'h' })
-      return true
-    }
-    return false
+  // The system clipboard (clipboard.ts): Copy and Cut from the keys and the ribbon; Cmd+V is the
+  // browser's paste event, which carries the clipboard without asking for permission.
+  const clipEditor: ClipboardEditor = { run: (command, params) => editor.run(command, params), enabled: editor.enabled, ask: editor.ask, t }
+  const clipboard = (action: 'copy' | 'cut' | 'paste' | 'pasteText' | 'pasteSpecial') => {
+    if (action === 'copy' || action === 'cut') void copySelection(clipEditor, action === 'cut', (state?.selected ?? 0) > 0 || state?.shape != null || editor.enabled('edit.cut'))
+    else void pasteFromClipboard(clipEditor, action === 'paste' ? 'keep' : action === 'pasteText' ? 'text' : 'special')
   }
+  const latestClip = useRef(clipEditor)
+  latestClip.current = clipEditor
+  useEffect(() => {
+    const inText = (target: EventTarget | null) => target instanceof HTMLTextAreaElement && target.classList.contains('kui-text-sink')
+    // Cmd+V in the text goes on to the browser, which pastes: the editor's shortcuts do not see it
+    // (they would prevent the paste event).
+    // A browser that pastes nothing on the key (no paste event follows it) still pastes, from the
+    // clipboard API or the engine's own copy.
+    let unpasted = 0
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      const command = event.metaKey || event.ctrlKey
+      if (!command || (event.metaKey && event.ctrlKey) || event.shiftKey || event.altKey || !(event.code === 'KeyV' || event.key.toLowerCase() === 'v') || !inText(event.target) || event.isComposing) return
+      event.stopPropagation()
+      window.clearTimeout(unpasted)
+      unpasted = window.setTimeout(() => void pasteFromClipboard(latestClip.current, 'keep'), 100)
+    }
+    const onPaste = (event: ClipboardEvent) => {
+      if (!inText(event.target) || !event.clipboardData) return
+      window.clearTimeout(unpasted)
+      event.preventDefault()
+      void pasteClip(latestClip.current, clipOf(event.clipboardData), 'keep')
+    }
+    window.addEventListener('keydown', onKey, true)
+    document.addEventListener('paste', onPaste, true)
+    return () => {
+      window.clearTimeout(unpasted)
+      window.removeEventListener('keydown', onKey, true)
+      document.removeEventListener('paste', onPaste, true)
+    }
+  }, [])
+
+  const openFind = (replacing: boolean) => setFind((open) => ({ replacing: replacing || (open?.replacing ?? false), request: open?.request, focus: ++findAsks.current }))
+  const closeFind = () => {
+    setFind(null)
+    window.requestAnimationFrame(() => focusText())
+  }
+  // The editor's own keys are a table (keys.ts), each through the editor's ordered runs.
+  const keyContext: KeyContext = {
+    run: (command, params = {}) => void editor.run(command, params),
+    ask: (command) => editor.ask(command),
+    openFind,
+    findStep: (direction) => setFind((open) => ({ replacing: open?.replacing ?? false, request: { direction, id: ++findAsks.current }, focus: open?.focus ?? 0 })),
+    clipboard,
+  }
+  const keyDown = (event: KeyboardEvent<HTMLDivElement>) => pressKey(event, keyContext)
 
   const contextTabs = state ? CONTEXT_TABS.filter((context) => context.when(editor.enabled, state)) : []
   const ribbons: Record<(typeof TABS)[number], ReactNode> = {
@@ -199,7 +299,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
         <ExportGroup page={(state?.page ?? 0) + 1} pages={state?.pages.length ?? 1} />
       </>
     ),
-    home: <HomeTab onFind={(replacing) => setFind({ replacing })} />,
+    home: <HomeTab onFind={openFind} onClipboard={clipboard} />,
     insert: <InsertTab />,
     draw: <DrawTab />,
     design: <CommandTab menu="Design" primary={DOC_PRIMARY.Design} />,
@@ -207,7 +307,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     references: <CommandTab menu="References" primary={DOC_PRIMARY.References} />,
     mailings: <CommandTab menu="Mailings" primary={DOC_PRIMARY.Mailings} />,
     review: <CommandTab menu="Review" primary={DOC_PRIMARY.Review} />,
-    view: <ViewTab onZoom={zoomTo} />,
+    view: <ViewTab zoom={zoomActions} />,
   }
   const tabs: FrameTab[] = [
     ...TABS.map((id) => ({ id, label: phrase(TAB_MENUS[id]), view: id === 'review' || id === 'view', ribbon: ribbons[id] })),
@@ -232,13 +332,17 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
         tab={activeTab}
         onTab={setTab}
         canvas={canvas}
-        zoom={zoom}
         onKeyDown={keyDown}
+        onFit={zoomActions.onePage}
+        keyboardHome={textInput}
         hiddenCommands={hiddenShortcut}
         statusEnd={
-          <Button variant="ghost" aria-pressed={commentsOpen} data-testid="doc-comments-toggle" onClick={() => setCommentsOpen((open) => !open)}>
-            {threads.length ? t('commentsCount', { count: threads.length }) : t('comments')}
-          </Button>
+          <>
+            <Button variant="ghost" aria-pressed={commentsOpen} data-testid="doc-comments-toggle" onClick={() => setCommentsOpen((open) => !open)}>
+              {threads.length ? t('commentsCount', { count: threads.length }) : t('comments')}
+            </Button>
+            {state ? <ZoomControl {...zoomActions} /> : null}
+          </>
         }
         status={
           state ? (
@@ -264,7 +368,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
       >
         {find ? (
           <FrameChrome>
-            <FindBar replacing={find.replacing} onClose={() => setFind(null)} />
+            <FindBar replacing={find.replacing} initial={findText.current} request={find.request} focus={find.focus} onText={(text) => (findText.current = text)} onClose={closeFind} />
           </FrameChrome>
         ) : null}
         <DocumentCanvas

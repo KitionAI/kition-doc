@@ -1,6 +1,6 @@
 # Gaps
 
-> **Last updated:** 2026-11-17 · **Source:** `features.yaml` (updated 2026-11-17) and the engine's command list
+> **Last updated:** 2026-11-28 · **Source:** `features.yaml` (updated 2026-11-28) and the engine's command list
 
 Every known shortfall of Kition Doc, from the feature catalogue: features that are not yet `has`,
 then the differences recorded on features that work. Update the feature in `features.yaml` when you
@@ -75,6 +75,8 @@ land work, then this list. The comparison with the target application is in
 ## Differences on working features
 
 - `doc.agent.guard`: Independent comparison retains conservative family holds. Comment reports include detached threads, and destructive writes must hold the content and metadata they discard. Private geometry facts are eager. Existing saved-file identity and convergence limitations remain documented in agent/guide.md.
+- `doc.editor.keyboard-and-zoom`: Checked in the development host only (Kition Desktop's keyboard on opening is the host's). The zoom percentage counts CSS pixels per point, so the page opens at 133% (WPS's 100% is a CSS pixel per point); showing the opening size as 100% waits for a maintainer, as the page-view tests assert 133%. A page the caret goes to comes into view, not yet the caret's line (stage 0B). Show/Hide ¶ turns over but no marks are drawn (stage 6A); Cmd+K and Go To open the generic parameters (stage 6A).
+- `doc.editor.system-clipboard`: A copy puts plain text only (the HTML comes with the engine's answer in stage 0B); Paste Special opens the generic parameters; copying between real applications, and in Kition Desktop's frame, is for a person to confirm.
 - `doc.format.character`: Save and reopen as .docx is proven by command for bold, italic, underline, strikethrough, size, font, highlight, superscript and colour; the feature's other commands are covered by engine tests only.
 - `doc.format.paragraph`: Save and reopen as .docx is proven by command for alignment, indent and line spacing; the feature's other commands are covered by engine tests only.
 - `doc.headers.footers`: Save and reopen as .docx is proven by command for header text and a page-number footer; the feature's other commands are covered by engine tests only.
@@ -87,4 +89,4 @@ land work, then this list. The comparison with the target application is in
 
 ## Catalogue
 
-The catalogue has 81 features: 20 `has`, 61 not yet.
+The catalogue has 88 features: 26 `has`, 62 not yet.
