@@ -630,7 +630,7 @@
   }
  },
  "caret.set": {
-  "description": "Puts the caret at a position (a document position, as file.selection answers) or at a point on a page, optionally extending the selection.",
+  "description": "Puts the caret at a position (a document position, as file.selection answers) or at a point on a page, optionally extending the selection. With `unit` it selects the word, line, paragraph (with its mark) or paragraph's text (without it) at `pos`; with `extend` too, the selection grows by that unit from the range `start`..`end` (else the anchor), which stays selected.",
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -677,6 +677,84 @@
    "pos": {
     "additionalProperties": true,
     "description": "a position as file.selection answers",
+    "properties": {
+     "off": {
+      "description": "character offset in the paragraph",
+      "type": "integer"
+     },
+     "path": {
+      "description": "paragraph path counted from 0",
+      "items": {
+       "type": "integer"
+      },
+      "type": "array"
+     },
+     "story": {
+      "description": "\"body\", or {\"part\": n} for a header, footer, note, comment or text box story",
+      "oneOf": [
+       {
+        "enum": [
+         "body"
+        ],
+        "type": "string"
+       },
+       {
+        "additionalProperties": false,
+        "properties": {
+         "part": {
+          "description": "header, footer, footnote, endnote, comment or text box story number",
+          "type": "integer"
+         }
+        },
+        "type": "object"
+       }
+      ]
+     }
+    },
+    "type": "object"
+   },
+   "start": {
+    "additionalProperties": true,
+    "description": "where the range the selection grows from starts (with `unit` and `extend`)",
+    "properties": {
+     "off": {
+      "description": "character offset in the paragraph",
+      "type": "integer"
+     },
+     "path": {
+      "description": "paragraph path counted from 0",
+      "items": {
+       "type": "integer"
+      },
+      "type": "array"
+     },
+     "story": {
+      "description": "\"body\", or {\"part\": n} for a header, footer, note, comment or text box story",
+      "oneOf": [
+       {
+        "enum": [
+         "body"
+        ],
+        "type": "string"
+       },
+       {
+        "additionalProperties": false,
+        "properties": {
+         "part": {
+          "description": "header, footer, footnote, endnote, comment or text box story number",
+          "type": "integer"
+         }
+        },
+        "type": "object"
+       }
+      ]
+     }
+    },
+    "type": "object"
+   },
+   "end": {
+    "additionalProperties": true,
+    "description": "where the range the selection grows from ends (with `unit` and `extend`)",
     "properties": {
      "off": {
       "description": "character offset in the paragraph",
@@ -7967,6 +8045,92 @@
  },
  "text.lineBreak": {
   "description": "Inserts a line break (Shift+Enter) at the caret, staying in the same paragraph."
+ },
+ "text.move": {
+  "description": "Moves the selected text to `to` in one step (dragging it), or with `copy` puts a copy there; the text is selected where it lands. Refused when nothing is selected, when `to` is inside the selection or in another story, or when the selection crosses a table's edge.",
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "anchor": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    },
+    "focus": {
+     "additionalProperties": true,
+     "properties": {
+      "off": {
+       "type": "number"
+      },
+      "path": {
+       "items": {
+        "type": "number"
+       },
+       "type": "array"
+      },
+      "story": {
+       "type": "string"
+      }
+     },
+     "type": "object"
+    }
+   },
+   "type": "object"
+  },
+  "params": {
+   "to": {
+    "additionalProperties": true,
+    "description": "where the text goes, a position as file.selection answers",
+    "properties": {
+     "off": {
+      "description": "character offset in the paragraph",
+      "type": "integer"
+     },
+     "path": {
+      "description": "paragraph path counted from 0",
+      "items": {
+       "type": "integer"
+      },
+      "type": "array"
+     },
+     "story": {
+      "description": "\"body\", or {\"part\": n} for a header, footer, note, comment or text box story",
+      "oneOf": [
+       {
+        "enum": [
+         "body"
+        ],
+        "type": "string"
+       },
+       {
+        "additionalProperties": false,
+        "properties": {
+         "part": {
+          "description": "header, footer, footnote, endnote, comment or text box story number",
+          "type": "integer"
+         }
+        },
+        "type": "object"
+       }
+      ]
+     }
+    },
+    "type": "object"
+   }
+  }
  },
  "text.nbHyphen": {
   "description": "Inserts a nonbreaking hyphen at the caret, which a line never breaks at."

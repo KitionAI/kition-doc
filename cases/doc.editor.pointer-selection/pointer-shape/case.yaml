@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.pointer-selection/pointer-shape
+feature: doc.editor.pointer-selection
+intent: "The text tool answers the I-beam over text, the bar arrow, the arrow off the page, copy while the painter is held; Escape puts the painter down."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: the_pointer_shape_follows_the_place_and_the_painter
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 120
+since: "2026-11-28"

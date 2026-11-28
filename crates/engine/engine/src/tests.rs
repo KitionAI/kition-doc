@@ -1302,6 +1302,8 @@ fn hostile_params_never_panic() {
         json!({"text": 5, "size": "x", "path": [], "pos": {"block": 9999, "off": 99999}}),
         json!({"value": -1e308, "rows": 1e9}),
         json!({"distance": 1e308, "extend": "yes"}),
+        json!({"pos": {"block": 0, "off": 3}, "extend": true, "unit": 7, "start": {"block": 9999, "off": 99999}, "end": "x"}),
+        json!({"pos": {"block": 0, "off": 1}, "unit": "line", "to": {"block": 9999, "off": 99999}, "copy": "yes"}),
     ];
     for spec in reg.all() {
         // These reach outside the session (files). Read Aloud (`readAloud.open`, `readAloud.*`)
@@ -3163,4 +3165,87 @@ fn a_cell_command_across_two_tables_acts_on_the_focus_cell() {
     };
     assert_eq!(shaded(&s, first), [true, false, false, false]);
     assert_eq!(shaded(&s, second), [false, false, false, false]);
+}
+
+/// A press selects by its unit and a drag grows by it, the first unit always kept (stage 1 of
+/// "Doc usable by hand"; WPS W-C4, W-C5, W-C7, W-A8).
+#[test]
+fn caret_set_selects_and_grows_by_unit() {
+    let mut s = s();
+    run(&mut s, "file.setText", json!({"text": "The quick brown fox\nSecond paragraph here\nThird"}));
+    let rev = s.rev();
+    let sel = |s: &Session| (s.sel.anchor.clone(), s.sel.focus.clone());
+    // A word with the space after it.
+    run(&mut s, "caret.set", json!({"pos": {"block": 0, "off": 5}, "unit": "word"}));
+    assert_eq!(sel(&s), (Pos::body(0, 4), Pos::body(0, 10)));
+    // Grown by words forward from it, then back past it: the first word stays, the anchor swaps.
+    run(
+        &mut s,
+        "caret.set",
+        json!({"pos": {"block": 0, "off": 17}, "extend": true, "unit": "word", "start": {"block": 0, "off": 4}, "end": {"block": 0, "off": 10}}),
+    );
+    assert_eq!(sel(&s), (Pos::body(0, 4), Pos::body(0, 19)));
+    run(
+        &mut s,
+        "caret.set",
+        json!({"pos": {"block": 0, "off": 1}, "extend": true, "unit": "word", "start": {"block": 0, "off": 4}, "end": {"block": 0, "off": 10}}),
+    );
+    assert_eq!(sel(&s), (Pos::body(0, 10), Pos::body(0, 0)));
+    // A paragraph with its mark; its text alone; the last paragraph has no mark to take.
+    run(&mut s, "caret.set", json!({"pos": {"block": 1, "off": 3}, "unit": "paragraph"}));
+    assert_eq!(sel(&s), (Pos::body(1, 0), Pos::body(2, 0)));
+    run(&mut s, "caret.set", json!({"pos": {"block": 1, "off": 3}, "unit": "paragraphText"}));
+    assert_eq!(sel(&s), (Pos::body(1, 0), Pos::body(1, 21)));
+    run(&mut s, "caret.set", json!({"pos": {"block": 2, "off": 1}, "unit": "paragraph"}));
+    assert_eq!(sel(&s), (Pos::body(2, 0), Pos::body(2, 5)));
+    // A one-line paragraph's line is the paragraph with its mark; grown by lines from the anchor.
+    run(&mut s, "caret.set", json!({"pos": {"block": 0, "off": 7}, "unit": "line"}));
+    assert_eq!(sel(&s), (Pos::body(0, 0), Pos::body(1, 0)));
+    run(&mut s, "caret.set", json!({"pos": {"block": 1, "off": 2}, "extend": true, "unit": "line"}));
+    assert_eq!(sel(&s), (Pos::body(0, 0), Pos::body(2, 0)));
+    // Bad units and ends are refused, never a panic; the selection is never an edit.
+    assert!(s.run("caret.set", &json!({"pos": {"block": 0, "off": 1}, "unit": "page"})).is_err());
+    assert!(s.run("caret.set", &json!({"pos": {"block": 0, "off": 1}, "extend": true, "unit": "word", "start": 3})).is_err());
+    assert_eq!(s.rev(), rev, "selecting is no edit");
+}
+
+/// Dragging selected text moves it (or with `copy` copies it) in one step and leaves it selected
+/// where it lands (WPS W-K1-W-K3).
+#[test]
+fn text_move_moves_or_copies_the_selection_in_one_step() {
+    let mut s = s();
+    run(&mut s, "file.setText", json!({"text": "alpha beta gamma\nsecond line\nthird"}));
+    // Forward in the same paragraph: "beta " goes after "gamma".
+    run(&mut s, "select.range", json!({"anchor": {"block": 0, "off": 6}, "focus": {"block": 0, "off": 11}}));
+    run(&mut s, "text.move", json!({"to": {"block": 0, "off": 16}}));
+    assert_eq!(text(&s), "alpha gammabeta \nsecond line\nthird");
+    assert_eq!(s.selected_text(), "beta ");
+    run(&mut s, "edit.undo", json!({}));
+    assert_eq!(text(&s), "alpha beta gamma\nsecond line\nthird");
+    // Backward into another paragraph.
+    run(&mut s, "select.range", json!({"anchor": {"block": 1, "off": 7}, "focus": {"block": 1, "off": 11}}));
+    run(&mut s, "text.move", json!({"to": {"block": 0, "off": 0}}));
+    assert_eq!(text(&s), "linealpha beta gamma\nsecond \nthird");
+    assert_eq!(s.selected_text(), "line");
+    run(&mut s, "edit.undo", json!({}));
+    // A whole paragraph with its mark, forward past the next: the place follows the removal.
+    run(&mut s, "select.range", json!({"anchor": {"block": 0, "off": 0}, "focus": {"block": 1, "off": 0}}));
+    run(&mut s, "text.move", json!({"to": {"block": 2, "off": 5}}));
+    assert_eq!(text(&s), "second line\nthirdalpha beta gamma\n");
+    assert_eq!(s.selected_text(), "alpha beta gamma\n");
+    run(&mut s, "edit.undo", json!({}));
+    assert_eq!(text(&s), "alpha beta gamma\nsecond line\nthird");
+    // A copy leaves the original and selects the copy.
+    run(&mut s, "select.range", json!({"anchor": {"block": 0, "off": 0}, "focus": {"block": 0, "off": 5}}));
+    run(&mut s, "text.move", json!({"to": {"block": 2, "off": 5}, "copy": true}));
+    assert_eq!(text(&s), "alpha beta gamma\nsecond line\nthirdalpha");
+    assert_eq!(s.selected_text(), "alpha");
+    run(&mut s, "edit.undo", json!({}));
+    assert_eq!(text(&s), "alpha beta gamma\nsecond line\nthird", "each move was one step");
+    // Inside the selection, or nothing selected: refused, nothing changes.
+    run(&mut s, "select.range", json!({"anchor": {"block": 0, "off": 0}, "focus": {"block": 0, "off": 5}}));
+    assert!(s.run("text.move", &json!({"to": {"block": 0, "off": 3}})).is_err());
+    run(&mut s, "select.collapse", json!({}));
+    assert!(s.run("text.move", &json!({"to": {"block": 1, "off": 3}})).is_err());
+    assert_eq!(text(&s), "alpha beta gamma\nsecond line\nthird");
 }

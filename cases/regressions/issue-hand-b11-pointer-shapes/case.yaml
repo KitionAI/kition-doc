@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-hand-b11-pointer-shapes
+feature: doc.editor.pointer-selection
+intent: "The pointer is the I-beam over text, the selection bar arrow in the left margin, the arrow beside the page and over the selected text (it was the I-beam everywhere; walkthrough B11)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/cursors.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/cursors.mjs, chromium, b11-pointer-shapes]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 120
+since: "2026-11-28"

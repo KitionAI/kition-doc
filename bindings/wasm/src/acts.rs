@@ -105,7 +105,8 @@ pub const SELECTION_FREE: &[&str] = &[
 pub fn places(id: &str) -> &'static [&'static str] {
     match id {
         "select.range" | "select.column" => &["anchor", "focus"],
-        "caret.set" | "spelling.suggestions" | "equation.edit" => &["pos"],
+        "caret.set" => &["pos", "start", "end"],
+        "spelling.suggestions" | "equation.edit" => &["pos"],
         "select.addObject" => &["pos", "index", "objects"],
         "select.objects" => &["index"],
         "paragraph.text" => &["index"],

@@ -11,6 +11,10 @@ use crate::{CmdError, CmdResult, CommandSpec, Selection, Session, p};
 pub fn specs() -> Vec<CommandSpec> {
     vec![
         CommandSpec::new("text.insert", "Type Text", "Editing", insert).params(r#"{"text": string}"#),
+        // Dragging selected text (WPS W-K1-W-K3): one step that moves it, or copies it, to `to`.
+        CommandSpec::new("text.move", "Move Text", "Editing", move_text)
+            .params(r#"{"to": Pos, "copy"?: bool}"#)
+            .when(|s| if s.sel.is_collapsed() { Some("nothing is selected") } else { None }),
         CommandSpec::new("text.newParagraph", "New Paragraph", "Editing", new_paragraph).key("Enter"),
         CommandSpec::new("text.lineBreak", "Line Break", "Editing", |s, _| ins_char(s, '\n')).key("Shift+Enter"),
         CommandSpec::new("text.pageBreak", "Page Break", "Insert › Pages", |s, _| ins_char(s, PAGE_BREAK)).key("Mod+Enter"),
@@ -470,4 +474,68 @@ fn delete_word_fwd(s: &mut Session, v: &Value) -> CmdResult {
     s.sel = Selection { anchor: f, focus: b };
     delete_selection(s)?;
     sel_result(s)
+}
+
+/// Moves the selected text to `to` (with `copy`, a copy goes there and the selection stays), in
+/// one step; the text is selected where it lands. A place inside the selection is refused, as is
+/// one in another story; a selection must not cross a table's edge.
+fn move_text(s: &mut Session, v: &Value) -> CmdResult {
+    let to = v.get("to").and_then(super::parse_pos).ok_or_else(|| CmdError::Params("`to` (a position) is required".into()))?;
+    let to = s.doc.clamp(&to);
+    let copy = p::bool(v, "copy").unwrap_or(false);
+    let (a, b) = s.sel.ordered();
+    if a == b {
+        return Err(CmdError::Failed("nothing is selected".into()));
+    }
+    if to.story != a.story {
+        return Err(CmdError::Params("`to` is in another story than the selection".into()));
+    }
+    if to >= a && to <= b {
+        return Err(CmdError::Params("`to` is inside the selection".into()));
+    }
+    if a.path.parent() != b.path.parent() {
+        return Err(CmdError::Failed("the selection crosses a table's edge".into()));
+    }
+    let fragment = s.doc.copy_range(&a, &b);
+    if copy {
+        let end = super::paste::insert_at(s, &to, fragment)?;
+        s.sel = Selection { anchor: to, focus: end };
+        return sel_result(s);
+    }
+    if to < a {
+        // Removing the text after the place leaves the place where it is.
+        s.sel = Selection { anchor: a, focus: b };
+        delete_selection(s)?;
+        let end = super::paste::insert_at(s, &to, fragment)?;
+        s.sel = Selection { anchor: to, focus: end };
+        return sel_result(s);
+    }
+    // After the selection: put the text there first, then remove it here, and follow the place
+    // over the removal (tracked, the removed text stays: nothing moves).
+    let end = super::paste::insert_at(s, &to, fragment)?;
+    s.sel = Selection { anchor: a.clone(), focus: b.clone() };
+    let tracked = s.doc.settings.track_changes;
+    delete_selection(s)?;
+    let (from, until) = if tracked { (to, end) } else { (after_removal(&a, &b, &to), after_removal(&a, &b, &end)) };
+    s.sel = Selection { anchor: s.doc.clamp(&from), focus: s.doc.clamp(&until) };
+    sel_result(s)
+}
+
+/// Where `p`, after `b`, is once `a`..`b` (in one container) is removed: in `b`'s paragraph it
+/// joins `a`'s; a later block of the container moves up by the blocks removed.
+fn after_removal(a: &Pos, b: &Pos, p: &Pos) -> Pos {
+    if p.path == b.path {
+        return Pos { story: a.story, path: a.path.clone(), off: a.off.saturating_add(p.off.saturating_sub(b.off)) };
+    }
+    let depth = b.path.parent().len();
+    let removed = b.path.last().saturating_sub(a.path.last());
+    let mut path = p.path.clone();
+    if removed > 0
+        && p.path.0.get(..depth) == Some(b.path.parent())
+        && let Some(index) = path.0.get_mut(depth)
+        && (*index as usize) > b.path.last()
+    {
+        *index = index.saturating_sub(u32::try_from(removed).unwrap_or(u32::MAX));
+    }
+    Pos { story: p.story, path, off: p.off }
 }

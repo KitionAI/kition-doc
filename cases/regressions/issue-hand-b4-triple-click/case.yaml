@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-hand-b4-triple-click
+feature: doc.editor.pointer-selection
+intent: "Three clicks select the paragraph with its mark and two the word with its space (three clicks only put the caret; WPS W-C1, W-C4; walkthrough B4)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/clicks.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/clicks.mjs, chromium, b4-triple-click]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 120
+since: "2026-11-28"

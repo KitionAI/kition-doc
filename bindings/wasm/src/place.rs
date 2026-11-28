@@ -39,7 +39,8 @@ const ROOT: &str = "document";
 fn positions(command: &str) -> &'static [&'static str] {
     match command {
         "select.range" | "select.column" => &["anchor", "focus"],
-        "caret.set" | "spelling.suggestions" | "equation.edit" => &["pos"],
+        "caret.set" => &["pos", "start", "end"],
+        "spelling.suggestions" | "equation.edit" => &["pos"],
         _ => &[],
     }
 }

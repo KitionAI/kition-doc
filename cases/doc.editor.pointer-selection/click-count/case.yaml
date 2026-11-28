@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.pointer-selection/click-count
+feature: doc.editor.pointer-selection
+intent: "Presses near in time and place count as one more click: a caret, the word with its space, the paragraph with its mark; far apart they start again; the browser double click after them adds nothing; selecting is no edit."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: clicks_count_into_word_and_paragraph
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 120
+since: "2026-11-28"

@@ -1,5 +1,6 @@
 use super::*;
 use kition_kit::testing::check_contract;
+use kition_kit::tools::PointerAction;
 
 #[test]
 fn page_margin_guides_follow_layout_without_entering_document_pixels() {
@@ -472,4 +473,258 @@ fn copy_answers_its_html_too() {
     assert!(html.contains("bold") && (html.contains("<b>") || html.contains("<strong>") || html.contains("font-weight")), "{html}");
     doc.execute("select.collapse", json!({})).unwrap();
     assert_eq!(doc.execute("edit.copy", json!({})).unwrap()["text"], "", "nothing selected copies nothing");
+}
+
+// ---- Stage 1 of "Doc usable by hand": the mouse's gestures (text_tool.rs).
+
+/// Where character `off` of body paragraph `block` is on the canvas: (x, the line's middle), from
+/// the caret the engine reports there.
+fn at_char(doc: &mut DocDocument, block: usize, off: usize) -> (f64, f64) {
+    doc.execute("caret.set", json!({ "pos": { "story": "body", "path": [block], "off": off } })).unwrap();
+    let caret = doc.inspect().unwrap()["caret"].clone();
+    (caret["x"].as_f64().unwrap(), caret["top"].as_f64().unwrap() + caret["height"].as_f64().unwrap() / 2.0)
+}
+
+fn with_mods(action: PointerAction, (x, y): (f64, f64), mods: ToolMods) -> ToolPointer {
+    ToolPointer { action, x, y, mods, pressure: 1.0, zoom: 1.0 }
+}
+
+/// A press and its release at `at`, `clock` milliseconds into the test.
+fn press(doc: &mut DocDocument, at: (f64, f64), clock: f64, mods: ToolMods) {
+    doc.text_tool.clock = Some(clock);
+    doc.pointer(&with_mods(PointerAction::Down, at, mods)).unwrap();
+    doc.pointer(&with_mods(PointerAction::Up, at, mods)).unwrap();
+}
+
+fn selected(doc: &DocDocument) -> String {
+    doc.session.borrow().selected_text()
+}
+
+fn ends(doc: &DocDocument) -> ((usize, usize), (usize, usize)) {
+    let session = doc.session.borrow();
+    let (a, b) = session.sel.ordered();
+    ((a.path.last(), a.off), (b.path.last(), b.off))
+}
+
+/// Presses near in time and place are one more click (WPS W-C1, W-C4): a caret, the word with its
+/// space, the paragraph with its mark, a fourth press the paragraph still; presses far apart in
+/// time or place start again at one. The browser's double click after two counted presses adds
+/// nothing; selecting never edits.
+#[test]
+fn clicks_count_into_word_and_paragraph() {
+    let mut doc = paragraphs(4);
+    let before = doc.revision();
+    let word = at_char(&mut doc, 1, 12);
+    let none = ToolMods::default();
+    press(&mut doc, word, 0.0, none);
+    assert_eq!(selected(&doc), "");
+    press(&mut doc, word, 200.0, none);
+    assert_eq!(selected(&doc), "of ", "the word with the space after it");
+    doc.pointer(&with_mods(PointerAction::DoubleClick, word, none)).unwrap();
+    assert_eq!(selected(&doc), "of ", "the browser's double click adds nothing");
+    press(&mut doc, word, 400.0, none);
+    assert_eq!(ends(&doc), ((1, 0), (2, 0)), "three clicks: the paragraph with its mark");
+    press(&mut doc, word, 600.0, none);
+    assert_eq!(ends(&doc), ((1, 0), (2, 0)), "a fourth click keeps the paragraph");
+    press(&mut doc, word, 1400.0, none);
+    assert_eq!(selected(&doc), "", "too late: one click again");
+    press(&mut doc, word, 1600.0, none);
+    press(&mut doc, (word.0 + 20.0, word.1), 1700.0, none);
+    assert_eq!(selected(&doc), "", "too far: one click again");
+    assert_eq!(doc.revision(), before, "selecting is no edit");
+}
+
+/// A double click held and dragged grows by whole words, the first word kept whichever way it
+/// goes (WPS W-C5); a triple click dragged grows by paragraphs; a plain drag stays by characters
+/// across word edges (W-B2).
+#[test]
+fn a_held_multi_click_drags_by_its_unit() {
+    let mut doc = paragraphs(4);
+    let none = ToolMods::default();
+    // "Paragraph 2 of the stage 0B test, …": double click "of", drag into "stage".
+    let of = at_char(&mut doc, 1, 13);
+    let stage = at_char(&mut doc, 1, 21);
+    let start = at_char(&mut doc, 1, 2);
+    press(&mut doc, of, 0.0, none);
+    doc.text_tool.clock = Some(100.0);
+    doc.pointer(&with_mods(PointerAction::Down, of, none)).unwrap();
+    doc.pointer(&with_mods(PointerAction::Drag, stage, none)).unwrap();
+    assert_eq!(selected(&doc), "of the stage ");
+    doc.pointer(&with_mods(PointerAction::Drag, start, none)).unwrap();
+    assert_eq!(selected(&doc), "Paragraph 2 of ", "back past it: the first word stays, the anchor at its end");
+    doc.pointer(&with_mods(PointerAction::Up, start, none)).unwrap();
+    doc.pointer(&with_mods(PointerAction::DoubleClick, start, none)).unwrap();
+    assert_eq!(selected(&doc), "Paragraph 2 of ", "the browser's double click after the drag changes nothing");
+    // Three clicks, dragged into the next paragraph: both paragraphs whole.
+    let below = at_char(&mut doc, 2, 5);
+    press(&mut doc, of, 2000.0, none);
+    press(&mut doc, of, 2100.0, none);
+    doc.text_tool.clock = Some(2200.0);
+    doc.pointer(&with_mods(PointerAction::Down, of, none)).unwrap();
+    doc.pointer(&with_mods(PointerAction::Drag, below, none)).unwrap();
+    doc.pointer(&with_mods(PointerAction::Up, below, none)).unwrap();
+    assert_eq!(ends(&doc), ((1, 0), (3, 0)));
+    // One click dragged from inside a word: exact characters.
+    let inside = at_char(&mut doc, 1, 15);
+    doc.text_tool.clock = Some(5000.0);
+    doc.pointer(&with_mods(PointerAction::Down, inside, none)).unwrap();
+    doc.pointer(&with_mods(PointerAction::Drag, stage, none)).unwrap();
+    doc.pointer(&with_mods(PointerAction::Up, stage, none)).unwrap();
+    assert_eq!(selected(&doc), "the st");
+}
+
+/// The selection bar, left of the text (WPS W-A8): one click the line, two the paragraph, three
+/// the whole document; Shift grows by lines; a drag grows by lines. Within a few pixels of the
+/// text a press still puts the caret.
+#[test]
+fn the_selection_bar_selects_lines_paragraphs_and_all() {
+    let mut doc = paragraphs(5);
+    let none = ToolMods::default();
+    let area = DocDocument::areas(&doc.layout())[0];
+    let (left, y1) = at_char(&mut doc, 1, 0);
+    let (_, y3) = at_char(&mut doc, 3, 0);
+    let bar = |y: f64| (area.x + 20.0, y);
+    press(&mut doc, bar(y1), 0.0, none);
+    assert_eq!(ends(&doc), ((1, 0), (2, 0)), "the line (a one-line paragraph: with its mark)");
+    assert_eq!(doc.inspect().unwrap()["all"], json!(false));
+    press(&mut doc, bar(y1), 100.0, none);
+    assert_eq!(ends(&doc), ((1, 0), (2, 0)), "two clicks: the paragraph");
+    press(&mut doc, bar(y1), 200.0, none);
+    assert_eq!(ends(&doc), ((0, 0), (4, doc.session.borrow().doc.para_at(&kition_doc_engine::doc::Pos::body(4, 0)).unwrap().len())));
+    assert_eq!(doc.inspect().unwrap()["all"], json!(true), "the whole document: the view stays");
+    // Shift in the bar grows by lines from the anchor.
+    press(&mut doc, bar(y1), 1000.0, none);
+    press(&mut doc, bar(y3), 2000.0, ToolMods { shift: true, ..ToolMods::default() });
+    assert_eq!(ends(&doc), ((1, 0), (4, 0)));
+    // A drag in the bar grows by lines.
+    doc.text_tool.clock = Some(3000.0);
+    doc.pointer(&with_mods(PointerAction::Down, bar(y3), none)).unwrap();
+    doc.pointer(&with_mods(PointerAction::Drag, bar(y1), none)).unwrap();
+    doc.pointer(&with_mods(PointerAction::Up, bar(y1), none)).unwrap();
+    assert_eq!(ends(&doc), ((1, 0), (4, 0)), "upwards: the first line kept, the line above taken whole");
+    // Right beside the text it is a click in the text.
+    press(&mut doc, (left - 2.0, y3), 4000.0, none);
+    assert_eq!(ends(&doc), ((3, 0), (3, 0)));
+}
+
+/// Cmd+click selects the paragraph's text without its mark (WPS W-C7).
+#[test]
+fn cmd_click_selects_the_paragraphs_text() {
+    let mut doc = paragraphs(3);
+    let at = at_char(&mut doc, 1, 20);
+    press(&mut doc, at, 0.0, ToolMods { command: true, ..ToolMods::default() });
+    assert_eq!(selected(&doc), "Paragraph 2 of the stage 0B test, long enough to read.");
+}
+
+/// A drag that goes on to another page selects into it: the page is the pointer's at each sample.
+#[test]
+fn a_drag_selects_across_pages() {
+    let mut doc = paragraphs(3);
+    doc.execute("caret.set", json!({ "pos": { "story": "body", "path": [1], "off": 0 } })).unwrap();
+    doc.execute("page.insertBreak", json!({})).unwrap();
+    assert_eq!(DocDocument::areas(&doc.layout()).len(), 2);
+    let last = doc.session.borrow().doc.body.len() - 1;
+    let from = at_char(&mut doc, 0, 3);
+    let to = at_char(&mut doc, last, 6);
+    assert_eq!(doc.inspect().unwrap()["caret"]["page"], json!(1));
+    doc.text_tool.clock = Some(0.0);
+    doc.pointer(&with_mods(PointerAction::Down, from, ToolMods::default())).unwrap();
+    doc.pointer(&with_mods(PointerAction::Drag, to, ToolMods::default())).unwrap();
+    doc.pointer(&with_mods(PointerAction::Up, to, ToolMods::default())).unwrap();
+    assert_eq!(ends(&doc), ((0, 3), (last, 6)));
+}
+
+/// Dragging the selected text (WPS W-K1-W-K4): past three pixels it is carried, a dashed bar shows
+/// where it lands, letting go moves it there in one step and leaves it selected; Cmd copies; Alt
+/// moves; let go on itself or Escape, nothing moves; a press let go where it went down puts the
+/// caret there.
+#[test]
+fn dragging_the_selected_text_moves_or_copies_it() {
+    let mut doc = paragraphs(3);
+    let none = ToolMods::default();
+    let text = |doc: &DocDocument, block: usize| doc.session.borrow().doc.para_at(&kition_doc_engine::doc::Pos::body(block, 0)).unwrap().text.clone();
+    let original = text(&doc, 1);
+    let end = at_char(&mut doc, 1, original.len());
+    let word = at_char(&mut doc, 1, 12);
+    doc.execute(
+        "select.range",
+        json!({ "anchor": { "story": "body", "path": [1], "off": 11 }, "focus": { "story": "body", "path": [1], "off": 14 } }),
+    )
+    .unwrap();
+    assert_eq!(selected(&doc), " of");
+    let over = doc.pointer(&with_mods(PointerAction::Move, word, none)).unwrap();
+    assert_eq!(over.cursor, "default", "the arrow over the selected text");
+    doc.text_tool.clock = Some(0.0);
+    doc.pointer(&with_mods(PointerAction::Down, word, none)).unwrap();
+    doc.pointer(&with_mods(PointerAction::Drag, (word.0 + 1.0, word.1), none)).unwrap();
+    let held = doc.pointer(&with_mods(PointerAction::Drag, end, none)).unwrap();
+    let bars = held.overlays.iter().filter(|o| matches!(o, ToolOverlay::Line { dashed: true, color, .. } if *color == CARET)).count();
+    assert_eq!(bars, 1, "a dashed bar where the text lands: {:?}", held.overlays);
+    assert_eq!(selected(&doc), " of", "the selection stays while the text is carried");
+    doc.pointer(&with_mods(PointerAction::Up, end, none)).unwrap();
+    assert_eq!(text(&doc, 1), "Paragraph 2 the stage 0B test, long enough to read. of");
+    assert_eq!(selected(&doc), " of", "selected where it landed");
+    doc.execute("edit.undo", json!({})).unwrap();
+    assert_eq!(text(&doc, 1), original, "one step");
+    // Cmd: a copy.
+    doc.execute(
+        "select.range",
+        json!({ "anchor": { "story": "body", "path": [1], "off": 11 }, "focus": { "story": "body", "path": [1], "off": 14 } }),
+    )
+    .unwrap();
+    let cmd = ToolMods { command: true, ..ToolMods::default() };
+    doc.text_tool.clock = Some(5000.0);
+    doc.pointer(&with_mods(PointerAction::Down, word, none)).unwrap();
+    doc.pointer(&with_mods(PointerAction::Drag, end, cmd)).unwrap();
+    let copying = doc.pointer(&with_mods(PointerAction::Drag, end, cmd)).unwrap();
+    assert_eq!(copying.cursor, "copy");
+    doc.pointer(&with_mods(PointerAction::Up, end, cmd)).unwrap();
+    assert_eq!(text(&doc, 1), format!("{original} of"));
+    doc.execute("edit.undo", json!({})).unwrap();
+    // Escape while carried: nothing moves, the selection stays.
+    doc.execute(
+        "select.range",
+        json!({ "anchor": { "story": "body", "path": [1], "off": 11 }, "focus": { "story": "body", "path": [1], "off": 14 } }),
+    )
+    .unwrap();
+    doc.text_tool.clock = Some(10_000.0);
+    doc.pointer(&with_mods(PointerAction::Down, word, none)).unwrap();
+    doc.pointer(&with_mods(PointerAction::Drag, end, none)).unwrap();
+    doc.key("Escape", none, 1.0).unwrap();
+    doc.pointer(&with_mods(PointerAction::Up, end, none)).unwrap();
+    assert_eq!(text(&doc, 1), original);
+    assert_eq!(selected(&doc), " of");
+    // Let go on itself: it stays. A press let go where it went down: the caret there.
+    doc.text_tool.clock = Some(15_000.0);
+    doc.pointer(&with_mods(PointerAction::Down, word, none)).unwrap();
+    doc.pointer(&with_mods(PointerAction::Drag, (word.0 + 8.0, word.1), none)).unwrap();
+    doc.pointer(&with_mods(PointerAction::Up, (word.0 + 8.0, word.1), none)).unwrap();
+    assert_eq!(text(&doc, 1), original);
+    assert_eq!(selected(&doc), " of");
+    press(&mut doc, word, 20_000.0, none);
+    assert_eq!(selected(&doc), "");
+    assert_eq!(ends(&doc).0, (1, 12));
+}
+
+/// The pointer's shape is the place's (walkthrough B11): the I-beam over text, the bar's arrow
+/// left of it, the arrow off the pages, `copy` while the format painter is held; Escape puts the
+/// painter down, and `inspect` says it is held.
+#[test]
+fn the_pointer_shape_follows_the_place_and_the_painter() {
+    let mut doc = paragraphs(3);
+    let none = ToolMods::default();
+    let area = DocDocument::areas(&doc.layout())[0];
+    let word = at_char(&mut doc, 1, 5);
+    let cursor = |doc: &mut DocDocument, at: (f64, f64)| doc.pointer(&with_mods(PointerAction::Move, at, none)).unwrap().cursor;
+    assert_eq!(cursor(&mut doc, word), "text");
+    assert!(cursor(&mut doc, (area.x + 20.0, word.1)).starts_with("url("), "the selection bar's arrow");
+    assert_eq!(cursor(&mut doc, (area.x + area.w + 20.0, word.1)), "default", "off the page");
+    doc.execute("edit.formatPainter", json!({})).unwrap();
+    assert_eq!(doc.inspect().unwrap()["painter"], json!("once"));
+    assert_eq!(doc.inspect().unwrap()["escape"], json!(true));
+    assert_eq!(cursor(&mut doc, word), "copy");
+    doc.key("Escape", none, 1.0).unwrap();
+    assert_eq!(doc.inspect().unwrap()["painter"], Value::Null);
+    doc.execute("edit.formatPainter", json!({ "sticky": true })).unwrap();
+    assert_eq!(doc.inspect().unwrap()["painter"], json!("sticky"));
 }

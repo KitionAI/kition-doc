@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.pointer-selection/caret-set-units
+feature: doc.editor.pointer-selection
+intent: "caret.set's unit selects the word, line or paragraph at a place and grows by it from the first unit, which stays selected; bad units are refused."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: crates/engine/engine/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-engine
+      filter: caret_set_selects_and_grows_by_unit
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 120
+since: "2026-11-28"

@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.pointer-selection/drag-across-pages
+feature: doc.editor.pointer-selection
+intent: "A drag from the first page onto the second selects into it: each sample is read on the page under the pointer."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: a_drag_selects_across_pages
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 120
+since: "2026-11-28"

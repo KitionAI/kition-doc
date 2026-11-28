@@ -366,7 +366,7 @@ features:
     commands: [caret.down, caret.pageDown, caret.pageUp, edit.undo, edit.find, text.insert]
     paths: [web/src/followCaret.ts, web/src/App.tsx, web/src/doc.ts, bindings/wasm/src/lib.rs, web/tests/hand/harness.mjs, web/tests/hand/follow.mjs]
     target: "WPS Office for Mac (black-box, plan 2026-11-28 section 2 row 10)"
-    gap: "Checked in the development host with synthetic wheel events; a drag past the window's edge does not scroll yet (stage 1's edge scroll). The caret does not blink (deferred to the SDK's stage S: a blinking overlay needs the canvas to redraw the caret alone)."
+    gap: "Checked in the development host with synthetic wheel events; during a drag the view is the edge scroll's (`doc.editor.edge-scroll`), and it follows the caret once the press is let go. The caret does not blink (deferred to the SDK's stage S: a blinking overlay needs the canvas to redraw the caret alone)."
     cases: [regressions/issue-hand-a10-view-follows-caret, regressions/issue-hand-d5-typing-scrolls-back, regressions/issue-hand-a11-undo-shows-place, doc.editor.caret-in-view/down-to-page-3, doc.editor.caret-in-view/find-scrolls-to-match]
     since: "2026-11-28"
   - id: doc.editor.mac-keys
@@ -379,6 +379,39 @@ features:
     target: "WPS Office for Mac (black-box, plan 2026-11-28 section 2 rows 8, 9, 13, 17)"
     gap: "Only a Mac's keys were checked on a real keyboard's layout; Windows and Linux keep the default column (Ctrl+Left a word), checked in the tests' browsers. Option+Left and Option+Right stay a word (WPS moves a character; plan section 2, not copied 1). With the caret inside a word and nothing selected, Cmd+B still formats the whole word (WPS leaves the word and formats what is typed next, W-L3): the agent declarations pin the word, so the change waits for a maintainer. Alt+Shift+Up and Down (move a paragraph) and Alt+Shift+Left and Right (outline level) have no engine command yet."
     cases: [regressions/issue-hand-c3-cmd-arrows-mac, regressions/issue-hand-c7-page-keys, regressions/issue-hand-i3-tab-is-not-undo-step, doc.editor.mac-keys/size-list-keys, doc.editor.mac-keys/cmd-page-down, doc.editor.mac-keys/alt-arrows-words]
+    since: "2026-11-28"
+  - id: doc.editor.pointer-selection
+    title: "Selecting with the mouse, as WPS does: a press takes effect as it goes down; two clicks select the word with its space, three the paragraph with its mark (a fourth too), and a press held after them and dragged grows by that unit, the first one always kept; a plain drag is exact to the character and goes on across pages; the left margin is the selection bar (one click a line, two the paragraph, three the whole document, Shift and a drag by lines, its own arrow); Cmd+click selects the paragraph's text; the pointer is the I-beam over text, the arrow beside the page and over the selected text, copy while the format painter is held, whose button is pressed meanwhile (one click paints once, a double click until Escape)"
+    dimension: [function]
+    priority: P1
+    status: has
+    commands: [caret.set, edit.selectAll, edit.formatPainter, edit.pasteFormat]
+    paths: [bindings/wasm/src/text_tool.rs, bindings/wasm/src/lib.rs, crates/engine/engine/src/cmd/caret.rs, crates/engine/layout/src/hit.rs, web/src/ribbon/HomeTab.tsx, web/src/App.tsx, web/src/doc.ts, web/tests/hand/clicks.mjs, web/tests/hand/cursors.mjs]
+    target: "WPS Office for Mac (black-box, plan 2026-11-28 section 2 rows 1-3, 5, 6, 19)"
+    gap: "Clicks are counted in the engine by its own clock (the SDK's Rust pointer has no click count yet; stage S): on a very busy engine two quick presses can count as two single clicks, and the browser's double click then still selects the word. Cmd+drag adding a second block, and Alt+drag selecting a column, are not done (no multi-block selection; the column drag was cut). A Cmd+click on a link selects its paragraph until links open by hand (stage 5B), and the pointer over pictures, handles and table borders is the text's until stages 4 and 5. Chinese words are cut by punctuation, not by word (stage 7). The selection bar beside a table belongs to the table's rows (stage 4)."
+    cases: [regressions/issue-hand-b4-triple-click, regressions/issue-hand-b12-double-click-drag, regressions/issue-hand-b10-selection-bar, regressions/issue-hand-b11-pointer-shapes, regressions/issue-hand-g14-format-painter, doc.editor.pointer-selection/cmd-click, doc.editor.pointer-selection/zoomed-and-scrolled, doc.editor.pointer-selection/click-count, doc.editor.pointer-selection/drag-by-unit, doc.editor.pointer-selection/selection-bar-units, doc.editor.pointer-selection/drag-across-pages, doc.editor.pointer-selection/pointer-shape, doc.editor.pointer-selection/caret-set-units]
+    since: "2026-11-28"
+  - id: doc.editor.edge-scroll
+    title: "A drag past the window's edge scrolls the view, as WPS does: while a press on the pages is held past an edge of the canvas a timer pans the view, the pointer still or not, faster the further out (WPS's pace, about 100 pixels a second 2 pixels out to 2000 from 32), and the selection, the selection bar's lines or the place carried text lands follow into what comes into view; inside the canvas nothing scrolls, nor while a pen, the eraser or a shape to draw is held; the zoom stays"
+    dimension: [function]
+    priority: P1
+    status: has
+    commands: [caret.set]
+    paths: [web/src/edgeScroll.ts, web/src/App.tsx, bindings/wasm/src/text_tool.rs, web/tests/hand/edge-scroll.mjs]
+    target: "WPS Office for Mac (black-box, plan 2026-11-28 section 2 row 4)"
+    gap: "WPS was measured past the bottom edge only; the top and the sides scroll the same way (plan section 2). The pace is checked with synthetic pointer events; how it feels with a real mouse is for a person to confirm."
+    cases: [regressions/issue-hand-b8-edge-auto-scroll, doc.editor.edge-scroll/inside-no-scroll, doc.editor.edge-scroll/across-pages]
+    since: "2026-11-28"
+  - id: doc.editor.drag-text
+    title: "Dragging selected text, as WPS does: a press on the selection carried past three pixels moves the text, a dashed bar showing where it lands, and letting go moves it there in one undo step (`text.move`), still selected; Cmd held as it is let go puts a copy there instead, Alt moves as a plain drag does; let go on itself, or Escape, moves nothing; a press let go where it went down puts the caret there"
+    dimension: [function]
+    priority: P1
+    status: has
+    commands: [text.move]
+    paths: [crates/engine/engine/src/cmd/text.rs, crates/engine/engine/src/cmd/paste.rs, bindings/wasm/src/text_tool.rs, bindings/wasm/src/family.rs, bindings/wasm/src/commands.json, web/tests/hand/drag-text.mjs]
+    target: "WPS Office for Mac (black-box, plan 2026-11-28 section 2 row 16)"
+    gap: "Text is dragged within one story; a selection crossing a table's edge is not dragged (`text.move` refuses it), nor is text dragged to another document or out of the window (WPS untested, W-K5). The view scrolls at the window's edge while text is carried (`doc.editor.edge-scroll`)."
+    cases: [regressions/issue-hand-b9-drag-text, doc.editor.drag-text/cmd-drag-copies, doc.editor.drag-text/press-places-caret, doc.editor.drag-text/text-move-one-step, doc.editor.drag-text/binding-drag]
     since: "2026-11-28"
   - id: doc.layout.east-asian-spacing
     title: Mixed East Asian text honors automatic Latin and numeric spacing

@@ -397,6 +397,38 @@ impl DocLayout {
         None
     }
 
+    /// The visual line holding `pos`: its start, where the next line starts (the paragraph's end
+    /// on its last line), and whether it is the paragraph's last line. Unlike [`Self::line_bounds`]
+    /// the end keeps the line's trailing space and break: what selecting the whole line takes.
+    pub fn line_span(&self, pos: &Pos, page_hint: usize) -> Option<(Pos, Pos, bool)> {
+        for (_, it) in self.pieces(pos.story, &pos.path, page_hint) {
+            let Placed::Lines { para, l0, l1, .. } = it else { continue };
+            let li = para.line_of(pos.off);
+            if li < *l0 || li >= *l1 {
+                continue;
+            }
+            let l = para.lines.get(li)?;
+            let mk = |off| Pos { story: pos.story, path: pos.path.clone(), off };
+            return Some((mk(l.start), mk(l.stop), li + 1 >= para.lines.len()));
+        }
+        None
+    }
+
+    /// The selection bar: a point on `page` left of the text by more than `reach` points (the
+    /// page's left margin and the pasteboard beside it, WPS W-A8) answers the start of the line it
+    /// is beside, the nearest by height; anywhere else `None`. Lines of `story` only, upright and
+    /// outside tables (the rows' bar belongs to the table).
+    pub fn selection_bar(&self, page: usize, x: f32, y: f32, story: StoryRef, reach: f32) -> Option<Pos> {
+        let p = self.pages.get(page)?;
+        let lines = page_lines(p, story);
+        let line = lines.iter().min_by(|a, b| band_dist(y, a.top, a.bottom - a.top).total_cmp(&band_dist(y, b.top, b.bottom - b.top)))?;
+        if line.path.cell().is_some() || !(x.is_finite() && x < line.x.min(line.left) - reach.max(0.0)) {
+            return None;
+        }
+        let start = line.para.lines.get(line.li)?.start;
+        Some(Pos { story: line.story, path: line.path.clone(), off: start })
+    }
+
     /// Column (block) selection: the piece of every line from the line holding `a` to the line
     /// holding `b` (document order) that lies between page x `left` and `right`. One `(start,
     /// end)` pair per line, both in the same paragraph; lines shorter than `left` give an empty

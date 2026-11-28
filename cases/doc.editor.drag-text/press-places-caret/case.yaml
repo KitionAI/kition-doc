@@ -1,0 +1,22 @@
+format: 1
+id: doc.editor.drag-text/press-places-caret
+feature: doc.editor.drag-text
+intent: "A press on the selected text let go where it went down puts the caret there and moves nothing."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/drag-text.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/drag-text.mjs, chromium, press-on-selection-places-caret]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 120
+since: "2026-11-28"

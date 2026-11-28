@@ -1301,6 +1301,15 @@ impl DocDocument {
             hold_paragraph(doc, &at, &["text", "~objects"], under);
             crate::place::hit_premises(doc, &at, under);
         }
+        // Dragged text lands at `to` (stage 1): the text there is split and joined, and a copied
+        // paragraph's id is dropped when it is in use.
+        if command == "text.move"
+            && let Some((to, _)) = params.get("to").and_then(|value| crate::place::parse(doc, value))
+        {
+            hold_paragraph(doc, &to, &["text"], under);
+            crate::place::hit_premises(doc, &to, under);
+            under.premises.push(Premise::on(ROOT).fields(["~paraIds"]).positions(Vec::<String>::new()));
+        }
         for at in drawing_destinations(&session, command, params, &a, &b) {
             hold_paragraph(doc, &at, &["text"], under);
             crate::place::hit_premises(doc, &at, under);

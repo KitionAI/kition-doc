@@ -41,6 +41,7 @@ import { pressKey, type KeyContext } from './keys'
 import { clipOf, copySelection, pasteClip, pasteFromClipboard, type ClipboardEditor } from './clipboard'
 import { pageWidthArea, wholePage, zoomKeepingMiddle } from './zoom'
 import { useFollowCaret } from './followCaret'
+import { edgeScrolling } from './edgeScroll'
 import { ZoomControl, type ZoomActions } from './ZoomControl'
 
 const NO_PAGES: RasterRect[] = []
@@ -130,6 +131,14 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   const tools = useEngineTools(session.tool, doc != null, change, { initial: 'text', hostTools: {}, escapable: () => state?.escape === true })
   const canvas = useRef<KitCanvasHandle>(null)
   useEngineBackdrop(doc, canvas)
+  // A drag past the window's edge scrolls the view (edgeScroll.ts), whatever the text tool's
+  // gesture is; it reads the tool's cursor (the crosshair while drawing) at each frame.
+  const toolCursor = useRef(tools.canvasTool.cursor)
+  toolCursor.current = tools.canvasTool.cursor
+  const pageTool = useMemo(() => edgeScrolling(tools.canvasTool, () => {
+    const view = canvas.current?.view()
+    return { cursor: toolCursor.current, size: view ? { width: view.width, height: view.height } : null }
+  }), [tools.canvasTool])
   // The keyboard is the text's from the moment the document opens (walkthrough K1), and comes back
   // to it when what had it goes away (the find bar, a dialog; K2): focus.ts.
   useKeyboardFallback()
@@ -202,7 +211,10 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   // only as far as shows its line (followCaret.ts; walkthrough A9, A10, D5, A11, C7, Q2). A caret
   // pushed on by an agent's or the host's edit does not move the person's view, nor does Select All.
   const page = state?.pages[state.page]
-  const holding = useCallback(() => holdView.current, [])
+  // The whole document selected (Select All, three clicks in the selection bar) holds the view too.
+  const allSelected = useRef(false)
+  allSelected.current = state?.all === true
+  const holding = useCallback(() => holdView.current || allSelected.current, [])
   personActed.current = useFollowCaret({ canvas, caret: state?.caret, editedBy: session.editedBy, held: holding })
 
   // The zoom (zoom.ts, ZoomControl.tsx): the status bar, View › Zoom, and the frame's Fit.
@@ -294,7 +306,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
         <ExportGroup page={(state?.page ?? 0) + 1} pages={state?.pages.length ?? 1} />
       </>
     ),
-    home: <HomeTab onFind={openFind} onClipboard={clipboard} />,
+    home: <HomeTab onFind={openFind} onClipboard={clipboard} painter={state?.painter ?? null} />,
     insert: <InsertTab />,
     draw: <DrawTab />,
     design: <CommandTab menu="Design" primary={DOC_PRIMARY.Design} />,
@@ -372,6 +384,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
           viewMemory={viewMemory}
           panBounds={panBounds}
           framed={false}
+          tool={pageTool}
           onView={(view) => {
             const previous = lastCanvasView.current
             lastCanvasView.current = view

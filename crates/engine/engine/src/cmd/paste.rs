@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use kition_doc_doc::edit::Fragment;
-use kition_doc_doc::{Block, Document, Paragraph};
+use kition_doc_doc::{Block, Document, Paragraph, Pos};
 use serde_json::{Value, json};
 
 use super::{delete_selection, sel_result};
@@ -127,8 +127,15 @@ fn paste_special(s: &mut Session, v: &Value) -> CmdResult {
 }
 
 /// Replace the selection with `frag`, marking it as an insertion under Track Changes.
-pub fn insert(s: &mut Session, mut frag: Fragment) -> Result<(), CmdError> {
+pub fn insert(s: &mut Session, frag: Fragment) -> Result<(), CmdError> {
     let at = delete_selection(s)?;
+    let end = insert_at(s, &at, frag)?;
+    s.sel = Selection::caret(end);
+    Ok(())
+}
+
+/// Puts `frag` at `at` (marked as an insertion under Track Changes); answers where it ends.
+pub fn insert_at(s: &mut Session, at: &Pos, mut frag: Fragment) -> Result<Pos, CmdError> {
     if s.doc.settings.track_changes {
         let rid = super::new_revision(s, kition_doc_doc::RevisionKind::Insert);
         for b in &mut frag.blocks {
@@ -141,9 +148,7 @@ pub fn insert(s: &mut Session, mut frag: Fragment) -> Result<(), CmdError> {
             });
         }
     }
-    let end = s.doc.insert_fragment(&at, &frag)?;
-    s.sel = Selection::caret(end);
-    Ok(())
+    Ok(s.doc.insert_fragment(at, &frag)?)
 }
 
 /// Every paragraph in a block, tables included (bounded depth).

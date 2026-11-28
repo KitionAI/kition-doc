@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.pointer-selection/drag-by-unit
+feature: doc.editor.pointer-selection
+intent: "A double click held and dragged grows by whole words and a triple click by paragraphs, the first unit kept whichever way the drag goes; a plain drag stays exact to the character."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: a_held_multi_click_drags_by_its_unit
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 120
+since: "2026-11-28"

@@ -1,0 +1,22 @@
+format: 1
+id: doc.editor.edge-scroll/inside-no-scroll
+feature: doc.editor.edge-scroll
+intent: "A drag held inside the canvas, near its bottom edge, does not scroll the view."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/edge-scroll.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/edge-scroll.mjs, chromium, inside-no-scroll]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 120
+since: "2026-11-28"

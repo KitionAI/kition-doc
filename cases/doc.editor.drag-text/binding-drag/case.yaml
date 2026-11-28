@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.drag-text/binding-drag
+feature: doc.editor.drag-text
+intent: "The text tool carries selected text past three pixels with a dashed bar, moves it on release, copies it with Cmd, and drops nothing on Escape or on itself."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: dragging_the_selected_text_moves_or_copies_it
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 120
+since: "2026-11-28"

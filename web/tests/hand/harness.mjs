@@ -14,7 +14,7 @@ import { createServer } from 'vite'
  * canvas's CSS pixels. Read with `caretDrawn()`.
  */
 const CARET_INIT = () => {
-  const drawn = (window.__caret = { cur: null, path: [], frames: 0 })
+  const drawn = (window.__caret = { cur: null, dashed: null, path: [], frames: 0 })
   const P = window.CanvasRenderingContext2D?.prototype
   if (!P) return
   const surface = (canvas) => canvas?.classList?.contains('kui-canvas-surface')
@@ -34,6 +34,7 @@ const CARET_INIT = () => {
   }
   wrap('drawImage', () => {
     drawn.cur = null
+    drawn.dashed = null
     drawn.path = []
     drawn.frames += 1
   })
@@ -46,6 +47,10 @@ const CARET_INIT = () => {
     const points = path ? [] : drawn.path
     if (points.length === 2 && Math.abs(points[0][0] - points[1][0]) < 0.6 && Math.abs(points[0][1] - points[1][1]) > 4 && ctx.getLineDash().length === 0 && !drawn.cur) {
       drawn.cur = { x: points[0][0], y: Math.min(points[0][1], points[1][1]), height: Math.abs(points[1][1] - points[0][1]) }
+    }
+    // A dashed upright bar: where dragged text would land (stage 1).
+    if (points.length === 2 && Math.abs(points[0][0] - points[1][0]) < 0.6 && Math.abs(points[0][1] - points[1][1]) > 4 && ctx.getLineDash().length > 0 && !drawn.dashed) {
+      drawn.dashed = { x: points[0][0], y: Math.min(points[0][1], points[1][1]), height: Math.abs(points[1][1] - points[0][1]) }
     }
     drawn.path = []
   })
@@ -142,6 +147,21 @@ export async function open({ which = process.argv[2] ?? 'chromium', query = 'loc
     const box = await surface()
     return { x: box.x + drawn.x, y: box.y + drawn.y, height: drawn.height }
   }
+  /** The dashed bar the canvas draws now (where dragged text lands), on the page; null when none. */
+  const dashedDrawn = async () => {
+    const drawn = await frame().evaluate(() => window.__caret?.dashed ?? null)
+    if (!drawn) return null
+    const box = await surface()
+    return { x: box.x + drawn.x, y: box.y + drawn.y, height: drawn.height }
+  }
+  /** A canvas point (document points) on the page, as the view shows it now. */
+  const toScreen = async (x, y) => {
+    const shown = await view()
+    const box = await surface()
+    return { x: box.x + (x - shown.x) * shown.zoom, y: box.y + (y - shown.y) * shown.zoom }
+  }
+  /** The CSS cursor the canvas shows now. */
+  const cursor = () => frame().evaluate(() => document.querySelector('[data-testid=kit-canvas-surface]')?.style.cursor ?? '')
   /**
    * The point on the page of character `ch` of body paragraph `index`: setup puts the person's caret
    * there through the editor's own `caret.set`, and the caret the canvas then draws is read back,
@@ -151,10 +171,15 @@ export async function open({ which = process.argv[2] ?? 'chromium', query = 'loc
     const text = (await paragraph(index))?.paragraph?.text ?? ''
     const off = Buffer.from([...text].slice(0, ch).join(''), 'utf8').length
     await setup('caret.set', { pos: { story: 'body', path: [index], off } })
+    // The caret drawn there, not the one drawn before the canvas showed the new place: it is where
+    // the engine reports the caret, on the screen.
     let drawn = null
     await until(async () => {
       drawn = await caretDrawn()
-      return drawn !== null
+      const rect = await caretRect()
+      if (!drawn || !rect) return false
+      const at = await toScreen(rect.x, rect.top)
+      return Math.abs(at.x - drawn.x) < 1.5 && Math.abs(at.y - drawn.y) < 1.5
     }, 30)
     if (!drawn) return null
     const box = await surface()
@@ -202,7 +227,7 @@ export async function open({ which = process.argv[2] ?? 'chromium', query = 'loc
     await browser.close().catch(() => undefined)
     await server.close().catch(() => undefined)
   }
-  return { which, page, kit, frame, wait, until, agent, ask, details, read, setup, selection, paragraphs, paragraph, zoom, surface, view, caretDrawn, caretRect, caretInView, textPoint, pagesOf, active, clipboardText, errors, close }
+  return { which, page, kit, frame, wait, until, agent, ask, details, read, setup, selection, paragraphs, paragraph, zoom, surface, view, caretDrawn, dashedDrawn, toScreen, cursor, caretRect, caretInView, textPoint, pagesOf, active, clipboardText, errors, close }
 }
 
 /**

@@ -49,8 +49,11 @@ pub fn specs() -> Vec<CommandSpec> {
         // (⌘PageUp, ⌘PageDown; WPS W-D7, W-D8).
         CommandSpec::new("caret.pageUp", "Page Up", "Navigation", |s, v| page(s, v, -1)).key("Mod+PageUp").params(PAGE).pure(),
         CommandSpec::new("caret.pageDown", "Page Down", "Navigation", |s, v| page(s, v, 1)).key("Mod+PageDown").params(PAGE).pure(),
+        // `unit` selects the word, line or paragraph at `pos` (a double or triple click, the
+        // selection bar); with `extend` the selection grows by that unit from the one the gesture
+        // started with (`start`..`end`, else the anchor), which stays selected.
         CommandSpec::new("caret.set", "Set Caret", "Navigation", set)
-            .params(r#"{"pos": Pos, "extend"?: bool} | {"page": n, "x": pt, "y": pt}"#)
+            .params(r#"{"pos": Pos, "extend"?: bool, "unit"?: "word|line|paragraph|paragraphText", "start"?: Pos, "end"?: Pos} | {"page": n, "x": pt, "y": pt}"#)
             .pure(),
         CommandSpec::new("edit.selectAll", "Select All", "Home › Editing › Select", select_all).key("Mod+A").pure(),
         CommandSpec::new("select.range", "Select Range", "Navigation", select_range).params(r#"{"anchor": Pos, "focus": Pos}"#).pure(),
@@ -343,8 +346,55 @@ fn set(s: &mut Session, v: &Value) -> CmdResult {
     };
     let to = s.doc.clamp(&to);
     s.goal_x = None;
-    apply(s, to, ext);
+    let Some(unit) = p::str(v, "unit") else {
+        apply(s, to, ext);
+        return sel_result(s);
+    };
+    let (from, until) = unit_at(s, &to, unit)?;
+    s.pending = None;
+    if !ext {
+        s.sel = Selection { anchor: from, focus: until };
+        return sel_result(s);
+    }
+    // The unit the gesture started with stays selected: the selection runs from its far side to
+    // the far side of the unit at `pos` (WPS W-C5).
+    let pos_of = |name: &str| v.get(name).map(|pv| parse_pos(pv).ok_or_else(|| CmdError::Params(format!("bad `{name}`")))).transpose();
+    let start = pos_of("start")?.map(|p| s.doc.clamp(&p)).unwrap_or_else(|| s.sel.anchor.clone());
+    let end = pos_of("end")?.map(|p| s.doc.clamp(&p)).unwrap_or_else(|| start.clone());
+    let (start, end) = if start <= end { (start, end) } else { (end, start) };
+    if start.story != to.story || end.story != to.story {
+        return Err(CmdError::Params("`start` and `end` must be in the story of `pos`".into()));
+    }
+    s.sel = if from < start { Selection { anchor: end, focus: from } } else { Selection { anchor: start, focus: until } };
     sel_result(s)
+}
+
+/// The word, line or paragraph holding `pos` (a paragraph with its mark, or its text alone).
+fn unit_at(s: &mut Session, pos: &Pos, unit: &str) -> Result<(Pos, Pos), CmdError> {
+    let at = |off| Pos { off, ..pos.clone() };
+    let len = s.doc.para_at(pos).map(|p| p.len()).unwrap_or(0);
+    // A paragraph's end with its mark: the start of the next paragraph in the same container.
+    let marked = |s: &Session| match s.doc.next_para(pos.story, &pos.path) {
+        Some(q) if q.parent() == pos.path.parent() => Pos { story: pos.story, path: q, off: 0 },
+        _ => at(len),
+    };
+    match unit {
+        "word" => Ok(s.doc.para_at(pos).map_or((pos.clone(), pos.clone()), |p| {
+            let (a, b) = p.word_at(pos.off);
+            (at(a), at(b))
+        })),
+        "paragraphText" => Ok((at(0), at(len))),
+        "paragraph" => Ok((at(0), marked(s))),
+        "line" => {
+            let l = s.layout();
+            match l.line_span(pos, s.page_hint) {
+                Some((a, _, true)) => Ok((a, marked(s))),
+                Some((a, b, false)) => Ok((a, b)),
+                None => Ok((at(0), marked(s))),
+            }
+        }
+        _ => Err(CmdError::Params("`unit` is word, line, paragraph or paragraphText".into())),
+    }
 }
 
 fn select_all(s: &mut Session, _: &Value) -> CmdResult {

@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-hand-b10-selection-bar
+feature: doc.editor.pointer-selection
+intent: "In the left margin one click selects the line, two the paragraph, three the whole document, and a drag down the margin whole lines, under the selection bar arrow (a click there only put the caret; WPS W-A8; walkthrough B10)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/clicks.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/clicks.mjs, chromium, b10-selection-bar]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 120
+since: "2026-11-28"

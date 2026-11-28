@@ -21,6 +21,10 @@ export type DocInfo = {
   chart: string | null
   /** Whether Escape has something to cancel: a gesture, a shape chosen to draw, or a selection. */
   escape: boolean
+  /** Whether the selection is the whole story (Select All, three clicks in the selection bar). */
+  all: boolean
+  /** The format painter held: for one selection, or until put down (double-clicked); `null` when not. */
+  painter: 'once' | 'sticky' | null
 }
 
 type Area = { x: number; y: number; width: number; height: number }
@@ -32,7 +36,7 @@ const caretOf = (caret: unknown): CaretRect | null => {
 }
 
 export function describe(info: KitEngineInfo): DocInfo {
-  const inspected = info.inspected as { page?: number; caret?: CaretRect | null; pages?: Array<{ area?: Area }>; words?: number; selected?: number; story?: unknown; equation?: boolean; shape?: string | null; shapes?: string[]; chart?: string | null; escape?: boolean }
+  const inspected = info.inspected as { page?: number; caret?: CaretRect | null; pages?: Array<{ area?: Area }>; words?: number; selected?: number; story?: unknown; equation?: boolean; shape?: string | null; shapes?: string[]; chart?: string | null; escape?: boolean; all?: boolean; painter?: unknown }
   return {
     page: inspected.page ?? 0,
     caret: caretOf(inspected.caret),
@@ -45,6 +49,8 @@ export function describe(info: KitEngineInfo): DocInfo {
     shapes: Array.isArray(inspected.shapes) ? inspected.shapes : [],
     chart: inspected.chart ?? null,
     escape: inspected.escape === true,
+    all: inspected.all === true,
+    painter: inspected.painter === 'once' || inspected.painter === 'sticky' ? inspected.painter : null,
   }
 }
 

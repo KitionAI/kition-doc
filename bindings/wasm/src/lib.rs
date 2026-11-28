@@ -23,6 +23,7 @@ mod objects;
 mod params;
 mod place;
 mod settle;
+mod text_tool;
 
 use std::cell::{RefCell, RefMut};
 use std::collections::HashMap;
@@ -31,7 +32,7 @@ use std::sync::Arc;
 use kition_doc_engine::layout::DocLayout;
 use kition_doc_engine::{Selection, Session};
 use kition_kit::raster::{self, Frame};
-use kition_kit::tools::{KitTools, PointerAction, ToolInfo, ToolMods, ToolOverlay, ToolPointer, ToolRequest, ToolResponse};
+use kition_kit::tools::{KitTools, ToolInfo, ToolMods, ToolOverlay, ToolPointer, ToolRequest, ToolResponse};
 use kition_kit::{KitCommand, KitDocument, MAX_RENDER_SIDE};
 use serde_json::{Value, json};
 
@@ -68,8 +69,8 @@ pub struct DocDocument {
     /// In a cell: laying out needs `&mut` (Kition Doc caches the layout per revision), and
     /// rendering and inspecting take `&self`.
     session: RefCell<Session>,
-    /// A drag that started on a page: the page.
-    dragging: Option<usize>,
+    /// The text tool's press under way, last press and pointer place (`text_tool`).
+    text_tool: text_tool::TextTool,
     cache: RefCell<HashMap<usize, (u64, kition_doc_render::Rendered)>>,
     /// The canvas around the pages (an editor's canvas color).
     pasteboard: [u8; 4],
@@ -164,7 +165,7 @@ impl DocDocument {
     fn from_session(session: Session) -> Self {
         Self {
             session: RefCell::new(session),
-            dragging: None,
+            text_tool: text_tool::TextTool::default(),
             cache: RefCell::new(HashMap::new()),
             pasteboard: PASTEBOARD,
             object_drag: None,
@@ -300,6 +301,7 @@ impl DocDocument {
             out.push(ToolOverlay::Line { ax, ay, bx, by, color: CARET, dashed: false });
         }
         drop(session);
+        self.text_tool_overlays(&layout, &areas, &mut out);
         margin_guides::append(&layout, &areas, &mut out);
         self.object_overlays(&areas, &mut out);
         self.ink_overlays(&areas, &mut out);
@@ -311,7 +313,10 @@ impl DocDocument {
         ToolResponse {
             requests: if requests.is_empty() { Vec::new() } else { vec![ToolRequest::Status { text: requests }] },
             overlays: self.overlays(),
-            cursor: "text".into(),
+            cursor: {
+                let layout = self.layout();
+                self.text_cursor(&layout, &Self::areas(&layout))
+            },
             // A word processor always types: editing keys and text come here.
             busy: true,
             wants_text: true,
@@ -526,7 +531,19 @@ impl KitDocument for DocDocument {
         // Whether Escape has something to cancel: a gesture, a shape chosen to draw, or a
         // selection (text or an object). The editor gives Escape to the text tool only then, so
         // an Escape with nothing to cancel is left to the host (in Focus it leaves Focus).
-        let escape = gesture || session.view.draw.shape.is_some() || !session.sel.is_collapsed();
+        let escape = gesture
+            || self.text_tool.gesture.is_some()
+            || session.painter.is_some()
+            || session.view.draw.shape.is_some()
+            || !session.sel.is_collapsed();
+        // Whether the selection is the whole story (Select All, or three clicks in the selection
+        // bar): the view stays where it is (walkthrough C10).
+        let all = !session.sel.is_collapsed() && {
+            let (a, b) = session.sel.ordered();
+            a == session.doc.start_of(a.story) && b == session.doc.end_of(a.story)
+        };
+        // The format painter held: once, or until put down (double-clicked).
+        let painter = session.painter.as_ref().map(|(_, _, sticky)| if *sticky { "sticky" } else { "once" });
         // The body's blocks with their tool ids (C8-land-14-doc): what `on`, `doc_query` and a
         // write's receipt name them by, beside the index `select.range` takes.
         let blocks: Vec<Value> = session
@@ -566,6 +583,8 @@ impl KitDocument for DocDocument {
             "shapes": shapes,
             "chart": chart,
             "escape": escape,
+            "all": all,
+            "painter": painter,
             "canUndo": session.can_undo(),
             "canRedo": session.can_redo(),
         }))
@@ -733,64 +752,28 @@ impl KitTools for DocDocument {
     fn pointer(&mut self, event: &ToolPointer) -> Result<ToolResponse, String> {
         let layout = self.layout();
         let areas = Self::areas(&layout);
-        let page = match (event.action, self.dragging) {
-            (PointerAction::Drag | PointerAction::Up, Some(page)) => page,
-            _ => Self::page_at(&areas, event.y),
-        };
-        let Some(area) = areas.get(page) else { return Ok(self.respond()) };
-        // Pictures, shapes and text box borders before the text under them; a drag stays in the
-        // coordinates of the page it started on.
-        let (opage, oarea) = match self.object_drag_page().and_then(|p| areas.get(p).map(|a| (p, *a))) {
-            Some(found) => found,
-            None => (page, *area),
-        };
-        if self.object_pointer(event, opage, event.x - oarea.x, event.y - oarea.y)? {
-            self.dragging = None;
-            return Ok(self.respond());
+        self.track_pointer(event);
+        // Pictures, shapes and text box borders before the text under them (unless the text tool
+        // holds a press); an object's drag stays in the coordinates of the page it started on.
+        if self.text_tool.gesture.is_none() {
+            let page = Self::page_at(&areas, event.y);
+            if let Some((opage, oarea)) =
+                self.object_drag_page().and_then(|p| areas.get(p).map(|a| (p, *a))).or_else(|| areas.get(page).map(|a| (page, *a)))
+                && self.object_pointer(event, opage, event.x - oarea.x, event.y - oarea.y)?
+            {
+                return Ok(self.respond());
+            }
         }
-        let (x, y) = ((event.x - area.x) as f32, (event.y - area.y) as f32);
-        let story = self.session.borrow().sel.focus.story;
-        let hit = layout.hit(page, x, y, story);
-        match event.action {
-            PointerAction::Down => {
-                if let Some(pos) = hit {
-                    let pos = serde_json::to_value(&pos).map_err(|error| error.to_string())?;
-                    self.session().run("caret.set", &json!({ "pos": pos, "extend": event.mods.shift })).map_err(|error| error.to_string())?;
-                    self.session().page_hint = page;
-                }
-                self.dragging = Some(page);
-            }
-            PointerAction::Drag => {
-                if let Some(pos) = hit {
-                    let mut session = self.session();
-                    if pos != session.sel.focus {
-                        session.sel.focus = pos;
-                        session.page_hint = page;
-                    }
-                }
-            }
-            PointerAction::Up => {
-                self.dragging = None;
-                let mut session = self.session();
-                if session.painter.is_some() && !session.sel.is_collapsed() {
-                    session.run("edit.pasteFormat", &json!({})).map_err(|error| error.to_string())?;
-                }
-            }
-            PointerAction::DoubleClick => {
-                // The word under the pointer, wherever the caret was.
-                if let Some(pos) = hit {
-                    let pos = serde_json::to_value(&pos).map_err(|error| error.to_string())?;
-                    self.session().run("caret.set", &json!({ "pos": pos })).map_err(|error| error.to_string())?;
-                }
-                self.session().run("select.word", &json!({})).map_err(|error| error.to_string())?;
-            }
-            PointerAction::Move => {}
-        }
+        self.text_pointer(event, &layout, &areas)?;
         Ok(self.respond())
     }
 
     fn key(&mut self, key: &str, mods: ToolMods, _zoom: f64) -> Result<ToolResponse, String> {
         if self.object_key(key, mods)? {
+            return Ok(self.respond());
+        }
+        // Escape drops a press under way (the text stays put), then puts down the format painter.
+        if key == "Escape" && (self.cancel_text_gesture() || self.session().painter.take().is_some()) {
             return Ok(self.respond());
         }
         let Some(name) = Self::key_name(key) else { return Ok(self.respond()) };

@@ -40,7 +40,11 @@ const HIGHLIGHTS: Array<[string, string]> = [
   ['black', '#000000'],
 ]
 
-export function HomeTab({ onFind, onClipboard }: { onFind: (replace: boolean) => void; onClipboard: (action: ClipboardAction) => void }) {
+/**
+ * `painter`: the format painter held (`inspect().painter`). One click holds it for one selection,
+ * a double click until Escape or another click (WPS W-M1, W-M2); the button is pressed meanwhile.
+ */
+export function HomeTab({ onFind, onClipboard, painter }: { onFind: (replace: boolean) => void; onClipboard: (action: ClipboardAction) => void; painter: 'once' | 'sticky' | null }) {
   const { run, enabled, phrase: p, testId } = useKitEditor()
   const format = useEngineQuery<FormatState>('format.state') ?? {}
   const view = useEngineQuery<ViewState>('view.state') ?? {}
@@ -59,7 +63,7 @@ export function HomeTab({ onFind, onClipboard }: { onFind: (replace: boolean) =>
         <RibbonStack>
           <RibbonButton icon={Scissors} label={p('Cut')} disabled={!enabled('edit.cut')} onClick={() => onClipboard('cut')} data-testid="doc-cmd-edit.cut" />
           <RibbonButton icon={Copy} label={p('Copy')} disabled={!enabled('edit.copy')} onClick={() => onClipboard('copy')} data-testid="doc-cmd-edit.copy" />
-          <CommandButton command="edit.formatPainter" icon={Paintbrush} label={p('Format Painter')} />
+          <CommandButton command="edit.formatPainter" icon={Paintbrush} label={p('Format Painter')} pressed={painter != null} onDoubleClick={() => void run('edit.formatPainter', { sticky: true })} />
         </RibbonStack>
       </RibbonGroup>
 

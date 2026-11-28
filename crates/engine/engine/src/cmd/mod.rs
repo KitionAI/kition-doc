@@ -307,6 +307,20 @@ pub fn now_unix() -> u64 {
     }
 }
 
+/// Milliseconds on the wall clock (the browser's on the web): how far apart two presses were, to
+/// tell a double click from two clicks. Never `SOURCE_DATE_EPOCH`; 0 when there is no clock.
+pub fn clock_ms() -> f64 {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs_f64() * 1000.0).unwrap_or(0.0)
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        let ms = js_sys::Date::now();
+        if ms.is_finite() { ms } else { 0.0 }
+    }
+}
+
 /// ISO-8601 timestamp (UTC, seconds).
 pub fn now_iso() -> String {
     iso_from_unix_secs(now_unix())

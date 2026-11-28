@@ -1,0 +1,22 @@
+format: 1
+id: doc.editor.pointer-selection/zoomed-and-scrolled
+feature: doc.editor.pointer-selection
+intent: "Three clicks on the second page at 150% select that paragraph, and the zoom stays."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/clicks.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/clicks.mjs, chromium, b4-zoomed-and-scrolled]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 150
+since: "2026-11-28"

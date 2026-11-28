@@ -31,7 +31,16 @@ async function scroll(e, deltaY) {
     await e.page.mouse.wheel(0, step)
     left -= step
   }
-  await e.wait(300)
+  // Until the view has settled (a wheel's pan lands on the canvas's next frames, slower on a busy
+  // machine): a key pressed before then would have its view followed and then scrolled away.
+  let last = null
+  let still = 0
+  await e.until(async () => {
+    const now = (await e.view())?.y
+    still = now === last ? still + 1 : 0
+    last = now
+    return still >= 3
+  }, 60)
 }
 /** The caret is drawn inside the canvas. */
 async function drawnInView(e) {
