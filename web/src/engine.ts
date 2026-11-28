@@ -1,5 +1,6 @@
 import type { KitModuleManifest } from '@kition/sdk/editor'
 import { canvasColor } from './backdrop'
+import { onMac } from './keys'
 import kit from '../../kit.json'
 
 /** The engine, from this package's own folder, on the host's canvas color. Called after the theme is applied. */
@@ -15,6 +16,9 @@ export function engineManifest(commentOnly = false): KitModuleManifest {
     // thumbnails and agents get them as printed.
     setup: [
       { method: 'setEditing', args: [true] },
+      // A Mac's keys: Cmd+Left and Cmd+Right go to the ends of the line, Option+Left and
+      // Option+Right a word (the engine has no platform of its own).
+      ...(onMac() ? [{ method: 'setMac', args: [true] }] : []),
       ...(canvas ? [{ method: 'setBackdrop', args: [canvas] }] : []),
       ...(commentOnly ? [{ method: 'setCommentOnly', args: [true] }] : []),
     ],

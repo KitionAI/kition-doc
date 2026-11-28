@@ -52,13 +52,15 @@ const CARET_INIT = () => {
 }
 
 /** Opens dev.html (the sample document) in `which` browser at `width` × `height`; Single line unless `query` says otherwise. */
-export async function open({ which = process.argv[2] ?? 'chromium', query = 'locale=en-US', width = 1600, height = 1000 } = {}) {
+export async function open({ which = process.argv[2] ?? 'chromium', query = 'locale=en-US', width = 1600, height = 1000, mac = false } = {}) {
   const server = await createServer({ root: new URL('../..', import.meta.url).pathname, configFile: new URL('../../vite.config.ts', import.meta.url).pathname, server: { port: 0, host: '127.0.0.1' }, logLevel: 'error' })
   await server.listen()
   const browser = await (which === 'webkit' ? webkit : chromium).launch()
   const context = await browser.newContext({ viewport: { width, height } })
   if (which === 'chromium') await context.grantPermissions(['clipboard-read', 'clipboard-write'])
   await context.addInitScript(CARET_INIT)
+  // A Mac's keyboard on any machine (`mac`): the editor and its frame read the platform.
+  if (mac) await context.addInitScript(() => Object.defineProperty(Navigator.prototype, 'platform', { get: () => 'MacIntel', configurable: true }))
   const page = await context.newPage()
   page.setDefaultTimeout(10_000)
   const errors = []
@@ -183,13 +185,24 @@ export async function open({ which = process.argv[2] ?? 'chromium', query = 'loc
       if (!element || element === document.body) return 'body'
       return `${element.tagName.toLowerCase()}${element.className && typeof element.className === 'string' ? `.${element.className.split(' ')[0]}` : ''}`
     })
+  /** The caret's place on the canvas as the engine reports it (`inspect().caret`, points). */
+  const caretRect = async () => (await details()).caret ?? null
+  /** Whether the engine's caret (with a selection, its moving end) is inside the canvas's view. */
+  const caretInView = async () => {
+    const caret = await caretRect()
+    const shown = await view()
+    const box = await surface()
+    if (!caret || !shown || !box) return false
+    const high = box.height / shown.zoom
+    return caret.top >= shown.y - 0.5 && caret.top + caret.height <= shown.y + high + 0.5
+  }
   /** The system clipboard's text (chromium, which grants the permission). */
   const clipboardText = () => page.evaluate(() => navigator.clipboard.readText())
   const close = async () => {
     await browser.close().catch(() => undefined)
     await server.close().catch(() => undefined)
   }
-  return { which, page, kit, frame, wait, until, agent, ask, details, read, setup, selection, paragraphs, paragraph, zoom, surface, view, caretDrawn, textPoint, pagesOf, active, clipboardText, errors, close }
+  return { which, page, kit, frame, wait, until, agent, ask, details, read, setup, selection, paragraphs, paragraph, zoom, surface, view, caretDrawn, caretRect, caretInView, textPoint, pagesOf, active, clipboardText, errors, close }
 }
 
 /**

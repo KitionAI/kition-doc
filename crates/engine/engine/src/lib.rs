@@ -59,13 +59,30 @@ pub struct CommandSpec {
     /// Where it lives in the UI: `Home › Font`, `Insert › Tables`, `File`…
     pub location: &'static str,
     /// Default shortcut in a portable form (`Mod+B`, `Mod+Shift+>`, `F7`). `Mod` = Ctrl, or ⌘ on macOS.
+    /// Alternatives are ` / ` apart, the first one the one menus show.
     pub shortcut: &'static str,
+    /// The shortcut on a Mac where it differs from [`Self::shortcut`] (empty: the same): ⌘← goes
+    /// to the start of the line there, ⌥← a word left. See [`Platform`].
+    pub mac_shortcut: &'static str,
     /// Parameter description for agents (`{"size": number}`).
     pub params: &'static str,
     pub mutates: bool,
     /// `None` = enabled; `Some(reason)` = disabled.
     pub enabled: fn(&Session) -> Option<&'static str>,
+    /// When a mutating command's run only moves the selection (see [`CommandSpec::moves_only_when`]).
+    pub moves_only: Option<fn(&Session, &Value) -> bool>,
     pub run: fn(&mut Session, &Value) -> CmdResult,
+}
+
+/// Which keyboard the shortcuts are for. The engine has no platform of its own (it runs in
+/// WebAssembly too); the editor that sends the keys says which (`kition-doc-kit`'s `set_mac`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Platform {
+    /// Windows and Linux: `Mod` is Ctrl.
+    #[default]
+    Default,
+    /// macOS: `Mod` is ⌘, and the keys follow the Mac's habits ([`CommandSpec::mac_shortcut`]).
+    Mac,
 }
 
 fn always(_: &Session) -> Option<&'static str> {
@@ -74,11 +91,34 @@ fn always(_: &Session) -> Option<&'static str> {
 
 impl CommandSpec {
     pub const fn new(id: &'static str, label: &'static str, location: &'static str, run: fn(&mut Session, &Value) -> CmdResult) -> Self {
-        CommandSpec { id, label, location, shortcut: "", params: "{}", mutates: true, enabled: always, run }
+        CommandSpec { id, label, location, shortcut: "", mac_shortcut: "", params: "{}", mutates: true, enabled: always, moves_only: None, run }
     }
     pub const fn key(mut self, s: &'static str) -> Self {
         self.shortcut = s;
         self
+    }
+    /// The shortcut on a Mac, where it differs from the default one (`key`).
+    pub const fn mac(mut self, s: &'static str) -> Self {
+        self.mac_shortcut = s;
+        self
+    }
+    /// The shortcut on `platform`.
+    pub fn shortcut_on(&self, platform: Platform) -> &'static str {
+        match platform {
+            Platform::Mac if !self.mac_shortcut.is_empty() => self.mac_shortcut,
+            _ => self.shortcut,
+        }
+    }
+    /// A run that, with these parameters in this session, only moves the caret or the selection
+    /// (Tab to the next table cell) leaves the document and the history as they were: no undo step.
+    pub const fn moves_only_when(mut self, f: fn(&Session, &Value) -> bool) -> Self {
+        self.moves_only = Some(f);
+        self
+    }
+    /// Whether this run, with `params` in `s`, changes nothing but the selection (see
+    /// [`Self::moves_only_when`]).
+    pub fn only_moves(&self, s: &Session, params: &Value) -> bool {
+        self.mutates && self.moves_only.is_some_and(|f| f(s, params))
     }
     pub const fn params(mut self, p: &'static str) -> Self {
         self.params = p;
@@ -124,9 +164,16 @@ impl Registry {
                 .collect(),
         )
     }
-    /// The command bound to a shortcut, if any.
+    /// The command bound to a shortcut on the default keyboard, if any.
     pub fn by_shortcut(&self, key: &str) -> Option<&CommandSpec> {
-        self.specs.iter().find(|s| !s.shortcut.is_empty() && s.shortcut.split(" / ").any(|k| k.eq_ignore_ascii_case(key)))
+        self.by_shortcut_on(key, Platform::Default)
+    }
+    /// The command bound to a shortcut on `platform`'s keyboard, if any.
+    pub fn by_shortcut_on(&self, key: &str, platform: Platform) -> Option<&CommandSpec> {
+        self.specs.iter().find(|s| {
+            let keys = s.shortcut_on(platform);
+            !keys.is_empty() && keys.split(" / ").any(|k| k.eq_ignore_ascii_case(key))
+        })
     }
 }
 

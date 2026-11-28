@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-hand-a10-view-follows-caret
+feature: doc.editor.caret-in-view
+intent: "The caret placed or typed below the window brings the view just far enough to show its line, not centred and at the same zoom, and every line typed from there stays in the canvas (the view did not follow, the person typed out of sight; WPS W-D6, W-U6; walkthrough A10)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/follow.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/follow.mjs, chromium, a10-view-follows-caret]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 120
+since: "2026-11-28"

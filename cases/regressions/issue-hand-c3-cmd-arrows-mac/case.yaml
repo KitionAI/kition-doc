@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-hand-c3-cmd-arrows-mac
+feature: doc.editor.mac-keys
+intent: "On a Mac's keyboard Cmd+Right and Cmd+Left go to the ends of the line and Shift+Cmd+Right selects to its end, Option+Right a word, Cmd+Up the start of the paragraph (Cmd+arrows moved by words; WPS W-D3-W-D5; walkthrough C3)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/mac-keys.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/mac-keys.mjs, chromium, c3-cmd-arrows-mac]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 90
+since: "2026-11-28"

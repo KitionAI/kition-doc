@@ -7,6 +7,9 @@ use super::{parse_pos, sel_result};
 use crate::{CmdError, CmdResult, CommandSpec, Selection, Session, p};
 
 const EXTEND: &str = r#"{"extend"?: bool}"#;
+const PAGE: &str = r#"{"extend"?: bool, "distance"?: pt}"#;
+/// The farthest one Page Up or Page Down goes, in points (a screen is far less).
+const MAX_PAGE_DISTANCE: f32 = 100_000.0;
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
@@ -17,14 +20,17 @@ pub fn specs() -> Vec<CommandSpec> {
         // In a right-to-left paragraph the word to the left is the next one.
         CommandSpec::new("caret.wordLeft", "Word Left", "Navigation", |s, v| mv(s, v, if rtl_para(s) { word_right } else { word_left }))
             .key("Mod+Left / Alt+Left")
+            .mac("Alt+Left")
             .params(EXTEND)
             .pure(),
         CommandSpec::new("caret.wordRight", "Word Right", "Navigation", |s, v| mv(s, v, if rtl_para(s) { word_left } else { word_right }))
             .key("Mod+Right / Alt+Right")
+            .mac("Alt+Right")
             .params(EXTEND)
             .pure(),
-        CommandSpec::new("caret.home", "Line Start", "Navigation", |s, v| line(s, v, true)).key("Home").params(EXTEND).pure(),
-        CommandSpec::new("caret.end", "Line End", "Navigation", |s, v| line(s, v, false)).key("End").params(EXTEND).pure(),
+        // On a Mac ⌘← and ⌘→ go to the ends of the line, as Home and End do (WPS W-D3).
+        CommandSpec::new("caret.home", "Line Start", "Navigation", |s, v| line(s, v, true)).key("Home").mac("Home / Mod+Left").params(EXTEND).pure(),
+        CommandSpec::new("caret.end", "Line End", "Navigation", |s, v| line(s, v, false)).key("End").mac("End / Mod+Right").params(EXTEND).pure(),
         CommandSpec::new("caret.paraUp", "Paragraph Up", "Navigation", |s, v| mv(s, v, para_up)).key("Mod+Up / Alt+Up").params(EXTEND).pure(),
         CommandSpec::new("caret.paraDown", "Paragraph Down", "Navigation", |s, v| mv(s, v, para_down))
             .key("Mod+Down / Alt+Down")
@@ -38,8 +44,11 @@ pub fn specs() -> Vec<CommandSpec> {
             .key("Mod+End")
             .params(EXTEND)
             .pure(),
-        CommandSpec::new("caret.pageUp", "Page Up", "Navigation", |s, v| page(s, v, -1)).key("PageUp").params(EXTEND).pure(),
-        CommandSpec::new("caret.pageDown", "Page Down", "Navigation", |s, v| page(s, v, 1)).key("PageDown").params(EXTEND).pure(),
+        // `distance` is a screen's height, which only the editor knows (it binds PageUp and
+        // PageDown with it); without it the caret goes to the start of the page before or after
+        // (⌘PageUp, ⌘PageDown; WPS W-D7, W-D8).
+        CommandSpec::new("caret.pageUp", "Page Up", "Navigation", |s, v| page(s, v, -1)).key("Mod+PageUp").params(PAGE).pure(),
+        CommandSpec::new("caret.pageDown", "Page Down", "Navigation", |s, v| page(s, v, 1)).key("Mod+PageDown").params(PAGE).pure(),
         CommandSpec::new("caret.set", "Set Caret", "Navigation", set)
             .params(r#"{"pos": Pos, "extend"?: bool} | {"page": n, "x": pt, "y": pt}"#)
             .pure(),
@@ -244,15 +253,79 @@ fn line(s: &mut Session, v: &Value, home: bool) -> CmdResult {
     sel_result(s)
 }
 
+/// Page Up and Page Down: by `distance` points (a screen) keeping the place across, through the
+/// pages as they are stacked; without it, to the start of the first line of the page before or
+/// after (the first page's, or the end of the last).
 fn page(s: &mut Session, v: &Value, dir: i32) -> CmdResult {
     let ext = extend(v);
+    let distance = match v.get("distance") {
+        None => None,
+        Some(_) => match p::f32(v, "distance") {
+            Some(d) if d > 0.0 => Some(d.min(MAX_PAGE_DISTANCE)),
+            _ => return Err(CmdError::Params("`distance` is a positive number of points".into())),
+        },
+    };
     let l = s.layout();
     let from = s.sel.focus.clone();
     let Some(c) = l.caret_on(&from, s.page_hint) else { return sel_result(s) };
-    let np = if dir < 0 { c.page.saturating_sub(1) } else { (c.page + 1).min(l.pages.len().saturating_sub(1)) };
-    let to = l.hit(np, c.x, c.top + 1.0, from.story).unwrap_or(from);
-    s.page_hint = np;
+    let last = l.pages.len().saturating_sub(1);
+    let Some(distance) = distance else {
+        let to = match (dir < 0, c.page) {
+            (false, p) if p >= last => s.doc.end_of(from.story),
+            (up, p) => {
+                let np = if up { p.saturating_sub(1) } else { p + 1 };
+                let first = l.hit(np, 0.0, 0.0, from.story);
+                s.page_hint = np;
+                match first {
+                    Some(pos) => l.line_bounds(&pos, np).map_or(pos, |(start, _)| start),
+                    None => from,
+                }
+            }
+        };
+        s.goal_x = None;
+        apply(s, to, ext);
+        return sel_result(s);
+    };
+    // Where the middle of the caret's line goes, on the pages stacked one after another; the line
+    // nearest it there, on its page or the next one (a margin between them is no line).
+    let goal = s.goal_x.unwrap_or(c.x);
+    let mut tops = Vec::with_capacity(l.pages.len());
+    let mut total = 0.0f32;
+    for p in &l.pages {
+        tops.push(total);
+        total += p.h;
+    }
+    let top_of = |page: usize| tops.get(page).copied().unwrap_or(0.0);
+    let start = top_of(c.page) + c.top + c.height / 2.0;
+    let target = if dir < 0 { start - distance } else { start + distance };
+    let to = if target > total {
+        // Past the last page: the end of the text.
+        s.doc.end_of(from.story)
+    } else {
+        let target = target.max(0.0);
+        let page = tops.iter().rposition(|top| *top <= target).unwrap_or(0);
+        let mut best: Option<(f32, Pos, usize)> = None;
+        let neighbours = [(page.checked_sub(1), f32::MAX), (Some(page), target - top_of(page)), (Some(page + 1).filter(|p| *p <= last), 0.0)];
+        for (p, y) in neighbours {
+            let Some(p) = p else { continue };
+            let y = y.min(l.pages.get(p).map_or(0.0, |pg| pg.h));
+            let Some(pos) = l.hit(p, goal, y, from.story) else { continue };
+            let Some(at) = l.caret_on(&pos, p) else { continue };
+            let off = (top_of(at.page) + at.top + at.height / 2.0 - target).abs();
+            if best.as_ref().is_none_or(|(b, ..)| off < *b) {
+                best = Some((off, pos, at.page));
+            }
+        }
+        match best {
+            Some((_, pos, page)) => {
+                s.page_hint = page;
+                pos
+            }
+            None => from,
+        }
+    };
     apply(s, to, ext);
+    s.goal_x = Some(goal);
     sel_result(s)
 }
 

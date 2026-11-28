@@ -2,7 +2,8 @@
 // J1, J2, J3, J4; WPS W-J1, W-J4–W-J6): Cmd+C and Cmd+X put the selected text on the system
 // clipboard, Cmd+V pastes what another application put there (plain text, lines as paragraphs, HTML
 // with its bold and its list), Cmd+Alt+Shift+V pastes the text only, and a copy inside the document
-// keeps its formatting. Chromium reads and writes the system clipboard; WebKit, which gives the test
+// keeps its formatting; the copy's HTML goes on the system clipboard beside its text (stage 0B).
+// Chromium reads and writes the system clipboard; WebKit, which gives the test
 // no clipboard permission, checks that copying and pasting inside the document still works.
 // node tests/hand/clipboard.mjs [chromium|webkit] [segment…]
 import assert from 'node:assert/strict'
@@ -93,6 +94,36 @@ const list = [
       await e.wait(250)
     }
     assert(!(await bold()), 'the bold undone')
+  }],
+  ['j1-copy-html', async (e) => {
+    // Stage 0B: Cmd+C puts the copy's HTML on the system clipboard too, so another application
+    // keeps the bold; pasted back here it is still the document's own copy.
+    if (e.which !== 'chromium') return
+    const start = await body(e)
+    await caretAt(e, 2, 0)
+    await selectRight(e, 5)
+    await e.page.keyboard.press('ControlOrMeta+b')
+    await e.until(async () => (await e.read('format.state'))?.bold === true)
+    await e.page.keyboard.press('ControlOrMeta+c')
+    await e.wait(300)
+    const html = await e.page.evaluate(async () => {
+      const item = (await navigator.clipboard.read()).find((entry) => entry.types.includes('text/html'))
+      return item ? (await item.getType('text/html')).text() : ''
+    })
+    const word = [...(await e.paragraph(2)).paragraph.text].slice(0, 5).join('')
+    assert(html.includes(word.trim()) && /<(b|strong)\b|font-weight:\s*(bold|[6-9]00)/i.test(html), `the clipboard's HTML has the bold word: ${html.replace(/style="[^"]*"/g, "").slice(0, 400)}`)
+    assert.equal((await e.clipboardText()).replace(/\r\n/g, '\n'), word, 'and its text')
+    const end = [...(await e.paragraph(3)).paragraph.text].length
+    await caretAt(e, 3, end)
+    await e.page.keyboard.press('ControlOrMeta+v')
+    await e.until(async () => (await e.paragraph(3)).paragraph.text.endsWith(word))
+    assert((await e.paragraph(3)).paragraph.text.endsWith(word), 'Cmd+V pastes it back as one word, no new paragraph')
+    await undoTo(e, start)
+    const bold = async () => ((await e.paragraph(2)).paragraph.runs ?? []).some((run) => run.props?.bold)
+    for (let index = 0; index < 4 && (await bold()); index += 1) {
+      await e.page.keyboard.press('ControlOrMeta+z')
+      await e.wait(250)
+    }
   }],
   ['j1-copy-picture', async (e) => {
     // A picture has no text: the system clipboard empties, so Cmd+V pastes the picture, not what

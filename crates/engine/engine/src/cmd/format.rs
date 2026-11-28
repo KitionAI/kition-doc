@@ -96,10 +96,14 @@ pub fn specs() -> Vec<CommandSpec> {
         CommandSpec::new("format.engrave", "Engrave", "Home › Font › Font", |s, v| toggle(s, v, |r| r.engrave, |c, on| c.engrave = Some(on))),
         CommandSpec::new("format.fontName", "Font", "Home › Font", font).key("Mod+Shift+F").params(r#"{"name": string}"#),
         CommandSpec::new("format.fontSize", "Font Size", "Home › Font", size).key("Mod+Shift+P").params(r#"{"size": number}"#),
-        CommandSpec::new("format.increaseFontSize", "Increase Font Size", "Home › Font", |s, _| step_size(s, 1)).key("Mod+Shift+. / Mod+Shift+>"),
-        CommandSpec::new("format.decreaseFontSize", "Decrease Font Size", "Home › Font", |s, _| step_size(s, -1)).key("Mod+Shift+, / Mod+Shift+<"),
-        CommandSpec::new("format.increaseFontSizeByOne", "Grow Font 1 Point", "Home › Font", |s, _| nudge_size(s, 1.0)).key("Mod+]"),
-        CommandSpec::new("format.decreaseFontSizeByOne", "Shrink Font 1 Point", "Home › Font", |s, _| nudge_size(s, -1.0)).key("Mod+["),
+        // ⌘] and ⌘[ go through the size list as ⌘⇧> and ⌘⇧< do (WPS W-L4); one point at a time
+        // has no key.
+        CommandSpec::new("format.increaseFontSize", "Increase Font Size", "Home › Font", |s, _| step_size(s, 1))
+            .key("Mod+] / Mod+Shift+. / Mod+Shift+>"),
+        CommandSpec::new("format.decreaseFontSize", "Decrease Font Size", "Home › Font", |s, _| step_size(s, -1))
+            .key("Mod+[ / Mod+Shift+, / Mod+Shift+<"),
+        CommandSpec::new("format.increaseFontSizeByOne", "Grow Font 1 Point", "Home › Font", |s, _| nudge_size(s, 1.0)),
+        CommandSpec::new("format.decreaseFontSizeByOne", "Shrink Font 1 Point", "Home › Font", |s, _| nudge_size(s, -1.0)),
         CommandSpec::new("format.color", "Font Color", "Home › Font", color).params(r#"{"color": "RRGGBB" | "auto"}"#),
         CommandSpec::new("format.highlight", "Text Highlight Color", "Home › Font", highlight).params(
             r#"{"color": "yellow|brightGreen|turquoise|pink|blue|red|darkBlue|teal|green|violet|darkRed|darkYellow|gray50|gray25|black|none"}"#,

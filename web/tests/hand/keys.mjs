@@ -2,7 +2,10 @@
 // Q2, Q4, G13, G11, I2; WPS W-R1–W-R3, W-I1, W-D10): the find bar's Enter and Shift+Enter, Cmd+G,
 // F3 and Cmd+Shift+G (opening the bar when it is closed), Match Case, Ctrl+H for Replace, Cmd+8 for
 // Show/Hide ¶, Cmd+K and F5 opening their parameters, Ctrl+A selecting all, Cmd+Y redoing,
-// Cmd+Shift+C and Cmd+Shift+V copying and pasting the formatting.
+// Cmd+Shift+C and Cmd+Shift+V copying and pasting the formatting. Stage 0B (section 2 rows 8, 9,
+// 13; walkthrough C4, C7, I3; WPS W-D5, W-D7, W-D9, W-X7): Alt+Right a word on, Page Down and Page
+// Up a screen keeping the place across (Shift selecting), Tab between table cells no undo step.
+// A Mac's own keys are in mac-keys.mjs.
 // node tests/hand/keys.mjs [chromium|webkit] [segment…]
 import assert from 'node:assert/strict'
 import { open, segments } from './harness.mjs'
@@ -160,5 +163,86 @@ const list = [
     await e.page.keyboard.press('ControlOrMeta+z')
   }],
 ]
+
+/** Setup: `count` short paragraphs from the agent in place of the document's text. */
+async function paragraphsOf(e, count) {
+  const commands = [{ command: 'edit.selectAll', params: {} }, { command: 'text.delete', params: {} }]
+  for (let index = 0; index < count; index += 1) {
+    if (index) commands.push({ command: 'text.newParagraph', params: {} })
+    commands.push({ command: 'text.insert', params: { text: `Paragraph ${index + 1} of the page keys test.` } })
+  }
+  await e.agent(commands)
+  await e.until(async () => (await e.paragraphs()).length >= count)
+}
+
+list.push(
+  ['c4-alt-arrows-words', async (e) => {
+    await caretAt(e, 2)
+    const text = (await e.paragraph(2)).paragraph.text
+    const firstWord = text.indexOf(' ')
+    await e.page.keyboard.press('Alt+ArrowRight')
+    await e.until(async () => (await e.selection()).focus.off > 0)
+    const { focus } = await e.selection()
+    assert(focus.off > 0 && focus.off <= firstWord + 1, `Alt+Right goes to the end of the first word (${focus.off}, the word ends at ${firstWord})`)
+    await e.page.keyboard.press('Alt+ArrowLeft')
+    await e.until(async () => (await e.selection()).focus.off === 0)
+    assert.equal((await e.selection()).focus.off, 0, 'Alt+Left back to its start')
+  }],
+  ['c7-page-keys', async (e) => {
+    await paragraphsOf(e, 120)
+    await e.setup('caret.set', { pos: { story: 'body', path: [2], off: 9 } })
+    await e.until(() => e.caretInView(), 30)
+    const start = await e.caretRect()
+    const shown = await e.view()
+    const box = await e.surface()
+    const screen = box.height / shown.zoom
+    await e.page.keyboard.press('PageDown')
+    await e.until(async () => (await e.caretRect())?.top > start.top + 20)
+    const down = await e.caretRect()
+    // About a screen: the line nearest a screen below, which across a page break may be the other
+    // side of the margins.
+    const went = down.top - start.top
+    assert(went > screen * 0.6 && went < screen * 1.4, `Page Down goes about a screen (${Math.round(went)} of ${Math.round(screen)} points)`)
+    assert(Math.abs(down.x - start.x) < 12, `keeping the place across (${Math.round(start.x)} → ${Math.round(down.x)})`)
+    assert(await e.caretInView(), 'the caret is in view')
+    const view = await e.view()
+    assert(view.y - shown.y > screen * 0.5, `the view went down with it (${Math.round(shown.y)} → ${Math.round(view.y)})`)
+    await e.page.keyboard.press('PageUp')
+    await e.until(async () => (await e.caretRect())?.top < down.top - 20)
+    const up = await e.caretRect()
+    assert(start.top - up.top < screen * 0.4 && up.top - start.top < screen * 0.4 && Math.abs(up.x - start.x) < 12, `Page Up comes back near where it was (${Math.round(start.top)} → ${Math.round(up.top)})`)
+    // Shift+Page Down selects a screen's worth.
+    await e.page.keyboard.press('Shift+PageDown')
+    await e.until(async () => ((await e.selection()).text?.length ?? 0) > 100)
+    assert(((await e.selection()).text?.length ?? 0) > 100, 'Shift+Page Down selects to a screen below')
+    await e.page.keyboard.press('ArrowLeft')
+  }],
+  ['i3-tab-is-not-undo-step', async (e) => {
+    await paragraphsOf(e, 2)
+    await e.agent([{ command: 'caret.docEnd', params: {} }, { command: 'text.newParagraph', params: {} }, { command: 'table.insert', params: { rows: 3, cols: 3 } }])
+    const tableAt = async () => ((await e.ask('file.inspect', {})).blocks ?? []).findIndex((block) => block.type === 'table')
+    await e.until(async () => (await tableAt()) >= 0)
+    const index = await tableAt()
+    await e.setup('caret.set', { pos: { story: 'body', path: [index, 0, 0, 0], off: 0 } })
+    await e.wait(200)
+    const cells = async () => {
+      const answer = await e.ask('file.text', {})
+      return typeof answer?.text === "string" ? answer.text : JSON.stringify(answer)
+    }
+    for (const [step, key] of [['1', 'Tab'], ['2', 'Tab'], ['3', null]]) {
+      await e.page.keyboard.type(step)
+      if (key) await e.page.keyboard.press(key)
+    }
+    await e.until(async () => /1[\s\S]*2[\s\S]*3/.test(await cells()))
+    assert(/1[\s\S]*2[\s\S]*3/.test(await cells()), 'typed 1, 2 and 3 into three cells')
+    for (let undo = 0; undo < 3; undo += 1) {
+      await e.page.keyboard.press('ControlOrMeta+z')
+      await e.wait(150)
+    }
+    await e.until(async () => !/[123]/.test((await cells()).split('of the page keys test.').pop() ?? ''))
+    const left = (await cells()).split('of the page keys test.').pop() ?? ''
+    assert(!/[123]/.test(left), `three Cmd+Z take back all three (the Tabs are no steps): ${JSON.stringify(left.slice(0, 60))}`)
+  }],
+)
 
 await segments('keys', list, (which) => open({ which }))

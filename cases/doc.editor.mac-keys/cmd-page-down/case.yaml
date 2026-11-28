@@ -1,0 +1,22 @@
+format: 1
+id: doc.editor.mac-keys/cmd-page-down
+feature: doc.editor.mac-keys
+intent: "On a Mac's keyboard Cmd+Page Down goes to the start of the next page's first line and Cmd+Page Up to the start of the page before (WPS W-D8)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/mac-keys.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/mac-keys.mjs, chromium, cmd-page-down]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 90
+since: "2026-11-28"

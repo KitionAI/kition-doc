@@ -1,0 +1,22 @@
+format: 1
+id: doc.editor.mac-keys/size-list-keys
+feature: doc.editor.mac-keys
+intent: "Cmd+] and Cmd+Shift+> grow the selection to the next size of the size list, Cmd+[ and Cmd+Shift+< take it back (Cmd+] grew one point; WPS W-L4)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/mac-keys.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/mac-keys.mjs, chromium, w-l4-size-list]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 90
+since: "2026-11-28"

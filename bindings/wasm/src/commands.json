@@ -360,7 +360,7 @@
   }
  },
  "caret.pageDown": {
-  "description": "Moves the caret down by one screen; extend grows the selection.",
+  "description": "Moves the caret down by `distance` points (one screen in the editor), keeping its place across the line; without `distance`, to the start of the next page's first line (on the last page, to the end). extend grows the selection.",
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -405,7 +405,7 @@
   }
  },
  "caret.pageUp": {
-  "description": "Moves the caret up by one screen; extend grows the selection.",
+  "description": "Moves the caret up by `distance` points (one screen in the editor), keeping its place across the line; without `distance`, to the start of the previous page's first line (on the first page, its own). extend grows the selection.",
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -1592,6 +1592,10 @@
    "properties": {
     "text": {
      "type": "string"
+    },
+    "html": {
+     "type": "string",
+     "description": "the copy as an HTML document (empty when it has no text)"
     }
    },
    "type": "object"
@@ -1643,7 +1647,7 @@
   }
  },
  "edit.cut": {
-  "description": "Removes the selection and puts it on the clipboard."
+  "description": "Removes the selection and puts it on the clipboard; answers its text and HTML as edit.copy does."
  },
  "edit.deleteClipboardItem": {
   "description": "Removes one item (0 = newest) from the Office clipboard.",

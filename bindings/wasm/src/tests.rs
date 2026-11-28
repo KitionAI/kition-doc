@@ -291,3 +291,185 @@ fn the_pointer_is_the_text_cursor_the_caret_lines_up_with_the_text_and_drags_do_
     assert_eq!(doc.revision(), before, "selecting never bumps the revision; the overlays follow the caret");
     doc.pointer(&event(PointerAction::Up, x + 80.0, middle, false)).unwrap();
 }
+
+/// A document of `count` short paragraphs, opened in the editor.
+fn paragraphs(count: usize) -> DocDocument {
+    let mut doc = DocDocument::create("Long.docx", 0, 0).unwrap();
+    for index in 0..count {
+        if index > 0 {
+            doc.execute("text.newParagraph", json!({})).unwrap();
+        }
+        doc.execute("text.insert", json!({ "text": format!("Paragraph {} of the stage 0B test, long enough to read.", index + 1) })).unwrap();
+    }
+    doc.execute("caret.docStart", json!({})).unwrap();
+    doc
+}
+
+/// The caret the engine reports in `inspect()` (stage 0B, R3): where it is on the canvas, the same
+/// place the drawn caret is, for the selection's moving end too; it changes no revision.
+#[test]
+fn inspect_reports_where_the_caret_is_on_the_canvas() {
+    let mut doc = paragraphs(80);
+    doc.execute(
+        "select.range",
+        json!({ "anchor": { "story": "body", "path": [3], "off": 0 }, "focus": { "story": "body", "path": [70], "off": 4 } }),
+    )
+    .unwrap();
+    let before = doc.revision();
+    let info = doc.inspect().unwrap();
+    let caret = &info["caret"];
+    assert_eq!(caret["page"], info["page"], "{info}");
+    assert!(caret["page"].as_u64().unwrap() >= 1, "the moving end is on a later page: {caret}");
+    doc.execute("select.collapse", json!({ "end": true })).unwrap();
+    let drawn = doc.state(0.0, 0.0, ToolMods::default(), 1.0);
+    let Some(ToolOverlay::Line { ax, ay, by, .. }) = drawn.overlays.first().cloned() else { panic!("no caret: {:?}", drawn.overlays) };
+    let caret = doc.inspect().unwrap()["caret"].clone();
+    assert!((caret["x"].as_f64().unwrap() - ax).abs() < 0.01 && (caret["top"].as_f64().unwrap() - ay).abs() < 0.01, "{caret} vs ({ax}, {ay})");
+    assert!((caret["height"].as_f64().unwrap() - (by - ay)).abs() < 0.01);
+    assert_eq!(doc.revision(), before, "reporting the caret is no edit");
+}
+
+/// The keys of a Mac and of the others (stage 0B, R5; WPS W-D3–W-D5): the editor says which, and
+/// the same key runs the command of that keyboard.
+#[test]
+fn the_keys_follow_the_platform_the_editor_names() {
+    let command = ToolMods { command: true, ..ToolMods::default() };
+    let alt = ToolMods { alt: true, ..ToolMods::default() };
+    let shift_command = ToolMods { command: true, shift: true, ..ToolMods::default() };
+    let at = |doc: &DocDocument| doc.session.borrow().sel.focus.off;
+    let mut doc = DocDocument::open("Letter.docx", &fixture()).unwrap();
+    let len = text(&doc).len();
+    // Elsewhere Ctrl+Right is a word on, Alt+Right too.
+    doc.execute("caret.docStart", json!({})).unwrap();
+    doc.key("ArrowRight", command, 1.0).unwrap();
+    assert_eq!(at(&doc), "Dear ".len(), "Ctrl+Right: a word");
+    doc.key("ArrowRight", alt, 1.0).unwrap();
+    assert_eq!(at(&doc), "Dear reader".len(), "Alt+Right: a word (to its end, before the comma)");
+    // On a Mac Cmd+Right is the end of the line, Cmd+Left its start, Option+Right a word.
+    doc.set_mac(true);
+    doc.execute("caret.docStart", json!({})).unwrap();
+    doc.key("ArrowRight", command, 1.0).unwrap();
+    assert_eq!(at(&doc), len, "Cmd+Right: the end of the line");
+    doc.key("ArrowLeft", command, 1.0).unwrap();
+    assert_eq!(at(&doc), 0, "Cmd+Left: its start");
+    doc.key("ArrowRight", alt, 1.0).unwrap();
+    assert_eq!(at(&doc), "Dear ".len(), "Option+Right: a word");
+    doc.key("ArrowRight", shift_command, 1.0).unwrap();
+    assert_eq!(doc.inspect().unwrap()["selected"], json!(len - "Dear ".len()), "Shift+Cmd+Right selects to the end of the line");
+    // The catalogue shows each command one key, the platform's first.
+    let shortcut = |doc: &DocDocument, id: &str| doc.commands().into_iter().find(|c| c.id == id).and_then(|c| c.shortcut);
+    assert_eq!(shortcut(&doc, "edit.redo").as_deref(), Some("Cmd+Shift+Z"));
+    assert_eq!(shortcut(&doc, "caret.home").as_deref(), Some("Home"));
+    assert_eq!(shortcut(&doc, "format.increaseFontSize").as_deref(), Some("Cmd+]"));
+    assert_eq!(shortcut(&doc, "text.optionalHyphen"), None, "Cmd+- types nothing");
+    doc.set_mac(false);
+    assert_eq!(shortcut(&doc, "edit.redo").as_deref(), Some("Cmd+Y"));
+    assert!(doc.commands().iter().filter_map(|c| c.shortcut.as_deref()).all(|key| !key.contains(" / ")), "no `A / B` reaches the frame");
+}
+
+/// Page Down and Page Up by a screen (stage 0B, C7; WPS W-D7–W-D9): the caret goes about that far
+/// and keeps its place across the line, Shift selects; without a distance it goes to the start of
+/// the next page (Cmd+Page Down, W-D8). No revision changes.
+#[test]
+fn page_down_goes_a_screen_keeping_the_place_across() {
+    let mut doc = paragraphs(120);
+    let before = doc.revision();
+    doc.execute("caret.set", json!({ "pos": { "story": "body", "path": [2], "off": 12 } })).unwrap();
+    let caret = |doc: &DocDocument| doc.inspect().unwrap()["caret"].clone();
+    let start = caret(&doc);
+    let screen = 500.0;
+    doc.execute("caret.pageDown", json!({ "distance": screen })).unwrap();
+    let down = caret(&doc);
+    let went = down["top"].as_f64().unwrap() - start["top"].as_f64().unwrap();
+    assert!(went > screen * 0.8 && went < screen * 1.2, "went {went} for {screen}");
+    assert!((down["x"].as_f64().unwrap() - start["x"].as_f64().unwrap()).abs() < 8.0, "{start} → {down}");
+    // Again: the place across is the one it started from, not the nearest character's.
+    doc.execute("caret.pageDown", json!({ "distance": screen })).unwrap();
+    doc.execute("caret.pageUp", json!({ "distance": screen })).unwrap();
+    doc.execute("caret.pageUp", json!({ "distance": screen })).unwrap();
+    let back = caret(&doc);
+    assert!((back["top"].as_f64().unwrap() - start["top"].as_f64().unwrap()).abs() < 30.0, "{start} → {back}");
+    // Shift: a selection.
+    doc.execute("caret.pageDown", json!({ "distance": screen, "extend": true })).unwrap();
+    assert!(doc.inspect().unwrap()["selected"].as_u64().unwrap() > 100);
+    // Past the end: the end of the text; before the start: the first line.
+    doc.execute("caret.pageDown", json!({ "distance": 100_000 })).unwrap();
+    assert_eq!(doc.session.borrow().sel.focus, doc.session.borrow().doc.end_of(kition_doc_engine::doc::StoryRef::Body));
+    doc.execute("caret.pageUp", json!({ "distance": 100_000 })).unwrap();
+    assert_eq!(doc.session.borrow().sel.focus.path.last(), 0);
+    // No distance: the start of the next page's first line.
+    doc.execute("caret.docStart", json!({})).unwrap();
+    doc.execute("caret.pageDown", json!({})).unwrap();
+    let next = caret(&doc);
+    assert_eq!(next["page"], json!(1));
+    let (path, off) = {
+        let s = doc.session.borrow();
+        (s.sel.focus.path.clone(), s.sel.focus.off)
+    };
+    let first = doc.layout().hit(1, 0.0, 0.0, kition_doc_engine::doc::StoryRef::Body).unwrap();
+    assert_eq!((path, off), (first.path.clone(), first.off), "the first line of page 2, at its start");
+    assert!(doc.execute("caret.pageDown", json!({ "distance": -5 })).is_err(), "a distance is positive");
+    assert_eq!(doc.revision(), before, "paging is no edit");
+}
+
+/// Tab between table cells is no undo step (stage 0B, I3; WPS W-X7): 1 Tab 2 Tab 3 is three steps,
+/// and three Undos take all three back; the Tab in the last cell, which adds a row, is one.
+#[test]
+fn tab_between_cells_is_no_undo_step() {
+    let mut doc = DocDocument::create("Table.docx", 0, 0).unwrap();
+    doc.execute("table.insert", json!({ "rows": 2, "cols": 2 })).unwrap();
+    doc.execute("caret.set", json!({ "pos": { "story": "body", "path": [0, 0, 0, 0], "off": 0 } })).unwrap();
+    let depth = |doc: &DocDocument| doc.session.borrow().undo_depth();
+    let start = depth(&doc);
+    let revision = doc.revision();
+    doc.key("Tab", ToolMods::default(), 1.0).unwrap();
+    assert_eq!(depth(&doc), start, "Tab to the next cell is no step");
+    assert_eq!(doc.revision(), revision, "nor an edit");
+    doc.key("Tab", ToolMods { shift: true, ..ToolMods::default() }, 1.0).unwrap();
+    assert_eq!(depth(&doc), start, "nor is Shift+Tab back");
+    for (step, typed) in ["1", "2", "3"].iter().enumerate() {
+        KitTools::text(&mut doc, typed, 1.0).unwrap();
+        if step < 2 {
+            doc.key("Tab", ToolMods::default(), 1.0).unwrap();
+        }
+    }
+    assert_eq!(depth(&doc), start + 3, "three cells typed, three steps");
+    for _ in 0..3 {
+        doc.execute("edit.undo", json!({})).unwrap();
+    }
+    assert!(!text(&doc).contains(['1', '2', '3']), "three Undos take all three back: {:?}", text(&doc));
+    // The last cell's Tab adds a row: one step.
+    doc.execute("caret.set", json!({ "pos": { "story": "body", "path": [0, 1, 1, 0], "off": 0 } })).unwrap();
+    let rows = |doc: &DocDocument| doc.inspect().unwrap()["blocks"][0]["rows"].as_u64();
+    let before = depth(&doc);
+    doc.key("Tab", ToolMods::default(), 1.0).unwrap();
+    assert_eq!(rows(&doc), Some(3));
+    assert_eq!(depth(&doc), before + 1, "adding the row is a step");
+    doc.execute("edit.undo", json!({})).unwrap();
+    assert_eq!(rows(&doc), Some(2));
+}
+
+/// Copy answers HTML beside the text (stage 0B, J1): the editor puts both on the system clipboard,
+/// so another application keeps the bold; a picture alone answers none.
+#[test]
+fn copy_answers_its_html_too() {
+    let mut doc = DocDocument::create("Bold.docx", 0, 0).unwrap();
+    KitTools::text(&mut doc, "plain bold", 1.0).unwrap();
+    doc.execute(
+        "select.range",
+        json!({ "anchor": { "story": "body", "path": [0], "off": 6 }, "focus": { "story": "body", "path": [0], "off": 10 } }),
+    )
+    .unwrap();
+    doc.execute("format.bold", json!({})).unwrap();
+    doc.execute(
+        "select.range",
+        json!({ "anchor": { "story": "body", "path": [0], "off": 0 }, "focus": { "story": "body", "path": [0], "off": 10 } }),
+    )
+    .unwrap();
+    let answer = doc.execute("edit.copy", json!({})).unwrap();
+    assert_eq!(answer["text"], "plain bold");
+    let html = answer["html"].as_str().unwrap();
+    assert!(html.contains("bold") && (html.contains("<b>") || html.contains("<strong>") || html.contains("font-weight")), "{html}");
+    doc.execute("select.collapse", json!({})).unwrap();
+    assert_eq!(doc.execute("edit.copy", json!({})).unwrap()["text"], "", "nothing selected copies nothing");
+}

@@ -37,6 +37,8 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(SCOPE_PARAMS)
         .key("Mod+Y / Mod+Shift+Z")
+        // A Mac's menus show Cmd+Shift+Z (both keys redo, WPS W-I2).
+        .mac("Mod+Shift+Z / Mod+Y")
         .pure(),
         CommandSpec::new("edit.cut", "Cut", "Home › Clipboard", cut).key("Mod+X").when(has_sel),
         CommandSpec::new("edit.copy", "Copy", "Home › Clipboard", copy).key("Mod+C").pure(),
@@ -105,8 +107,29 @@ fn copy(s: &mut Session, _: &Value) -> CmdResult {
     let f = s.doc.copy_range(&a, &b);
     s.clipboard_text = f.plain_text();
     s.clip_history.push(&f, &s.clipboard_text);
+    // The copy as HTML too, for the system clipboard (other applications keep its formatting);
+    // only for the one who copied: the answer goes to them alone.
+    let html = copied_html(s, &f);
     s.clipboard = Some(f);
-    Ok(json!({"text": s.clipboard_text}))
+    Ok(json!({"text": s.clipboard_text, "html": html}))
+}
+
+/// `frag` as an HTML document, with the session document's styles, lists and pictures (the
+/// HTML export of `formats`). Empty for a copy with no text (a picture alone pastes as the
+/// engine's own copy).
+fn copied_html(s: &Session, frag: &Fragment) -> String {
+    if s.clipboard_text.trim().is_empty() {
+        return String::new();
+    }
+    let doc = kition_doc_doc::Document {
+        body: frag.blocks.iter().cloned().map(std::sync::Arc::new).collect(),
+        parts: frag.parts.clone(),
+        styles: s.doc.styles.clone(),
+        numbering: s.doc.numbering.clone(),
+        media: s.doc.media.clone(),
+        ..kition_doc_doc::Document::new()
+    };
+    kition_doc_formats::html::export(&doc)
 }
 
 fn cut(s: &mut Session, v: &Value) -> CmdResult {

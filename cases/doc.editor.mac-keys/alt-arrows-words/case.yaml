@@ -1,0 +1,22 @@
+format: 1
+id: doc.editor.mac-keys/alt-arrows-words
+feature: doc.editor.mac-keys
+intent: "Alt+Right goes to the end of the word and Alt+Left back to its start (kept by words, plan section 2 not copied 1; walkthrough C4)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/keys.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/keys.mjs, chromium, c4-alt-arrows-words]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 60
+since: "2026-11-28"

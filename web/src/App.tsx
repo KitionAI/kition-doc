@@ -40,6 +40,7 @@ import { focusText, takeKeyboardOnOpen, textInput, useKeyboardFallback } from '.
 import { pressKey, type KeyContext } from './keys'
 import { clipOf, copySelection, pasteClip, pasteFromClipboard, type ClipboardEditor } from './clipboard'
 import { pageWidthArea, wholePage, zoomKeepingMiddle } from './zoom'
+import { useFollowCaret } from './followCaret'
 import { ZoomControl, type ZoomActions } from './ZoomControl'
 
 const NO_PAGES: RasterRect[] = []
@@ -95,9 +96,13 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   // Select All keeps the view where it is (walkthrough C10; WPS W-D10): the caret it leaves at the
   // end of the document does not bring the last page into view, until the person's next key or press.
   const holdView = useRef(false)
+  // The editor's own runs (the ribbon, the keys table, dialogs) are the person's moves: the view
+  // follows the caret after them (followCaret.ts).
+  const personActed = useRef<() => void>(() => undefined)
   const editor = useMemo(() => {
     const run: typeof ownEditor.run = (id, params, options) => {
       if (id === 'edit.selectAll') holdView.current = true
+      personActed.current()
       if (id !== NEW_COMMENT || !hosted.on) return ownEditor.run(id, params, options)
       if (hostCreates) startHosted()
       return Promise.resolve(null)
@@ -106,12 +111,9 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     const enabled = (id: string) => (id === NEW_COMMENT ? hostCreates && hostSelection != null : ownEditor.enabled(id))
     return { ...ownEditor, run, enabled }
   }, [hostCreates, hostSelection, hosted.on, ownEditor, startHosted])
-  // Whether the person pressed a key or the pointer since the caret's page last changed: only
-  // their own moves bring a page into view (below).
-  const acted = useRef(false)
+  // Select All holds the view until the person's next key (but Cmd+A itself) or press.
   useEffect(() => {
     const release = (event: Event) => {
-      acted.current = true
       if (event instanceof KeyboardEvent && (event.key === 'a' || event.key === 'A' || event.code === 'KeyA') && (event.metaKey || event.ctrlKey)) return
       holdView.current = false
     }
@@ -196,33 +198,12 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     [overlays, hostMarks, markers, marks],
   )
 
-  // A page the person's own key or press made current (Page Down, Go To, a find) comes into view
-  // at the same zoom (walkthrough A9): scrolled so its top shows, or its bottom when the caret went
-  // up into the page before. A page the caret was pushed to by an agent's or the host's edit (text
-  // inserted before it) does not move the person's view, nor does Select All.
+  // The view follows the caret after the person's own key, press or command, at the same zoom,
+  // only as far as shows its line (followCaret.ts; walkthrough A9, A10, D5, A11, C7, Q2). A caret
+  // pushed on by an agent's or the host's edit does not move the person's view, nor does Select All.
   const page = state?.pages[state.page]
-  const shown = useRef<{ page: number; editedBy: unknown }>({ page: -1, editedBy: null })
-  const editedBy = session.editedBy
-  useEffect(() => {
-    if (!state || !page) return
-    // An agent's or the host's edit comes with an edit of its own (`editedBy`): what the person
-    // did before it is not what moved the caret.
-    if (editedBy != null && editedBy !== shown.current.editedBy) acted.current = false
-    const before = shown.current.page
-    shown.current = { page: state.page, editedBy }
-    if (before === state.page || before < 0) return
-    const mine = acted.current
-    acted.current = false
-    if (!mine || holdView.current) return
-    const handle = canvas.current
-    const view = handle?.view()
-    if (!handle || !view) return
-    const height = view.height / view.zoom
-    if (page.y1 > view.y && page.y0 < view.y + height) return
-    const gap = 20 / view.zoom
-    const upOne = state.page === before - 1
-    handle.panTo(view.x, upOne ? page.y1 + gap - height : page.y0 - gap)
-  }, [editedBy, page, state])
+  const holding = useCallback(() => holdView.current, [])
+  personActed.current = useFollowCaret({ canvas, caret: state?.caret, editedBy: session.editedBy, held: holding })
 
   // The zoom (zoom.ts, ZoomControl.tsx): the status bar, View › Zoom, and the frame's Fit.
   const zoomActions: ZoomActions = {
@@ -288,6 +269,20 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     openFind,
     findStep: (direction) => setFind((open) => ({ replacing: open?.replacing ?? false, request: { direction, id: ++findAsks.current }, focus: open?.focus ?? 0 })),
     clipboard,
+    // Page Up and Page Down go a screen (the canvas's height), the view with them, so the caret
+    // keeps its place on the screen (WPS W-D7); with Cmd, to the page before or after (W-D8).
+    page: (direction, extend, screen) => {
+      const command = direction > 0 ? 'caret.pageDown' : 'caret.pageUp'
+      const handle = canvas.current
+      const view = handle?.view()
+      if (!screen || !handle || !view || !(view.zoom > 0) || view.height <= 0) {
+        void editor.run(command, { extend })
+        return
+      }
+      const distance = view.height / view.zoom
+      handle.panTo(view.x, view.y + direction * distance)
+      void editor.run(command, { extend, distance })
+    },
   }
   const keyDown = (event: KeyboardEvent<HTMLDivElement>) => pressKey(event, keyContext)
 

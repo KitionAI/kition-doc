@@ -77,6 +77,9 @@ pub struct DocDocument {
     object_drag: Option<objects::ObjectDrag>,
     /// A pen stroke or an eraser drag under way (Draw tab, `objects`).
     ink_drag: Option<objects::InkDrag>,
+    /// Whose keyboard the keys come from (the editor's `setup` says a Mac's): which command a
+    /// shortcut runs, and the one the catalogue shows.
+    platform: kition_doc_engine::Platform,
     /// Pages drawn as the editor shows them while editing (its `setup` turns it on): headers
     /// and footers dimmed, spelling and grammar squiggles. Otherwise they are drawn as printed,
     /// for thumbnails and agents' screenshots.
@@ -166,6 +169,7 @@ impl DocDocument {
             pasteboard: PASTEBOARD,
             object_drag: None,
             ink_drag: None,
+            platform: kition_doc_engine::Platform::Default,
             editing: false,
             context_on: Vec::new(),
             context_named: false,
@@ -393,9 +397,11 @@ fn straight(pixels: &mut [u8]) {
     }
 }
 
-/// `Mod+B` (Kition Doc) as `Cmd+B` (the Kition platform, where Cmd is Control off macOS).
+/// `Mod+B` (Kition Doc) as `Cmd+B` (the Kition platform, where Cmd is Control off macOS). The
+/// catalogue takes one key a command: of `Mod+Y / Mod+Shift+Z` the first; the editor binds the
+/// others it needs itself (`web/src/keys.ts`), and the text tool takes every one (`KitTools::key`).
 fn shortcut(text: &str) -> Option<String> {
-    (!text.is_empty()).then(|| text.replace("Mod+", "Cmd+"))
+    text.split(" / ").next().filter(|first| !first.is_empty()).map(|first| first.replace("Mod+", "Cmd+"))
 }
 
 impl KitDocument for DocDocument {
@@ -501,14 +507,22 @@ impl KitDocument for DocDocument {
         // grouping.
         let shapes: Vec<String> = shape.iter().cloned().chain(self.also_selected_ids()).collect();
         let layout = self.layout();
-        let pages: Vec<Value> = Self::areas(&layout)
+        let areas = Self::areas(&layout);
+        let pages: Vec<Value> = areas
             .iter()
             .enumerate()
             .map(|(index, area)| json!({ "index": index, "area": { "x": area.x, "y": area.y, "width": area.w, "height": area.h } }))
             .collect();
         let gesture = self.object_drag_page().is_some();
         let session = self.session.borrow();
-        let page = layout.caret_on(&session.sel.focus, session.page_hint).map_or(session.page_hint, |caret| caret.page);
+        let caret = layout.caret_on(&session.sel.focus, session.page_hint);
+        let page = caret.as_ref().map_or(session.page_hint, |caret| caret.page);
+        // Where the caret is on the canvas (the selection's moving end), so the editor can keep it
+        // in view: session state, never in the file.
+        let caret = caret.and_then(|caret| {
+            let area = areas.get(caret.page)?;
+            Some(json!({ "page": caret.page, "x": area.x + f64::from(caret.x), "top": area.y + f64::from(caret.top), "height": f64::from(caret.height) }))
+        });
         // Whether Escape has something to cancel: a gesture, a shape chosen to draw, or a
         // selection (text or an object). The editor gives Escape to the text tool only then, so
         // an Escape with nothing to cancel is left to the host (in Focus it leaves Focus).
@@ -538,6 +552,7 @@ impl KitDocument for DocDocument {
             "blocks": blocks,
             "pages": pages,
             "page": page,
+            "caret": caret,
             "words": session.word_count(),
             "selected": session.selected_text().chars().count(),
             // Where the caret is (`body`, or a header or footer part), and whether an equation is
@@ -569,7 +584,7 @@ impl KitDocument for DocDocument {
                         id: spec.id.to_owned(),
                         title: spec.label.trim_end_matches('…').to_owned(),
                         menu: (!menu.is_empty() && !NOT_MENUS.contains(&menu[0].as_str())).then_some(menu),
-                        shortcut: shortcut(spec.shortcut),
+                        shortcut: shortcut(spec.shortcut_on(self.platform)),
                         params: Some(spec.params.to_owned()),
                         mutates: changes_document(spec),
                         enabled: (spec.enabled)(&session).is_none(),
@@ -780,10 +795,10 @@ impl KitTools for DocDocument {
         }
         let Some(name) = Self::key_name(key) else { return Ok(self.respond()) };
         let registry = self.session.borrow().registry.clone();
-        if let Some(spec) = registry.by_shortcut(&Self::combo(mods, &name, true)) {
+        if let Some(spec) = registry.by_shortcut_on(&Self::combo(mods, &name, true), self.platform) {
             self.session().run(spec.id, &json!({})).map_err(|error| error.to_string())?;
         } else if mods.shift
-            && let Some(spec) = registry.by_shortcut(&Self::combo(mods, &name, false))
+            && let Some(spec) = registry.by_shortcut_on(&Self::combo(mods, &name, false), self.platform)
             && spec.id.starts_with("caret.")
         {
             // Shift extends caret movement.
@@ -831,6 +846,12 @@ impl DocDocument {
     pub fn set_editing(&mut self, editing: bool) {
         self.editing = editing;
         self.cache.borrow_mut().clear();
+    }
+
+    /// The keys come from a Mac's keyboard (the editor's `setup` on a Mac): ⌘← and ⌘→ go to the
+    /// ends of the line, ⌥← and ⌥→ a word (`CommandSpec::mac_shortcut`).
+    pub fn set_mac(&mut self, mac: bool) {
+        self.platform = if mac { kition_doc_engine::Platform::Mac } else { kition_doc_engine::Platform::Default };
     }
 
     /// The canvas around the pages in `#rrggbb` (the editor's canvas color).
@@ -882,6 +903,12 @@ pub mod web {
         #[wasm_bindgen(js_name = setEditing)]
         pub fn set_editing(&mut self, editing: bool) {
             self.0.set_editing(editing);
+        }
+
+        /// The keys come from a Mac's keyboard (see `DocDocument::set_mac`).
+        #[wasm_bindgen(js_name = setMac)]
+        pub fn set_mac(&mut self, mac: bool) {
+            self.0.set_mac(mac);
         }
 
         /// Opens the document for commenting only (see `DocDocument::set_comment_only`).

@@ -75,8 +75,10 @@ land work, then this list. The comparison with the target application is in
 ## Differences on working features
 
 - `doc.agent.guard`: Independent comparison retains conservative family holds. Comment reports include detached threads, and destructive writes must hold the content and metadata they discard. Private geometry facts are eager. Existing saved-file identity and convergence limitations remain documented in agent/guide.md.
-- `doc.editor.keyboard-and-zoom`: Checked in the development host only (Kition Desktop's keyboard on opening is the host's). The zoom percentage counts CSS pixels per point, so the page opens at 133% (WPS's 100% is a CSS pixel per point); showing the opening size as 100% waits for a maintainer, as the page-view tests assert 133%. A page the caret goes to comes into view, not yet the caret's line (stage 0B). Show/Hide ¶ turns over but no marks are drawn (stage 6A); Cmd+K and Go To open the generic parameters (stage 6A).
-- `doc.editor.system-clipboard`: A copy puts plain text only (the HTML comes with the engine's answer in stage 0B); Paste Special opens the generic parameters; copying between real applications, and in Kition Desktop's frame, is for a person to confirm.
+- `doc.editor.keyboard-and-zoom`: Checked in the development host only (Kition Desktop's keyboard on opening is the host's). The zoom percentage counts CSS pixels per point, so the page opens at 133% (WPS's 100% is a CSS pixel per point); showing the opening size as 100% waits for a maintainer, as the page-view tests assert 133%. Show/Hide ¶ turns over but no marks are drawn (stage 6A); Cmd+K and Go To open the generic parameters (stage 6A).
+- `doc.editor.caret-in-view`: Checked with synthetic wheel events in the development host; a drag past the window's edge does not scroll yet (stage 1); the caret does not blink (stage S).
+- `doc.editor.mac-keys`: Windows and Linux keep the default keys (Ctrl+Left a word); Option+Left and Option+Right stay a word (WPS moves a character). With the caret inside a word and nothing selected, Cmd+B still formats the word (WPS formats only what is typed next): waits for a maintainer, as the agent declarations pin the word. No engine command for Alt+Shift+arrows (move a paragraph, outline level).
+- `doc.editor.system-clipboard`: Paste Special opens the generic parameters; copying between real applications, and in Kition Desktop's frame, is for a person to confirm.
 - `doc.format.character`: Save and reopen as .docx is proven by command for bold, italic, underline, strikethrough, size, font, highlight, superscript and colour; the feature's other commands are covered by engine tests only.
 - `doc.format.paragraph`: Save and reopen as .docx is proven by command for alignment, indent and line spacing; the feature's other commands are covered by engine tests only.
 - `doc.headers.footers`: Save and reopen as .docx is proven by command for header text and a page-number footer; the feature's other commands are covered by engine tests only.
@@ -89,4 +91,4 @@ land work, then this list. The comparison with the target application is in
 
 ## Catalogue
 
-The catalogue has 88 features: 26 `has`, 62 not yet.
+The catalogue has 90 features: 28 `has`, 62 not yet.

@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-hand-i3-tab-is-not-undo-step
+feature: doc.editor.mac-keys
+intent: "Typing 1 Tab 2 Tab 3 in a table's cells and pressing Cmd+Z three times takes all three back: Tab to the next cell is no undo step (six were needed; WPS W-X7; walkthrough I3)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/keys.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/keys.mjs, chromium, i3-tab-is-not-undo-step]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 90
+since: "2026-11-28"

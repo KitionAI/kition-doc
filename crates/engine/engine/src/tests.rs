@@ -2,7 +2,7 @@ use kition_doc_doc::props::BorderStyle;
 use kition_doc_doc::{Pos, StoryRef};
 use serde_json::json;
 
-use crate::{Session, cmd};
+use crate::{Platform, Session, cmd};
 
 fn s() -> Session {
     Session::new(kition_doc_doc::Document::new())
@@ -49,6 +49,29 @@ fn every_shortcut_runs_one_command() {
         }
     }
     assert_eq!(reg.by_shortcut("Shift+F3").map(|c| c.id), Some("format.changeCase"));
+}
+
+#[test]
+fn every_mac_shortcut_runs_one_command() {
+    // The Mac's column (stage 0B, R5): one key, one command, as on the default keyboard; and the
+    // Mac's own keys go where a Mac goes (WPS W-D3, W-D5).
+    let reg = cmd::registry();
+    let mut seen = std::collections::HashMap::new();
+    for c in reg.all() {
+        for k in c.shortcut_on(Platform::Mac).split(" / ").filter(|k| !k.is_empty()) {
+            if let Some(other) = seen.insert(k.to_ascii_lowercase(), c.id) {
+                panic!("{k} is bound to both {other} and {} on a Mac", c.id);
+            }
+        }
+    }
+    let on = |key: &str, platform| reg.by_shortcut_on(key, platform).map(|c| c.id);
+    assert_eq!(on("Mod+Left", Platform::Mac), Some("caret.home"));
+    assert_eq!(on("Mod+Right", Platform::Mac), Some("caret.end"));
+    assert_eq!(on("Alt+Right", Platform::Mac), Some("caret.wordRight"));
+    assert_eq!(on("Mod+Up", Platform::Mac), Some("caret.paraUp"));
+    assert_eq!(on("Mod+Left", Platform::Default), Some("caret.wordLeft"));
+    assert_eq!(on("Mod+]", Platform::Default), Some("format.increaseFontSize"));
+    assert_eq!(on("Mod+-", Platform::Default), None);
 }
 
 #[test]
@@ -1278,6 +1301,7 @@ fn hostile_params_never_panic() {
         json!({}),
         json!({"text": 5, "size": "x", "path": [], "pos": {"block": 9999, "off": 99999}}),
         json!({"value": -1e308, "rows": 1e9}),
+        json!({"distance": 1e308, "extend": "yes"}),
     ];
     for spec in reg.all() {
         // These reach outside the session (files). Read Aloud (`readAloud.open`, `readAloud.*`)

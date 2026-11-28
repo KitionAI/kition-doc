@@ -1,0 +1,22 @@
+format: 1
+id: doc.editor.caret-in-view/down-to-page-3
+feature: doc.editor.caret-in-view
+intent: "The Down arrow pressed from the first page to the third keeps the caret in the canvas after every press, at the same zoom (walkthrough C7's view, A9)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/follow.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/follow.mjs, chromium, c7-down-to-page-3]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 90
+since: "2026-11-28"

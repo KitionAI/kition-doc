@@ -9,6 +9,12 @@
  * (either of them), `Ctrl` the Control key itself. No row works while an input method composes
  * (the key is the input method's). Cmd+V is not here: the browser's own paste event carries the
  * clipboard (App.tsx). Later stages add their rows here.
+ *
+ * The engine's commands may name several keys (`Mod+Y / Mod+Shift+Z`); the catalogue gives the
+ * frame only the first (stage 0B, R5), so the others a key outside the text tool reaches are rows
+ * here: Cmd+Shift+Z, Cmd+Alt+G, Cmd+Shift+. and Cmd+Shift+, (Cmd+8 and F3 too). The keys the text
+ * tool takes (arrows, Home, End, Backspace, Delete, with any modifier) go to the engine, which
+ * knows a Mac's keys from the others (`setMac`).
  */
 
 /** What a row's action can do: the editor's runs and its parts. */
@@ -21,6 +27,8 @@ export type KeyContext = {
   /** Find Next (`1`) or Previous (`-1`): opens the find bar first when it is closed. */
   findStep: (direction: 1 | -1) => void
   clipboard: (action: 'copy' | 'cut' | 'pasteText' | 'pasteSpecial') => void
+  /** Page Down (`1`) or Up (`-1`): a screen, or (`screen` false) to the page after or before. */
+  page: (direction: 1 | -1, extend: boolean, screen: boolean) => void
 }
 
 export type KeyEvent = { key: string; code: string; shiftKey: boolean; altKey: boolean; metaKey: boolean; ctrlKey: boolean; keyCode?: number; isComposing?: boolean; nativeEvent?: { isComposing?: boolean } }
@@ -37,7 +45,8 @@ export const onMac = () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/
 export const KEYS: KeyRow[] = [
   // Cmd+0, Cmd+= and Cmd+- are not zoom keys in a word processor (WPS W-U4, W-L7; section 2 row
   // 35): Cmd+= is Subscript and Cmd+Shift+= Superscript (Word for Mac), Cmd+0 adds or removes the
-  // space before the paragraph (the engine's own key), and Cmd+- does nothing.
+  // space before the paragraph (the engine's own key), and Cmd+- does nothing (not the frame's
+  // zoom either).
   { keys: ['Cmd+='], act: (c) => c.run('format.subscript') },
   { keys: ['Cmd+Shift+='], act: (c) => c.run('format.superscript') },
   { keys: ['Cmd+0'], act: (c) => c.run('paragraph.addSpaceBefore') },
@@ -47,15 +56,28 @@ export const KEYS: KeyRow[] = [
   { keys: ['Ctrl+H'], act: (c) => c.openFind(true) },
   { keys: ['Cmd+G', 'F3'], act: (c) => c.findStep(1) },
   { keys: ['Cmd+Shift+G'], act: (c) => c.findStep(-1) },
-  { keys: ['F5'], act: (c) => c.ask('edit.goto') },
+  { keys: ['F5', 'Cmd+Alt+G'], act: (c) => c.ask('edit.goto') },
   { keys: ['Ctrl+G'], when: onMac, act: (c) => c.ask('edit.goto') },
   // Show/Hide ¶ (both of the engine's keys).
   { keys: ['Cmd+8', 'Cmd+Shift+8'], act: (c) => c.run('view.marks') },
   // Insert › Link's parameters until the link dialog (stage 6A).
   { keys: ['Cmd+K'], act: (c) => c.ask('link.insert') },
-  // Cmd+Y redoes as Cmd+Shift+Z does (WPS W-I1; the catalogue reads only the last of the
-  // engine's two keys).
-  { keys: ['Cmd+Y'], act: (c) => c.run('edit.redo') },
+  // Cmd+Y and Cmd+Shift+Z both redo (WPS W-I2; the catalogue gives the frame one of them).
+  { keys: ['Cmd+Y', 'Cmd+Shift+Z'], act: (c) => c.run('edit.redo') },
+  // Cmd+] and Cmd+Shift+> grow the text through the size list, Cmd+[ and Cmd+Shift+< shrink it
+  // (WPS W-L4; Cmd+] and Cmd+[ are the catalogue's).
+  { keys: ['Cmd+Shift+.'], act: (c) => c.run('format.increaseFontSize') },
+  { keys: ['Cmd+Shift+,'], act: (c) => c.run('format.decreaseFontSize') },
+  // Page Down and Page Up: a screen, keeping the place across; with Shift they select; with Cmd,
+  // the start of the next or previous page (WPS W-D7–W-D9; Alt+PageDown is PageDown).
+  { keys: ['PageDown', 'Alt+PageDown'], act: (c) => c.page(1, false, true) },
+  { keys: ['Shift+PageDown', 'Alt+Shift+PageDown'], act: (c) => c.page(1, true, true) },
+  { keys: ['PageUp', 'Alt+PageUp'], act: (c) => c.page(-1, false, true) },
+  { keys: ['Shift+PageUp', 'Alt+Shift+PageUp'], act: (c) => c.page(-1, true, true) },
+  { keys: ['Cmd+PageDown'], act: (c) => c.page(1, false, false) },
+  { keys: ['Cmd+Shift+PageDown'], act: (c) => c.page(1, true, false) },
+  { keys: ['Cmd+PageUp'], act: (c) => c.page(-1, false, false) },
+  { keys: ['Cmd+Shift+PageUp'], act: (c) => c.page(-1, true, false) },
   // Ctrl+A selects all as Cmd+A does (WPS W-D10); elsewhere Ctrl is Cmd already.
   { keys: ['Ctrl+A'], when: onMac, act: (c) => c.run('edit.selectAll') },
   // The system clipboard: written while the key press is still the person's.
@@ -66,9 +88,9 @@ export const KEYS: KeyRow[] = [
 ]
 
 /** The key codes of the characters rows name (the code, not the character Shift makes of it). */
-const CODES: Record<string, string> = { '=': 'Equal', '-': 'Minus' }
+const CODES: Record<string, string> = { '=': 'Equal', '-': 'Minus', '.': 'Period', ',': 'Comma' }
 /** The characters a key with Shift (or without) may report for a row's character. */
-const CHARACTERS: Record<string, string[]> = { '=': ['=', '+'], '-': ['-', '_'] }
+const CHARACTERS: Record<string, string[]> = { '=': ['=', '+'], '-': ['-', '_'], '.': ['.', '>'], ',': [',', '<'] }
 
 /** Whether `event` is the key `shortcut` names (`Cmd+Shift+G`, `F3`, `Ctrl+Cmd+V`). */
 export function keyMatches(shortcut: string, event: KeyEvent) {

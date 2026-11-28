@@ -1031,14 +1031,15 @@ impl Session {
         if let Some(why) = (spec.enabled)(self) {
             return Err(CmdError::Disabled(format!("{id}: {why}")));
         }
+        // A run that only moves the selection (Tab to the next cell) is no edit: no undo step.
+        let moves_only = spec.only_moves(self, params);
+        let mutates = spec.mutates && !moves_only;
         // Open for commenting only: comments, and taking back one's own (rule M23).
-        if spec.mutates && self.comment_only && !is_comment_command(id) && !matches!(id, "edit.undo" | "edit.redo") {
+        if mutates && self.comment_only && !is_comment_command(id) && !matches!(id, "edit.undo" | "edit.redo") {
             return Err(CmdError::Disabled(format!("{id}: the document is open for commenting only")));
         }
         // Restrict Editing.
-        if spec.mutates
-            && let Some(mode) = self.doc.settings.protection.clone()
-        {
+        if mutates && let Some(mode) = self.doc.settings.protection.clone() {
             let allowed = id == "file.restrictEditing" || family == "file" || id == "edit.undo" || id == "edit.redo";
             // The commands on the current comment (the Review tab's); not the ones naming a comment by id.
             let comment_ok =
@@ -1056,7 +1057,7 @@ impl Session {
         if record && let Some((_, steps)) = self.recording.as_mut() {
             steps.push((id.to_string(), params.clone()));
         }
-        if spec.mutates && !matches!(id, "edit.undo" | "edit.redo" | "edit.repeat") {
+        if mutates && !matches!(id, "edit.undo" | "edit.redo" | "edit.repeat") {
             self.previous_command = self.last_command.replace((id.to_string(), params.clone()));
         }
         // Typing, caret movement and selection outside the equation commands leave the equation.
@@ -1069,7 +1070,7 @@ impl Session {
         }
         // The undo stacks are snapshotted whole, not as a length: commands run nested commands,
         // whose checkpoints, undos and redos (and evictions at the limit) must be put back too.
-        let before_doc = if spec.mutates {
+        let before_doc = if mutates {
             Some((
                 self.doc.clone(),
                 self.sel.clone(),
@@ -1084,14 +1085,17 @@ impl Session {
             None
         };
         let typing = spec.id == "text.insert" || spec.id == "equation.type";
-        if spec.mutates && !typing {
+        if mutates && !typing {
             self.typing_open = false;
         }
-        if spec.mutates {
+        if mutates {
             let label = if typing { "Typing" } else { spec.label };
             if !join || self.history.is_empty() {
                 self.checkpoint(label);
             }
+        } else if moves_only {
+            // Tab to another cell ends the typing there, as moving the caret does.
+            self.typing_open = false;
         } else if !spec.id.starts_with("caret.") && !spec.id.starts_with("view.") {
             // Non-mutating commands other than caret movement keep the typing group.
         } else if spec.id.starts_with("caret.") {
@@ -1100,7 +1104,6 @@ impl Session {
         let sel_before = self.sel.clone();
         let return_before = self.body_return.clone();
         let run = spec.run;
-        let mutates = spec.mutates;
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| crate::cmd::column::dispatch(self, id, mutates, run, params)));
         let result = match result {
             Ok(r) => r,
@@ -1111,7 +1114,7 @@ impl Session {
         };
         match &result {
             Ok(_) => {
-                if spec.mutates {
+                if mutates {
                     // Formatting changed while tracking becomes a formatting revision.
                     if let Some((before, ..)) = &before_doc {
                         crate::cmd::fmt_revisions::record(self, id, before);
@@ -1145,7 +1148,7 @@ impl Session {
                     }
                 }
                 // Extra selected objects last until something else is edited or selected.
-                if !matches!(id, "select.addObject" | "arrange.ungroup") && (spec.mutates || self.sel != sel_before) {
+                if !matches!(id, "select.addObject" | "arrange.ungroup") && (mutates || self.sel != sel_before) {
                     self.also_selected.clear();
                 }
             }

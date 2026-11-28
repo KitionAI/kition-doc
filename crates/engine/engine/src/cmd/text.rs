@@ -15,15 +15,18 @@ pub fn specs() -> Vec<CommandSpec> {
         CommandSpec::new("text.lineBreak", "Line Break", "Editing", |s, _| ins_char(s, '\n')).key("Shift+Enter"),
         CommandSpec::new("text.pageBreak", "Page Break", "Insert › Pages", |s, _| ins_char(s, PAGE_BREAK)).key("Mod+Enter"),
         CommandSpec::new("text.columnBreak", "Column Break", "Layout › Breaks", |s, _| ins_char(s, COLUMN_BREAK)).key("Mod+Shift+Enter"),
-        CommandSpec::new("text.tab", "Tab", "Editing", tab).key("Tab"),
-        CommandSpec::new("text.backTab", "Shift+Tab", "Editing", back_tab).key("Shift+Tab"),
+        // Tab and Shift+Tab that only go to another table cell are no undo step (WPS W-I3, W-X7):
+        // only the Tab that adds a row changes the document.
+        CommandSpec::new("text.tab", "Tab", "Editing", tab).key("Tab").moves_only_when(tab_moves_only),
+        CommandSpec::new("text.backTab", "Shift+Tab", "Editing", back_tab).key("Shift+Tab").moves_only_when(back_tab_moves_only),
         CommandSpec::new("text.backspace", "Backspace", "Editing", backspace).key("Backspace"),
         CommandSpec::new("text.delete", "Delete", "Editing", delete).key("Delete"),
         CommandSpec::new("text.deleteWordBack", "Delete Previous Word", "Editing", delete_word_back).key("Mod+Backspace / Alt+Backspace"),
         CommandSpec::new("text.deleteWordForward", "Delete Next Word", "Editing", delete_word_fwd).key("Mod+Delete / Alt+Delete"),
         CommandSpec::new("text.nbsp", "Nonbreaking Space", "Insert › Symbols", |s, _| ins_char(s, NBSP)).key("Mod+Shift+Space"),
         CommandSpec::new("text.nbHyphen", "Nonbreaking Hyphen", "Insert › Symbols", |s, _| ins_char(s, NB_HYPHEN)).key("Mod+Shift+-"),
-        CommandSpec::new("text.optionalHyphen", "Optional Hyphen", "Insert › Symbols", |s, _| ins_char(s, SOFT_HYPHEN)).key("Mod+-"),
+        // No key: ⌘- types nothing in a word processor (WPS W-L7), and the mark it would put in is unseen.
+        CommandSpec::new("text.optionalHyphen", "Optional Hyphen", "Insert › Symbols", |s, _| ins_char(s, SOFT_HYPHEN)),
     ]
 }
 
@@ -244,6 +247,20 @@ fn new_paragraph(s: &mut Session, _: &Value) -> CmdResult {
 }
 
 /// In a table: next cell (adds a row at the end). At the start of a list item: demote. Else a tab.
+/// Whether Tab only goes to the next cell: the caret in a table cell that is not the table's last
+/// (where Tab adds a row), with no column block.
+fn tab_moves_only(s: &Session, _: &Value) -> bool {
+    let Some((tpath, r, c)) = s.sel.focus.path.cell() else { return false };
+    let Some(t) = s.doc.table(s.sel.focus.story, &tpath) else { return false };
+    let row_len = t.rows.get(r).map_or(0, |x| x.cells.len());
+    s.column.is_none() && (c + 1 < row_len || r + 1 < t.rows.len())
+}
+
+/// Shift+Tab in a table cell only goes to the cell before (or stays in the first).
+fn back_tab_moves_only(s: &Session, _: &Value) -> bool {
+    s.column.is_none() && s.sel.focus.path.cell().is_some_and(|(tpath, ..)| s.doc.table(s.sel.focus.story, &tpath).is_some())
+}
+
 fn tab(s: &mut Session, _: &Value) -> CmdResult {
     if let Some((tpath, r, c)) = s.sel.focus.path.cell() {
         let story = s.sel.focus.story;

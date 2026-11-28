@@ -385,3 +385,26 @@ fn caret_formatting_picked_in_a_footer_stays_there() {
     typ(&mut s, "!");
     assert_ne!(s.doc.para(StoryRef::Body, &kition_doc_doc::Path::top(0)).map(|p| p.props_of_char(4).bold), Some(Some(true)));
 }
+
+/// Tab and Shift+Tab that only go to another table cell are no undo step (WPS W-X7, as in Word):
+/// "1 Tab 2 Tab 3" in three cells is three steps, the cells' typing each its own; the last cell's
+/// Tab, which adds a row, is one.
+#[test]
+fn tab_between_table_cells_is_no_undo_step() {
+    let mut s = s();
+    run(&mut s, "table.insert", json!({"rows": 2, "cols": 2}));
+    run(&mut s, "caret.set", json!({"pos": {"story": "body", "path": [0, 0, 0, 0], "off": 0}}));
+    let start = s.undo_depth();
+    typ(&mut s, "1\t2\t3");
+    assert_eq!(s.undo_depth(), start + 3, "{:?}", s.undo_labels());
+    run(&mut s, "text.backTab", json!({}));
+    assert_eq!(s.undo_depth(), start + 3, "Shift+Tab back is no step either");
+    for _ in 0..3 {
+        run(&mut s, "edit.undo", json!({}));
+    }
+    assert!(!s.doc.plain_text(StoryRef::Body).contains(['1', '2', '3']), "{:?}", s.doc.plain_text(StoryRef::Body));
+    run(&mut s, "caret.set", json!({"pos": {"story": "body", "path": [0, 1, 1, 0], "off": 0}}));
+    let before = s.undo_depth();
+    typ(&mut s, "\t");
+    assert_eq!(s.undo_depth(), before + 1, "the Tab that adds a row is a step");
+}

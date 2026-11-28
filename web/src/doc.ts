@@ -1,8 +1,11 @@
 import type { KitEngineInfo, RasterRect } from '@kition/sdk/editor'
+import type { CaretRect } from './followCaret'
 
 /** What the editor reads from the engine's `inspect()`. */
 export type DocInfo = {
   page: number
+  /** Where the caret (the selection's moving end) is on the canvas, in points. */
+  caret: CaretRect | null
   pages: RasterRect[]
   words: number
   /** Characters selected. */
@@ -22,10 +25,17 @@ export type DocInfo = {
 
 type Area = { x: number; y: number; width: number; height: number }
 
+const caretOf = (caret: unknown): CaretRect | null => {
+  if (!caret || typeof caret !== 'object') return null
+  const { page, x, top, height } = caret as Record<string, unknown>
+  return [page, x, top, height].every((value) => typeof value === 'number' && Number.isFinite(value)) ? { page: page as number, x: x as number, top: top as number, height: height as number } : null
+}
+
 export function describe(info: KitEngineInfo): DocInfo {
-  const inspected = info.inspected as { page?: number; pages?: Array<{ area?: Area }>; words?: number; selected?: number; story?: unknown; equation?: boolean; shape?: string | null; shapes?: string[]; chart?: string | null; escape?: boolean }
+  const inspected = info.inspected as { page?: number; caret?: CaretRect | null; pages?: Array<{ area?: Area }>; words?: number; selected?: number; story?: unknown; equation?: boolean; shape?: string | null; shapes?: string[]; chart?: string | null; escape?: boolean }
   return {
     page: inspected.page ?? 0,
+    caret: caretOf(inspected.caret),
     pages: (inspected.pages ?? []).map(({ area }) => (area ? { x0: area.x, y0: area.y, x1: area.x + area.width, y1: area.y + area.height } : { x0: 0, y0: 0, x1: 0, y1: 0 })),
     words: inspected.words ?? 0,
     selected: inspected.selected ?? 0,

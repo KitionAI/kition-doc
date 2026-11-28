@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-hand-c7-page-keys
+feature: doc.editor.mac-keys
+intent: "Page Down moves the caret about a screen and the view with it, keeping the caret's place across the line; Page Up comes back near where it was; Shift+Page Down selects (Page Down jumped to the next page at another zoom; WPS W-D7, W-D9; walkthrough C7)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/keys.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/keys.mjs, chromium, c7-page-keys]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 90
+since: "2026-11-28"

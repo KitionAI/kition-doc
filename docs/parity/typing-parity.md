@@ -1,6 +1,6 @@
 # Typing parity with Word
 
-> **Last reviewed:** 2026-11-17 · **Last updated:** 2026-11-17 · **Target:** Microsoft Word (Microsoft 365) for Mac 16.113.4
+> **Last reviewed:** 2026-11-17 · **Last updated:** 2026-11-28 · **Target:** Microsoft Word (Microsoft 365) for Mac 16.113.4
 
 What Word does when you type, observed black-box (same keystrokes typed into Word and
 Kition Doc, results read back paragraph by paragraph) and pinned by tests in
@@ -17,6 +17,7 @@ format fidelity is in [`file-format-parity.md`](file-format-parity.md).
 | Enter on an empty **nested** item | moves it up one level; only a top-level empty item leaves the list | `enter_on_an_empty_nested_item_moves_it_up_a_level_first` |
 | `* ` Enter (nothing typed) | list cancelled, Normal paragraph | `enter_right_after_starting_a_list_cancels_it` |
 | Tab / Shift+Tab at the start of an item | demote / promote | `shift_tab_and_tab_change_list_levels` |
+| Tab / Shift+Tab in a table cell (not the last) | goes to the next / previous cell; **no undo step** (the typing in each cell is its own); the last cell's Tab adds a row, one step (WPS W-X7 alike) | `tab_between_table_cells_is_no_undo_step` |
 | Backspace at the start of an item | 1st: number removed, indent kept; 2nd: Normal paragraph — **not** joined to the one above | `backspace_at_the_start_of_an_item_removes_the_number_then_the_indent` |
 | Enter mid-item / at item start | splits the item / inserts an empty item above | `enter_in_the_middle_or_at_the_start_of_an_item` |
 | Shift+Enter in an item | line break inside the same item | `shift_enter_stays_inside_the_list_item` |
@@ -88,3 +89,4 @@ Applied when a word is finished by a space, punctuation **or Enter** (`enter_fin
 | Date | Change | Summary |
 |---|---|---|
 | 2026-11-17 | major | First public version |
+| 2026-11-28 | minor | Tab between table cells is no undo step (plan "Doc usable by hand", stage 0B) |

@@ -63,23 +63,45 @@ export async function readClipboard(): Promise<Clip | null> {
  */
 export async function copySelection(editor: ClipboardEditor, cut: boolean, selected: boolean) {
   if (cut && !editor.enabled('edit.cut')) return
-  const text = editor
+  const copied = editor
     .run(cut ? 'edit.cut' : 'edit.copy', {})
-    .then((raw) => (raw ? ((JSON.parse(raw) as { text?: string }).text ?? '') : ''))
-  // Written before the engine answers: the clipboard waits for the blob. Paragraphs are CR LF
-  // apart, as a word processor puts them (WPS W-J6).
-  const blob = text.then((plain) => (plain || selected ? new Blob([plain.replace(/\r?\n/g, '\r\n')], { type: 'text/plain' }) : Promise.reject(new Error('nothing selected'))))
+    .then((raw) => (raw ? (JSON.parse(raw) as { text?: string; html?: string }) : {}))
+    .then(({ text, html }) => {
+      const plain = text ?? ''
+      ownCopy = plain ? plain.replace(/\r\n/g, '\n') : null
+      return { plain, html: plain ? (html ?? '') : '' }
+    })
+  // Written before the engine answers: the clipboard waits for the blobs. Paragraphs are CR LF
+  // apart, as a word processor puts them (WPS W-J6); the HTML (stage 0B) keeps the formatting for
+  // other applications. A picture alone has neither, so Cmd+V pastes the engine's own copy.
+  const text = copied.then(({ plain }) => (plain || selected ? new Blob([plain.replace(/\r?\n/g, '\r\n')], { type: 'text/plain' }) : Promise.reject(new Error('nothing selected'))))
+  const html = copied.then(({ html }) => new Blob([html], { type: 'text/html' }))
   try {
-    await navigator.clipboard.write([new ClipboardItem({ 'text/plain': blob })])
+    // The item is made now, while the key press is the person's (WebKit refuses it later): an
+    // empty HTML when there is none.
+    await navigator.clipboard.write([new ClipboardItem({ 'text/plain': text, 'text/html': html })])
   } catch {
-    const plain = await text.catch(() => '')
+    const plain = (await copied.catch(() => ({ plain: '' }))).plain
     if (plain || selected) await navigator.clipboard.writeText(plain.replace(/\r?\n/g, '\r\n')).catch(() => undefined)
   }
 }
 
+/**
+ * The text of this editor's last copy (LF paragraphs), or null: a clipboard still holding it pastes
+ * the engine's own formatted copy, not its HTML (which keeps less).
+ */
+let ownCopy: string | null = null
+
+/**
+ * HTML with something in it: a browser makes the empty HTML of a picture's copy a bare `<meta>`,
+ * which pastes nothing (the engine's own copy is the picture).
+ */
+const withContent = (html: string) => (/<(img|table|hr)\b/i.test(html) || html.replace(/<(style|script|head|title)\b[\s\S]*?<\/\1>/gi, '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() !== '' ? html : '')
+
 /** Pastes `clip` in `mode`. */
 export async function pasteClip(editor: ClipboardEditor, clip: Clip, mode: PasteMode) {
-  const { text, html, image } = clip
+  const { text, image } = clip
+  const html = withContent(clip.html)
   if (mode === 'special') {
     editor.ask('edit.pasteSpecial', { ...(text ? { text } : {}), ...(html ? { html } : {}) })
     return
@@ -94,7 +116,7 @@ export async function pasteClip(editor: ClipboardEditor, clip: Clip, mode: Paste
     await editor.run('image.insert', { data: base64(new Uint8Array(await image.arrayBuffer())) })
     return
   }
-  if (html) {
+  if (html && !(ownCopy !== null && text.replace(/\r\n/g, '\n') === ownCopy)) {
     await editor.run('edit.pasteSpecial', { as: 'html', html, ...(text ? { text } : {}) })
     return
   }
