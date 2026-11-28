@@ -43,6 +43,7 @@ import { pageWidthArea, wholePage, zoomKeepingMiddle } from './zoom'
 import { useFollowCaret } from './followCaret'
 import { edgeScrolling } from './edgeScroll'
 import { ZoomControl, type ZoomActions } from './ZoomControl'
+import { DocContextMenu, type MenuAnswer, type OpenMenu } from './ContextMenu'
 
 const NO_PAGES: RasterRect[] = []
 /** Word's New Comment: in a host that keeps comment threads, the host's new thread instead. */
@@ -269,6 +270,40 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     }
   }, [])
 
+  // The right-click menu (ContextMenu.tsx; stage 2A, walkthrough R1): the engine settles the
+  // selection for the press (in the editor's input order, after the presses before it) and says
+  // what the menu is for; it opens at the pointer, or from the keyboard at the caret's foot.
+  const [menu, setMenu] = useState<OpenMenu | null>(null)
+  const closeMenu = useCallback(() => setMenu(null), [])
+  const latestMenu = useRef({ session, tools })
+  latestMenu.current = { session, tools }
+  const openMenu = (client: { x: number; y: number } | null) => {
+    const { session: now } = latestMenu.current
+    const engine = now.doc
+    const handle = canvas.current
+    const shown = handle?.view()
+    const surface = document.querySelector<HTMLCanvasElement>('[data-testid=kit-canvas-surface]')
+    if (!engine || !shown || !surface || !(shown.zoom > 0)) return
+    const box = surface.getBoundingClientRect()
+    const point = client ? { x: shown.x + (client.x - box.left) / shown.zoom, y: shown.y + (client.y - box.top) / shown.zoom } : null
+    void now
+      .inOrder(async () => {
+        const answer = await engine.invoke<string>('contextMenu', point?.x ?? Number.NaN, point?.y ?? Number.NaN, shown.zoom)
+        // A settled tool call brings the editor's state up to date (the selection may have moved).
+        await now.tool('tool', [], true)
+        return answer
+      })
+      .then((raw) => {
+        latestMenu.current.tools.refresh()
+        const answer = JSON.parse(raw) as MenuAnswer
+        const view = canvas.current?.view() ?? shown
+        const at = client ?? (answer.at ? { x: box.left + (answer.at[0] - view.x) * view.zoom, y: box.top + (answer.at[1] - view.y) * view.zoom } : { x: box.left + 40, y: box.top + 40 })
+        setMenu({ ...answer, client: at })
+      })
+      .catch(() => undefined)
+  }
+  const newComment = () => (hosted.on ? void editor.run(NEW_COMMENT) : editor.ask(NEW_COMMENT))
+
   const openFind = (replacing: boolean) => setFind((open) => ({ replacing: replacing || (open?.replacing ?? false), request: open?.request, focus: ++findAsks.current }))
   const closeFind = () => {
     setFind(null)
@@ -295,6 +330,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
       handle.panTo(view.x, view.y + direction * distance)
       void editor.run(command, { extend, distance })
     },
+    contextMenu: () => openMenu(null),
   }
   const keyDown = (event: KeyboardEvent<HTMLDivElement>) => pressKey(event, keyContext)
 
@@ -385,6 +421,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
           panBounds={panBounds}
           framed={false}
           tool={pageTool}
+          onMenu={openMenu}
           onView={(view) => {
             const previous = lastCanvasView.current
             lastCanvasView.current = view
@@ -410,6 +447,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
               : undefined
           }
         />
+        <DocContextMenu menu={menu} onClose={closeMenu} onClipboard={clipboard} onNewComment={newComment} />
       </EditorFrame>
     </KitEditorProvider>
   )

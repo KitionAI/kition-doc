@@ -251,7 +251,7 @@ impl DocDocument {
     }
 
     /// Whether page point (`x`, `y`) is on the selected text (its highlight).
-    fn on_selection(&self, layout: &DocLayout, page: usize, x: f32, y: f32) -> bool {
+    pub(crate) fn on_selection(&self, layout: &DocLayout, page: usize, x: f32, y: f32) -> bool {
         let session = self.session.borrow();
         if session.sel.is_collapsed() {
             return false;

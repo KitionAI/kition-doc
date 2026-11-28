@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.context-menu/picture-and-table
+feature: doc.editor.context-menu
+intent: "A right-click on a picture selects it and answers `picture` (Shift+F10 opens at its middle); one in a table's cell answers that the caret is in a table."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: a_right_click_selects_a_picture_and_knows_a_table
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 120
+since: "2026-11-28"

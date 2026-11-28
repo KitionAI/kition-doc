@@ -1,0 +1,22 @@
+format: 1
+id: doc.editor.context-menu/table-insert-row
+feature: doc.editor.context-menu
+intent: "A right-click in a table's cell has Insert, and its Insert Rows Below adds a row (WPS W-S3)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/context-menu.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/context-menu.mjs, chromium, r1-table-insert-row]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 120
+since: "2026-11-28"

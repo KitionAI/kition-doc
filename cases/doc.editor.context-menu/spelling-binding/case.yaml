@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.context-menu/spelling-binding
+feature: doc.editor.context-menu
+intent: "The engine answers a misspelled word's first suggestions with its ends, so the menu replaces it in one undo step; with checking as you type off it offers none."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: a_right_click_on_a_misspelled_word_offers_its_suggestions
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 120
+since: "2026-11-28"

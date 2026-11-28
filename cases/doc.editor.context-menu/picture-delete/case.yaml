@@ -1,0 +1,22 @@
+format: 1
+id: doc.editor.context-menu/picture-delete
+feature: doc.editor.context-menu
+intent: "A right-click on a picture selects it, its menu has Delete and Wrap Text, and Delete takes it out (WPS W-S4)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/context-menu.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/context-menu.mjs, chromium, r1-picture-delete]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 120
+since: "2026-11-28"

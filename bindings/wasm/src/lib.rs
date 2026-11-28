@@ -15,6 +15,7 @@ pub mod acts;
 mod check;
 mod collab;
 pub mod context;
+mod context_menu;
 mod describe;
 mod family;
 pub mod files;
@@ -1050,6 +1051,14 @@ pub mod web {
         #[wasm_bindgen(getter, js_name = docId)]
         pub fn doc_id(&self) -> Option<String> {
             self.0.doc_id()
+        }
+
+        /// A right-click at canvas point (`x`, `y`), or for the selection as it is when either is
+        /// not a number (Shift+F10): see `DocDocument::context_menu`. Answers its JSON.
+        #[wasm_bindgen(js_name = contextMenu)]
+        pub fn context_menu(&mut self, x: f64, y: f64, zoom: f64) -> Result<String, JsError> {
+            let point = (x.is_finite() && y.is_finite()).then_some((x, y));
+            self.0.context_menu(point, zoom).map(|answer| answer.to_string()).map_err(error)
         }
     }
 }

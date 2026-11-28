@@ -728,3 +728,109 @@ fn the_pointer_shape_follows_the_place_and_the_painter() {
     doc.execute("edit.formatPainter", json!({ "sticky": true })).unwrap();
     assert_eq!(doc.inspect().unwrap()["painter"], json!("sticky"));
 }
+
+/// A right-click (plan stage 2A, walkthrough R1; WPS W-S1-W-S4, Word where WPS is untested): on the
+/// selected text the selection stays; elsewhere the caret goes there; on a picture it is selected;
+/// in a table the menu knows it; on a misspelled word the menu has its suggestions; with no point
+/// (Shift+F10) the selection stays and the menu opens at the caret's foot. Nothing of it edits.
+#[test]
+fn a_right_click_settles_the_selection_and_says_what_the_menu_is_for() {
+    let mut doc = paragraphs(3);
+    let revision = doc.revision();
+    let inside = at_char(&mut doc, 1, 12);
+    let outside = at_char(&mut doc, 0, 4);
+    doc.execute(
+        "select.range",
+        json!({ "anchor": { "story": "body", "path": [1], "off": 10 }, "focus": { "story": "body", "path": [1], "off": 16 } }),
+    )
+    .unwrap();
+    let kept = selected(&doc);
+    let answer = doc.context_menu(Some(inside), 1.0).unwrap();
+    assert_eq!(selected(&doc), kept, "a right-click on the selection keeps it");
+    assert_eq!(answer["target"], json!("text"));
+    assert_eq!(answer["selected"], json!(true));
+    assert_eq!(answer["table"], json!(false));
+    assert_eq!(answer["at"], json!([inside.0, inside.1]), "the menu opens where it was pressed");
+    let answer = doc.context_menu(Some(outside), 1.0).unwrap();
+    assert_eq!(selected(&doc), "", "elsewhere the caret goes there");
+    assert_eq!(ends(&doc), ((0, 4), (0, 4)));
+    assert_eq!(answer["selected"], json!(false));
+    assert_eq!(answer["spelling"], Value::Null);
+    // Shift+F10: the selection stays, the menu opens at the caret's foot.
+    doc.execute(
+        "select.range",
+        json!({ "anchor": { "story": "body", "path": [1], "off": 10 }, "focus": { "story": "body", "path": [1], "off": 16 } }),
+    )
+    .unwrap();
+    let caret = doc.inspect().unwrap()["caret"].clone();
+    let answer = doc.context_menu(None, 1.0).unwrap();
+    assert_eq!(selected(&doc), kept);
+    let foot = caret["top"].as_f64().unwrap() + caret["height"].as_f64().unwrap();
+    assert_eq!(answer["at"], json!([caret["x"].as_f64().unwrap(), foot]));
+    assert_eq!(doc.revision(), revision, "settling the selection edits nothing");
+    // A press held with the left button: a right-click changes nothing.
+    doc.text_tool.clock = Some(0.0);
+    doc.pointer(&with_mods(PointerAction::Down, inside, ToolMods::default())).unwrap();
+    doc.context_menu(Some(outside), 1.0).unwrap();
+    assert_eq!(selected(&doc), kept, "not while a press is held");
+    doc.pointer(&with_mods(PointerAction::Up, inside, ToolMods::default())).unwrap();
+}
+
+#[test]
+fn a_right_click_on_a_misspelled_word_offers_its_suggestions() {
+    let mut doc = DocDocument::create("Spell.docx", 0, 0).unwrap();
+    doc.execute("text.insert", json!({ "text": "This is wrnog here." })).unwrap();
+    let word = at_char(&mut doc, 0, 10);
+    doc.execute("caret.docStart", json!({})).unwrap();
+    let answer = doc.context_menu(Some(word), 1.0).unwrap();
+    let spelling = &answer["spelling"];
+    assert_eq!(spelling["word"], json!("wrnog"), "{answer}");
+    assert_eq!(spelling["kind"], json!("spelling"));
+    let suggestions = spelling["suggestions"].as_array().unwrap();
+    assert!(!suggestions.is_empty() && suggestions.len() <= 5, "{suggestions:?}");
+    assert!(suggestions.contains(&json!("wrong")), "{suggestions:?}");
+    // The menu's row: the issue selected, then the suggestion, one undo step.
+    doc.execute("select.range", json!({ "anchor": spelling["start"], "focus": spelling["end"] })).unwrap();
+    doc.execute("spelling.applySuggestion", json!({ "text": "wrong" })).unwrap();
+    assert_eq!(text(&doc), "This is wrong here.");
+    doc.execute("edit.undo", json!({})).unwrap();
+    assert_eq!(text(&doc), "This is wrnog here.");
+    // Checking as you type off: no squiggle, no suggestions.
+    doc.execute("spelling.proofing", json!({ "value": false })).unwrap();
+    assert_eq!(doc.context_menu(Some(word), 1.0).unwrap()["spelling"], Value::Null);
+}
+
+#[test]
+fn a_right_click_selects_a_picture_and_knows_a_table() {
+    let mut doc = paragraphs(2);
+    doc.execute("caret.docEnd", json!({})).unwrap();
+    doc.execute("text.newParagraph", json!({})).unwrap();
+    let picture = image::RgbaImage::from_pixel(4, 4, image::Rgba([200, 30, 30, 255]));
+    let mut bytes = std::io::Cursor::new(Vec::new());
+    picture.write_to(&mut bytes, image::ImageFormat::Png).unwrap();
+    let data = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, bytes.into_inner());
+    doc.execute("image.insert", json!({ "data": data, "width": 60 })).unwrap();
+    doc.execute("select.range", json!({ "anchor": { "story": "body", "path": [2], "off": 0 }, "focus": { "story": "body", "path": [2], "off": 3 } }))
+        .unwrap();
+    let (hit, _, _) = doc.selected_object().unwrap();
+    let area = DocDocument::areas(&doc.layout())[hit.page];
+    let middle = (area.x + f64::from(hit.rect.x + hit.rect.w / 2.0), area.y + f64::from(hit.rect.y + hit.rect.h / 2.0));
+    doc.execute("caret.docStart", json!({})).unwrap();
+    let answer = doc.context_menu(Some(middle), 1.0).unwrap();
+    assert_eq!(answer["target"], json!("picture"), "{answer}");
+    assert!(doc.selected_object().is_some(), "the picture is selected");
+    // Shift+F10 on it: the menu opens at its middle.
+    let answer = doc.context_menu(None, 1.0).unwrap();
+    assert_eq!(answer["at"], json!([middle.0, middle.1]));
+    // A table's cell: the caret goes in, and the menu knows it.
+    doc.execute("caret.docStart", json!({})).unwrap();
+    doc.execute("table.insert", json!({ "rows": 2, "cols": 2 })).unwrap();
+    let cell = {
+        let caret = doc.inspect().unwrap()["caret"].clone();
+        (caret["x"].as_f64().unwrap() + 2.0, caret["top"].as_f64().unwrap() + caret["height"].as_f64().unwrap() / 2.0)
+    };
+    doc.execute("caret.docEnd", json!({})).unwrap();
+    let answer = doc.context_menu(Some(cell), 1.0).unwrap();
+    assert_eq!(answer["table"], json!(true), "{answer}");
+    assert_eq!(answer["target"], json!("text"));
+}

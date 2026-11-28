@@ -29,6 +29,8 @@ export type KeyContext = {
   clipboard: (action: 'copy' | 'cut' | 'pasteText' | 'pasteSpecial') => void
   /** Page Down (`1`) or Up (`-1`): a screen, or (`screen` false) to the page after or before. */
   page: (direction: 1 | -1, extend: boolean, screen: boolean) => void
+  /** Opens the right-click menu for the selection as it is (Shift+F10, the menu key; stage 2A). */
+  contextMenu: () => void
 }
 
 export type KeyEvent = { key: string; code: string; shiftKey: boolean; altKey: boolean; metaKey: boolean; ctrlKey: boolean; keyCode?: number; isComposing?: boolean; nativeEvent?: { isComposing?: boolean } }
@@ -85,6 +87,8 @@ export const KEYS: KeyRow[] = [
   { keys: ['Cmd+X'], act: (c) => c.clipboard('cut') },
   { keys: ['Cmd+Alt+Shift+V'], act: (c) => c.clipboard('pasteText') },
   { keys: ['Ctrl+Cmd+V', 'Cmd+Alt+V'], act: (c) => c.clipboard('pasteSpecial') },
+  // The right-click menu from the keyboard, at the caret (stage 2A; WPS untested, Word's keys).
+  { keys: ['Shift+F10', 'ContextMenu'], act: (c) => c.contextMenu() },
 ]
 
 /** The key codes of the characters rows name (the code, not the character Shift makes of it). */

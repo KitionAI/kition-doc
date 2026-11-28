@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.context-menu/settles-selection
+feature: doc.editor.context-menu
+intent: "The engine settles a right-click without editing: the selection stays when pressed on it, the caret goes elsewhere, Shift+F10 keeps it and opens at the caret's foot, nothing changes while a press is held."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: a_right_click_settles_the_selection_and_says_what_the_menu_is_for
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 120
+since: "2026-11-28"
