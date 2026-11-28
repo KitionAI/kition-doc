@@ -14,7 +14,7 @@ import { createServer } from 'vite'
  * canvas's CSS pixels. Read with `caretDrawn()`.
  */
 const CARET_INIT = () => {
-  const drawn = (window.__caret = { cur: null, dashed: null, path: [], frames: 0 })
+  const drawn = (window.__caret = { cur: null, dashed: null, under: [], path: [], frames: 0 })
   const P = window.CanvasRenderingContext2D?.prototype
   if (!P) return
   const surface = (canvas) => canvas?.classList?.contains('kui-canvas-surface')
@@ -35,6 +35,7 @@ const CARET_INIT = () => {
   wrap('drawImage', () => {
     drawn.cur = null
     drawn.dashed = null
+    drawn.under = []
     drawn.path = []
     drawn.frames += 1
   })
@@ -51,6 +52,10 @@ const CARET_INIT = () => {
     // A dashed upright bar: where dragged text would land (stage 1).
     if (points.length === 2 && Math.abs(points[0][0] - points[1][0]) < 0.6 && Math.abs(points[0][1] - points[1][1]) > 4 && ctx.getLineDash().length > 0 && !drawn.dashed) {
       drawn.dashed = { x: points[0][0], y: Math.min(points[0][1], points[1][1]), height: Math.abs(points[1][1] - points[0][1]) }
+    }
+    // A level line in the engine's dark grey: under what an input method composes (stage 3).
+    if (points.length === 2 && Math.abs(points[0][1] - points[1][1]) < 0.6 && Math.abs(points[0][0] - points[1][0]) > 1 && ctx.getLineDash().length === 0 && String(ctx.strokeStyle).toLowerCase() === '#404040') {
+      drawn.under.push({ x0: Math.min(points[0][0], points[1][0]), x1: Math.max(points[0][0], points[1][0]), y: points[0][1] })
     }
     drawn.path = []
   })
@@ -154,6 +159,12 @@ export async function open({ which = process.argv[2] ?? 'chromium', query = 'loc
     const box = await surface()
     return { x: box.x + drawn.x, y: box.y + drawn.y, height: drawn.height }
   }
+  /** The lines drawn now under what an input method composes, on the page (`{x0, x1, y}`). */
+  const underDrawn = async () => {
+    const lines = await frame().evaluate(() => window.__caret?.under ?? [])
+    const box = await surface()
+    return lines.map((line) => ({ x0: box.x + line.x0, x1: box.x + line.x1, y: box.y + line.y }))
+  }
   /** A canvas point (document points) on the page, as the view shows it now. */
   const toScreen = async (x, y) => {
     const shown = await view()
@@ -227,7 +238,7 @@ export async function open({ which = process.argv[2] ?? 'chromium', query = 'loc
     await browser.close().catch(() => undefined)
     await server.close().catch(() => undefined)
   }
-  return { which, page, kit, frame, wait, until, agent, ask, details, read, setup, selection, paragraphs, paragraph, zoom, surface, view, caretDrawn, dashedDrawn, toScreen, cursor, caretRect, caretInView, textPoint, pagesOf, active, clipboardText, errors, close }
+  return { which, page, kit, frame, wait, until, agent, ask, details, read, setup, selection, paragraphs, paragraph, zoom, surface, view, caretDrawn, dashedDrawn, underDrawn, toScreen, cursor, caretRect, caretInView, textPoint, pagesOf, active, clipboardText, errors, close }
 }
 
 /**

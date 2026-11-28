@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.input-method/binding-commit-undo-step
+feature: doc.editor.input-method
+intent: "Each commit is one undo step of its own between the typing before and after it, and letters committed by Enter make no paragraph."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: a_committed_composition_is_one_undo_step_of_its_own
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 120
+since: "2026-11-28"

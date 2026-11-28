@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.input-method/binding-no-document-change
+feature: doc.editor.input-method
+intent: "A composition is drawn at the caret with the text after it moved on, without changing the document, its revision, its undo history or whether it needs saving; taken away the pages are as they were."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: a_composition_shows_at_the_caret_without_changing_the_document
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 120
+since: "2026-11-28"

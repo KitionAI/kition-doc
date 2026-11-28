@@ -6,6 +6,10 @@ export type DocInfo = {
   page: number
   /** Where the caret (the selection's moving end) is on the canvas, in points. */
   caret: CaretRect | null
+  /** What an input method composes at the caret (its text and cursor, characters), shown by the engine. */
+  preedit: { text: string; cursor: number } | null
+  /** Where a composition starts on the canvas (the caret, or the selection's start), in points. */
+  inputAt: CaretRect | null
   pages: RasterRect[]
   words: number
   /** Characters selected. */
@@ -35,11 +39,19 @@ const caretOf = (caret: unknown): CaretRect | null => {
   return [page, x, top, height].every((value) => typeof value === 'number' && Number.isFinite(value)) ? { page: page as number, x: x as number, top: top as number, height: height as number } : null
 }
 
+const preeditOf = (preedit: unknown): { text: string; cursor: number } | null => {
+  if (!preedit || typeof preedit !== 'object') return null
+  const { text, cursor } = preedit as Record<string, unknown>
+  return typeof text === 'string' && typeof cursor === 'number' ? { text, cursor } : null
+}
+
 export function describe(info: KitEngineInfo): DocInfo {
-  const inspected = info.inspected as { page?: number; caret?: CaretRect | null; pages?: Array<{ area?: Area }>; words?: number; selected?: number; story?: unknown; equation?: boolean; shape?: string | null; shapes?: string[]; chart?: string | null; escape?: boolean; all?: boolean; painter?: unknown }
+  const inspected = info.inspected as { page?: number; caret?: CaretRect | null; preedit?: unknown; inputAt?: unknown; pages?: Array<{ area?: Area }>; words?: number; selected?: number; story?: unknown; equation?: boolean; shape?: string | null; shapes?: string[]; chart?: string | null; escape?: boolean; all?: boolean; painter?: unknown }
   return {
     page: inspected.page ?? 0,
     caret: caretOf(inspected.caret),
+    preedit: preeditOf(inspected.preedit),
+    inputAt: caretOf(inspected.inputAt),
     pages: (inspected.pages ?? []).map(({ area }) => (area ? { x0: area.x, y0: area.y, x1: area.x + area.width, y1: area.y + area.height } : { x0: 0, y0: 0, x1: 0, y1: 0 })),
     words: inspected.words ?? 0,
     selected: inspected.selected ?? 0,

@@ -834,3 +834,185 @@ fn a_right_click_selects_a_picture_and_knows_a_table() {
     assert_eq!(answer["table"], json!(true), "{answer}");
     assert_eq!(answer["target"], json!("text"));
 }
+
+/// The lines under a composition the overlays draw (stage 3), as `(x0, x1, y)`.
+fn underlines(doc: &DocDocument) -> Vec<(f64, f64, f64)> {
+    doc.overlays()
+        .into_iter()
+        .filter_map(|overlay| match overlay {
+            ToolOverlay::Line { ax, ay, bx, color, .. } if color == composing::UNDERLINE => Some((ax.min(bx), ax.max(bx), ay)),
+            _ => None,
+        })
+        .collect()
+}
+
+/// The caret the overlays draw (its x), none with a selection.
+fn caret_drawn(doc: &DocDocument) -> Option<f64> {
+    doc.overlays().into_iter().find_map(|overlay| match overlay {
+        ToolOverlay::Line { ax, ay, bx, by, color, .. } if color == CARET && (ax - bx).abs() < 1e-6 && by > ay => Some(ax),
+        _ => None,
+    })
+}
+
+/// An input method's composition (stage 3, walkthrough D16; WPS W-V1): it shows at the caret,
+/// underlined, the text after it moved on and the caret at the input method's cursor, and the
+/// pages are drawn again with it; the document, its revision, its undo history and whether it
+/// needs saving do not change, and taken away the pages are as they were.
+#[test]
+fn a_composition_shows_at_the_caret_without_changing_the_document() {
+    let mut doc = paragraphs(3);
+    doc.mark_saved();
+    let (x, y) = at_char(&mut doc, 1, 9);
+    let before = text(&doc);
+    let rev = doc.session.borrow().rev();
+    let depth = doc.session.borrow().undo_depth();
+    let caret = doc.inspect().unwrap()["caret"].clone();
+    let line_top = caret["top"].as_f64().unwrap();
+    let pixels = doc.render(x - 2.0, line_top, 2.0, 400, 30).unwrap();
+    let revision = doc.revision();
+    assert_eq!(doc.inspect().unwrap()["inputAt"], caret, "a composition would start at the caret");
+    assert!(doc.set_preedit("ni hao", 6), "it shows");
+    assert!(doc.revision() > revision, "the pages are drawn again");
+    assert_eq!(text(&doc), before, "the document does not change");
+    assert_eq!(doc.session.borrow().rev(), rev, "nor its revision");
+    assert_eq!(doc.session.borrow().undo_depth(), depth, "nor its undo history");
+    assert!(!doc.dirty(), "nor does it need saving");
+    let inspected = doc.inspect().unwrap();
+    assert_eq!(inspected["preedit"], json!({ "text": "ni hao", "cursor": 6 }));
+    assert_eq!(inspected["inputAt"], caret, "the input method's text input stays where the composition starts");
+    assert_eq!(inspected["caret"], caret, "the person's caret is where it was");
+    let lines = underlines(&doc);
+    assert_eq!(lines.len(), 1, "{lines:?}");
+    let (x0, x1, under) = lines[0];
+    assert!((x0 - x).abs() < 0.5, "the line starts at the caret ({x0} vs {x})");
+    assert!(x1 - x0 > 20.0, "and runs under the letters ({x0}..{x1})");
+    assert!(under > y && under <= line_top + caret["height"].as_f64().unwrap() + 4.0, "under the line's text ({under})");
+    let at = caret_drawn(&doc).unwrap();
+    assert!((at - x1).abs() < 0.5, "the caret is at the input method's cursor, the end ({at} vs {x1})");
+    assert_ne!(doc.render(x - 2.0, line_top, 2.0, 400, 30).unwrap(), pixels, "the letters are on the page, the text after them moved on");
+    // The input method's cursor inside the composition.
+    assert!(doc.set_preedit("ni hao", 2));
+    let at = caret_drawn(&doc).unwrap();
+    assert!(at > x0 + 2.0 && at < x1 - 10.0, "the caret after “ni” ({at} in {x0}..{x1})");
+    // Taken away (the input method's Escape): the pages as they were.
+    let revision = doc.revision();
+    assert!(!doc.set_preedit("", 0));
+    assert!(doc.revision() > revision, "drawn again");
+    assert_eq!(doc.inspect().unwrap()["preedit"], Value::Null);
+    assert!(underlines(&doc).is_empty());
+    assert_eq!(doc.render(x - 2.0, line_top, 2.0, 400, 30).unwrap(), pixels, "the pages are as they were");
+    assert_eq!(text(&doc), before);
+    assert!(!doc.dirty());
+}
+
+/// What the input method commits is one undo step of its own, between the typing before and
+/// after it (WPS W-V5), and ends the composition; a commit of letters (Enter while composing,
+/// W-V4) makes no new paragraph.
+#[test]
+fn a_committed_composition_is_one_undo_step_of_its_own() {
+    let mut doc = DocDocument::create("Ime.docx", 0, 0).unwrap();
+    KitTools::text(&mut doc, "a", 1.0).unwrap();
+    KitTools::text(&mut doc, "b", 1.0).unwrap();
+    assert!(doc.set_preedit("ni hao", 6));
+    KitTools::text(&mut doc, "你好", 1.0).unwrap();
+    assert_eq!(doc.inspect().unwrap()["preedit"], Value::Null, "the commit ends the composition");
+    assert!(underlines(&doc).is_empty());
+    assert!(doc.set_preedit("zhong", 5));
+    KitTools::text(&mut doc, "中", 1.0).unwrap();
+    assert!(doc.set_preedit("shijie", 6));
+    KitTools::text(&mut doc, "shijie", 1.0).unwrap();
+    KitTools::text(&mut doc, "c", 1.0).unwrap();
+    KitTools::text(&mut doc, "d", 1.0).unwrap();
+    assert_eq!(text(&doc), "ab你好中shijiecd");
+    assert_eq!(doc.session.borrow().doc.body.len(), 1, "no new paragraph");
+    for want in ["ab你好中shijie", "ab你好中", "ab你好", "ab", ""] {
+        doc.execute("edit.undo", json!({})).unwrap();
+        assert_eq!(text(&doc), want);
+    }
+}
+
+/// With text selected the composition shows in its place, and the selection is back when it is
+/// taken away; only the commit replaces it, one undo step (WPS W-V6).
+#[test]
+fn a_composition_replaces_the_selection_only_when_committed() {
+    let mut doc = paragraphs(2);
+    doc.execute("select.range", json!({ "anchor": { "story": "body", "path": [0], "off": 0 }, "focus": { "story": "body", "path": [0], "off": 9 } }))
+        .unwrap();
+    let before = text(&doc);
+    let start = doc.inspect().unwrap()["caret"]["x"].as_f64().unwrap();
+    let (x0, ..) = {
+        assert!(doc.set_preedit("ni", 2));
+        underlines(&doc)[0]
+    };
+    let first = doc.inspect().unwrap()["inputAt"]["x"].as_f64().unwrap();
+    assert!((x0 - first).abs() < 0.5 && first < start, "it shows where the selection starts ({x0}, {first}, {start})");
+    assert!(
+        !doc.overlays().iter().any(|overlay| matches!(overlay, ToolOverlay::Highlight { .. })),
+        "the selected text is not shown selected: the composition is in its place"
+    );
+    assert_eq!(text(&doc), before);
+    assert!(!doc.set_preedit("", 0));
+    assert_eq!(selected(&doc), "Paragraph", "the selection is back");
+    assert!(doc.set_preedit("ni", 2));
+    KitTools::text(&mut doc, "你", 1.0).unwrap();
+    assert!(text(&doc).starts_with("你 1 of"), "{}", text(&doc));
+    doc.execute("edit.undo", json!({})).unwrap();
+    assert_eq!(text(&doc), before, "one undo step");
+}
+
+/// A composition goes away when the caret moves (a key, a click) or the document changes (an
+/// agent's edit, an undo): the pages are drawn again without it, and what the input method
+/// commits then goes in at the caret (plan stage 3 item 6).
+#[test]
+fn a_composition_goes_when_the_caret_or_the_document_moves_on() {
+    let mut doc = paragraphs(2);
+    let to = at_char(&mut doc, 1, 4);
+    assert!(doc.set_preedit("ni", 2));
+    let revision = doc.revision();
+    doc.execute("caret.right", json!({})).unwrap();
+    assert_eq!(doc.inspect().unwrap()["preedit"], Value::Null, "a caret move takes it away");
+    assert!(doc.revision() > revision, "and the pages are drawn again");
+    assert!(doc.set_preedit("ni", 2));
+    click(&mut doc, to.0, to.1, false);
+    assert_eq!(doc.inspect().unwrap()["preedit"], Value::Null, "so does a click");
+    assert!(doc.set_preedit("ni", 2));
+    doc.execute("select.range", json!({ "anchor": { "story": "body", "path": [0], "off": 0 }, "focus": { "story": "body", "path": [0], "off": 0 } }))
+        .unwrap();
+    doc.execute("text.insert", json!({ "text": "X" })).unwrap();
+    assert_eq!(doc.inspect().unwrap()["preedit"], Value::Null, "and an edit of the document");
+    KitTools::text(&mut doc, "你", 1.0).unwrap();
+    assert!(text(&doc).starts_with("X你Paragraph 1"), "the commit goes in at the caret as it is then: {}", text(&doc));
+    // An undo while composing.
+    assert!(doc.set_preedit("hao", 3));
+    doc.execute("edit.undo", json!({})).unwrap();
+    assert_eq!(doc.inspect().unwrap()["preedit"], Value::Null);
+}
+
+/// Whatever the editor sends never panics: line breaks and other control characters are left
+/// out, a cursor past the end is the end, a long composition is cut at 1000 characters, and
+/// nothing shows while commenting only or editing an equation.
+#[test]
+fn hostile_compositions_never_panic() {
+    let mut doc = paragraphs(2);
+    for (text, cursor) in [("a\nb\r\tc", usize::MAX), ("\u{0}\u{1b}", 3), ("👩‍👩‍👧é\u{301}", 2), ("", usize::MAX)] {
+        doc.set_preedit(text, cursor);
+        let _ = doc.overlays();
+        let _ = doc.inspect().unwrap();
+        let _ = doc.render(0.0, 0.0, 1.5, 200, 200).unwrap();
+    }
+    assert!(doc.set_preedit("a\nb", 9));
+    assert_eq!(doc.inspect().unwrap()["preedit"], json!({ "text": "ab", "cursor": 2 }));
+    assert!(doc.set_preedit(&"字".repeat(5000), 0));
+    assert_eq!(doc.inspect().unwrap()["preedit"]["text"].as_str().unwrap().chars().count(), composing::LONGEST);
+    assert!(!doc.set_preedit("\n\r", 0), "nothing left to show");
+    // Across paragraphs.
+    doc.execute("select.range", json!({ "anchor": { "story": "body", "path": [0], "off": 3 }, "focus": { "story": "body", "path": [1], "off": 5 } }))
+        .unwrap();
+    assert!(doc.set_preedit("ni", 1));
+    let _ = doc.render(0.0, 0.0, 1.0, 300, 300).unwrap();
+    assert!(!doc.set_preedit("", 0));
+    doc.set_comment_only(true);
+    assert!(!doc.set_preedit("ni", 2), "commenting only: none");
+    doc.set_comment_only(false);
+    assert_eq!(text(&doc).chars().count(), text(&paragraphs(2)).chars().count());
+}

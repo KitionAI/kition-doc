@@ -1,0 +1,22 @@
+format: 1
+id: doc.editor.input-method/table-cell
+feature: doc.editor.input-method
+intent: "In a table's cell the composition shows at the caret and the commit goes into the cell."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/ime.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/ime.mjs, chromium, d16-ime-table-cell]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 120
+since: "2026-11-28"

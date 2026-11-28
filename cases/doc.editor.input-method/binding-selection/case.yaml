@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.input-method/binding-selection
+feature: doc.editor.input-method
+intent: "A composition shows over the selected text, the selection is back when it is taken away, and the commit replaces it in one undo step."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: a_composition_replaces_the_selection_only_when_committed
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 120
+since: "2026-11-28"

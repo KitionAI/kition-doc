@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.input-method/binding-hostile
+feature: doc.editor.input-method
+intent: "Control characters, a cursor past the end, a long composition, a selection across paragraphs and commenting only never panic."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: hostile_compositions_never_panic
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 120
+since: "2026-11-28"

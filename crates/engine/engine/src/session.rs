@@ -545,16 +545,27 @@ impl Session {
         {
             return l.clone();
         }
-        let opts = LayoutOptions {
-            view: self.view.mode,
-            web_width: ww,
-            show_hidden: self.view.marks,
-            hide_deleted: !self.view.show_markup || self.prefs.markup.hides_deletions(),
-            proofing: self.view.proofing,
-        };
+        let opts = self.layout_options();
         let l = Arc::new(kition_doc_layout::layout(&self.doc, &mut self.cache, &opts));
         self.layout = Some((self.rev, ww, self.view.mode, l.clone(), self.view.proofing));
         l
+    }
+    /// What the view lays the document out with.
+    fn layout_options(&self) -> LayoutOptions {
+        LayoutOptions {
+            view: self.view.mode,
+            web_width: self.view.web_width,
+            show_hidden: self.view.marks,
+            hide_deleted: !self.view.show_markup || self.prefs.markup.hides_deletions(),
+            proofing: self.view.proofing,
+        }
+    }
+    /// `doc` laid out as the view lays out the session's document, with its cache of paragraphs:
+    /// for a document the editor shows in its place for a moment (what an input method composes,
+    /// typed in at the caret). The session's own document, layout and revision stay as they are.
+    pub fn layout_of(&mut self, doc: &Document) -> Arc<DocLayout> {
+        let opts = self.layout_options();
+        Arc::new(kition_doc_layout::layout(doc, &mut self.cache, &opts))
     }
     /// A layout for output (PDF, images, print): no proofing marks, print view.
     pub fn export_layout(&self) -> Arc<DocLayout> {

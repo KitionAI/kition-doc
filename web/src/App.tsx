@@ -41,6 +41,7 @@ import { pressKey, type KeyContext } from './keys'
 import { clipOf, copySelection, pasteClip, pasteFromClipboard, type ClipboardEditor } from './clipboard'
 import { pageWidthArea, wholePage, zoomKeepingMiddle } from './zoom'
 import { useFollowCaret } from './followCaret'
+import { useInputMethod } from './inputMethod'
 import { edgeScrolling } from './edgeScroll'
 import { ZoomControl, type ZoomActions } from './ZoomControl'
 import { DocContextMenu, type MenuAnswer, type OpenMenu } from './ContextMenu'
@@ -217,6 +218,19 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   allSelected.current = state?.all === true
   const holding = useCallback(() => holdView.current || allSelected.current, [])
   personActed.current = useFollowCaret({ canvas, caret: state?.caret, editedBy: session.editedBy, held: holding })
+
+  // An input method composes in the text at the caret, its candidate window under the line
+  // (inputMethod.ts; stage 3, walkthrough D16).
+  const placeInput = useInputMethod({
+    composer: {
+      invoke: doc ? (method, ...args) => doc.invoke(method, ...args) : null,
+      inOrder: session.inOrder,
+      settle: () => session.tool('tool', [], true),
+      refresh: () => tools.refresh(),
+    },
+    canvas,
+    at: state?.inputAt,
+  })
 
   // The zoom (zoom.ts, ZoomControl.tsx): the status bar, View › Zoom, and the frame's Fit.
   const zoomActions: ZoomActions = {
@@ -428,6 +442,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
             setZoom(view.zoom)
             setCanvasHeight(view.height)
             if (previous && previous.height !== view.height && previous.zoom === view.zoom) canvas.current?.panTo(view.x, previous.y)
+            placeInput(view)
           }}
           decorate={decorate}
           overlay={

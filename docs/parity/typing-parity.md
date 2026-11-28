@@ -67,6 +67,17 @@ Applied when a word is finished by a space, punctuation **or Enter** (`enter_fin
 - No line break right after a slash (`and/or`, URLs) unless the word can't fit a line
   (`layout::tests::no_line_break_right_after_a_slash`).
 
+## Input methods
+
+Black-box in WPS Office for Mac (plan "Doc usable by hand", stage 3, W-V1–W-V7), driven in the
+editor with Chromium's DevTools input method (`web/tests/hand/ime.mjs`).
+
+| Keys | Result | Test |
+|---|---|---|
+| pinyin `ni hao` composing | shown at the caret, underlined, the text after it moved on; the document, its undo history and its saved state unchanged | `tests::a_composition_shows_at_the_caret_without_changing_the_document`, `ime.mjs d16-ime-composition` |
+| Space (commit `你好`), then commit `shijie` with Enter, then type `cd` | three undo steps: the typing, each commit; Enter while composing makes no paragraph | `tests::a_committed_composition_is_one_undo_step_of_its_own`, `ime.mjs d16-ime-keys` |
+| composing over selected text, Escape / commit | Escape brings the selection back; the commit replaces it, one undo step | `tests::a_composition_replaces_the_selection_only_when_committed` |
+
 ## Known gaps
 
 - Word's body font Aptos isn't installed outside Office; our substitute (Carlito, else Helvetica
@@ -90,3 +101,4 @@ Applied when a word is finished by a space, punctuation **or Enter** (`enter_fin
 |---|---|---|
 | 2026-11-17 | major | First public version |
 | 2026-11-28 | minor | Tab between table cells is no undo step (plan "Doc usable by hand", stage 0B) |
+| 2026-11-28 | minor | Input methods: composing at the caret, each commit one undo step (stage 3) |

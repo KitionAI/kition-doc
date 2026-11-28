@@ -14,6 +14,7 @@
 pub mod acts;
 mod check;
 mod collab;
+mod composing;
 pub mod context;
 mod context_menu;
 mod describe;
@@ -103,6 +104,12 @@ pub struct DocDocument {
     /// chart (so typing follows it), where the chart is still the object at the caret and the
     /// editor shows its Chart Design until the selection moves.
     pub(crate) inserted_chart: Option<(u32, kition_doc_engine::Selection)>,
+    /// What an input method composes at the caret (`composing`): session state, never the
+    /// document. The pages are drawn with it typed in.
+    preedit: Option<composing::Preedit>,
+    /// How many times the pages changed without the document changing (a composition shown,
+    /// changed or taken away): part of the revision the canvas repaints on.
+    drawn: u64,
 }
 
 impl DocDocument {
@@ -181,6 +188,8 @@ impl DocDocument {
             planning: false,
             selection_active: false,
             inserted_chart: None,
+            preedit: None,
+            drawn: 0,
         }
     }
 
@@ -222,8 +231,9 @@ impl DocDocument {
     /// Premultiplied RGBA of the canvas area at (`x`, `y`) at `scale` pixels per point.
     fn compose(&self, x: f64, y: f64, scale: f64, width: u32, height: u32) -> Vec<u8> {
         let mut out = self.pasteboard.repeat(width as usize * height as usize);
-        let layout = self.layout();
+        let layout = self.drawn_layout();
         let session = self.session.borrow();
+        let doc = self.shown_preedit().map_or(&session.doc, |preedit| &preedit.doc);
         let options = self.render_options();
         for (index, area) in Self::areas(&layout).iter().enumerate() {
             // The part of the page inside the output, in output pixels.
@@ -238,7 +248,7 @@ impl DocDocument {
             let (w, h) = ((px1 - px0) as u32, (py1 - py0) as u32);
             // Page points → canvas points → output pixels → this piece's pixels.
             let view = kurbo::Affine::translate((-px0, -py0)) * kurbo::Affine::scale(scale) * kurbo::Affine::translate((area.x - x, area.y - y));
-            let rendered = kition_doc_render::render_region(&session.doc, page, w, h, view, &options);
+            let rendered = kition_doc_render::render_region(doc, page, w, h, view, &options);
             blit(&mut out, width, &rendered.pixels, w, px0 as u32, py0 as u32);
         }
         out
@@ -247,8 +257,9 @@ impl DocDocument {
     /// Straight-alpha 1:1 pixels of the integer area (`x0`, `y0`) `w` × `h`, from cached pages.
     fn full(&self, x0: i32, y0: i32, w: u32, h: u32) -> Vec<u8> {
         let mut out = self.pasteboard.repeat(w as usize * h as usize);
-        let layout = self.layout();
-        let revision = self.session.borrow().rev();
+        let layout = self.drawn_layout();
+        // The pages as drawn: a composition shown changes them, not the document's revision.
+        let revision = self.revision();
         for (index, area) in Self::areas(&layout).iter().enumerate() {
             let (sx, sy) = (area.x.round() as i32, area.y.round() as i32);
             let (pw, ph) = (area.w.ceil() as i32, area.h.ceil() as i32);
@@ -260,7 +271,10 @@ impl DocDocument {
             let fresh = self.cache.borrow().get(&index).is_some_and(|(rev, _)| *rev == revision);
             if !fresh {
                 let Some(page) = layout.pages.get(index) else { continue };
-                let rendered = kition_doc_render::render_page(&self.session.borrow().doc, page, 1.0, &self.render_options());
+                let session = self.session.borrow();
+                let doc = self.shown_preedit().map_or(&session.doc, |preedit| &preedit.doc);
+                let rendered = kition_doc_render::render_page(doc, page, 1.0, &self.render_options());
+                drop(session);
                 let mut cache = self.cache.borrow_mut();
                 if cache.len() >= CACHED_PAGES {
                     cache.clear();
@@ -283,15 +297,28 @@ impl DocDocument {
         out
     }
 
-    /// The caret and the selection.
+    /// The layout the pages are drawn from: with what an input method composes typed in
+    /// (`composing`), else the document's.
+    fn drawn_layout(&self) -> Arc<DocLayout> {
+        match self.shown_preedit() {
+            Some(preedit) => preedit.layout.clone(),
+            None => self.layout(),
+        }
+    }
+
+    /// The caret and the selection (while an input method composes, the caret in the
+    /// composition and the line under it).
     fn overlays(&self) -> Vec<ToolOverlay> {
         let layout = self.layout();
         let areas = Self::areas(&layout);
+        let preedit = self.preedit_overlays();
         let session = self.session.borrow();
         let mut out = Vec::new();
         let at = |page: usize, x: f32, y: f32| areas.get(page).map(|area| (area.x + f64::from(x), area.y + f64::from(y)));
         let (a, b) = session.sel.ordered();
-        if !session.sel.is_collapsed() {
+        if let Some(preedit) = preedit {
+            out.extend(preedit);
+        } else if !session.sel.is_collapsed() {
             for (page, rect) in layout.selection_rects(&session.doc, &a, &b, session.page_hint) {
                 let (Some((x0, y0)), Some((x1, y1))) = (at(page, rect.x, rect.y), at(page, rect.x + rect.w, rect.y + rect.h)) else { continue };
                 out.push(ToolOverlay::Highlight { quad: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], color: SELECTION });
@@ -438,8 +465,9 @@ impl KitDocument for DocDocument {
 
     fn revision(&self) -> u64 {
         let session = self.session.borrow();
-        // The caret moves without changing the document; the overlays follow it either way.
-        session.rev()
+        // The caret moves without changing the document; the overlays follow it either way. A
+        // composition shown changes the pages drawn, not the document (`composing`).
+        session.rev().saturating_add(self.drawn)
     }
 
     /// Never while the document is open for commenting only: comments reach the others through
@@ -488,6 +516,7 @@ impl KitDocument for DocDocument {
         self.selection_active |= self.session.borrow().sel != selection || matches!(command, "select.range" | "caret.set");
         self.copied_by(command);
         self.note_inserted_chart(command, &params, &answer);
+        self.settle_preedit();
         Ok(answer)
     }
 
@@ -520,6 +549,10 @@ impl KitDocument for DocDocument {
             .map(|(index, area)| json!({ "index": index, "area": { "x": area.x, "y": area.y, "width": area.w, "height": area.h } }))
             .collect();
         let gesture = self.object_drag_page().is_some();
+        // What an input method composes, and where a composition starts (the editor puts the
+        // input method's text input there): session state, never in the file.
+        let preedit = self.preedit_info();
+        let input_at = self.input_at(&layout, &areas);
         let session = self.session.borrow();
         let caret = layout.caret_on(&session.sel.focus, session.page_hint);
         let page = caret.as_ref().map_or(session.page_hint, |caret| caret.page);
@@ -571,6 +604,8 @@ impl KitDocument for DocDocument {
             "pages": pages,
             "page": page,
             "caret": caret,
+            "preedit": preedit,
+            "inputAt": input_at,
             "words": session.word_count(),
             "selected": session.selected_text().chars().count(),
             // Where the caret is (`body`, or a header or footer part), and whether an equation is
@@ -762,14 +797,41 @@ impl KitTools for DocDocument {
                 self.object_drag_page().and_then(|p| areas.get(p).map(|a| (p, *a))).or_else(|| areas.get(page).map(|a| (page, *a)))
                 && self.object_pointer(event, opage, event.x - oarea.x, event.y - oarea.y)?
             {
+                self.settle_preedit();
                 return Ok(self.respond());
             }
         }
         self.text_pointer(event, &layout, &areas)?;
+        self.settle_preedit();
         Ok(self.respond())
     }
 
-    fn key(&mut self, key: &str, mods: ToolMods, _zoom: f64) -> Result<ToolResponse, String> {
+    fn key(&mut self, key: &str, mods: ToolMods, zoom: f64) -> Result<ToolResponse, String> {
+        let answer = self.key_press(key, mods, zoom);
+        self.settle_preedit();
+        answer
+    }
+
+    fn text(&mut self, text: &str, _zoom: f64) -> Result<ToolResponse, String> {
+        // What an input method chose ends its composition, a step of its own (`composing`).
+        let committed = self.commit_preedit();
+        if !text.is_empty() && text.chars().all(|c| !c.is_control()) {
+            self.session().run("text.insert", &json!({ "text": text })).map_err(|error| error.to_string())?;
+        }
+        if committed {
+            self.session().close_typing();
+        }
+        Ok(self.respond())
+    }
+
+    fn state(&mut self, _x: f64, _y: f64, _mods: ToolMods, _zoom: f64) -> ToolResponse {
+        self.respond()
+    }
+}
+
+impl DocDocument {
+    /// A key for the text tool (see `KitTools::key`).
+    fn key_press(&mut self, key: &str, mods: ToolMods, _zoom: f64) -> Result<ToolResponse, String> {
         if self.object_key(key, mods)? {
             return Ok(self.respond());
         }
@@ -793,17 +855,6 @@ impl KitTools for DocDocument {
             session.sel = Selection::caret(focus);
         }
         Ok(self.respond())
-    }
-
-    fn text(&mut self, text: &str, _zoom: f64) -> Result<ToolResponse, String> {
-        if !text.is_empty() && text.chars().all(|c| !c.is_control()) {
-            self.session().run("text.insert", &json!({ "text": text })).map_err(|error| error.to_string())?;
-        }
-        Ok(self.respond())
-    }
-
-    fn state(&mut self, _x: f64, _y: f64, _mods: ToolMods, _zoom: f64) -> ToolResponse {
-        self.respond()
     }
 }
 
@@ -1053,12 +1104,22 @@ pub mod web {
             self.0.doc_id()
         }
 
+        /// What an input method composes at the caret (`text`, its cursor `cursor` characters in),
+        /// shown without changing the document; empty text takes it away. Answers whether it
+        /// shows (see `DocDocument::set_preedit`).
+        #[wasm_bindgen(js_name = setPreedit)]
+        pub fn set_preedit(&mut self, text: &str, cursor: u32) -> bool {
+            self.0.set_preedit(text, cursor as usize)
+        }
+
         /// A right-click at canvas point (`x`, `y`), or for the selection as it is when either is
         /// not a number (Shift+F10): see `DocDocument::context_menu`. Answers its JSON.
         #[wasm_bindgen(js_name = contextMenu)]
         pub fn context_menu(&mut self, x: f64, y: f64, zoom: f64) -> Result<String, JsError> {
             let point = (x.is_finite() && y.is_finite()).then_some((x, y));
-            self.0.context_menu(point, zoom).map(|answer| answer.to_string()).map_err(error)
+            let answer = self.0.context_menu(point, zoom).map(|answer| answer.to_string()).map_err(error);
+            self.0.settle_preedit();
+            answer
         }
     }
 }

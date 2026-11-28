@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.input-method/binding-moves-on
+feature: doc.editor.input-method
+intent: "A caret move, a click, an edit or an undo takes a composition away and the pages are drawn again; the commit goes in at the caret as it is then."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: a_composition_goes_when_the_caret_or_the_document_moves_on
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 120
+since: "2026-11-28"
