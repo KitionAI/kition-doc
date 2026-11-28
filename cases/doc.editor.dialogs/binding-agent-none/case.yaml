@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.dialogs/binding-agent-none
+feature: doc.editor.dialogs
+intent: "An agent's call opens no dialog: its requests are dropped."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: an_agents_call_opens_no_dialog
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 120
+since: "2026-11-28"

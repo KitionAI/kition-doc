@@ -183,10 +183,11 @@ export function HomeTab({ onFind, onClipboard, painter }: { onFind: (replace: bo
             <CommandButton command="view.marks" icon={Pilcrow} size="icon" pressed={view.marks} label={p('Show/Hide ¶')} title={p('Show/Hide ¶')} />
           </RibbonRow>
           <RibbonRow>
-            <CommandButton command="format.alignLeft" primary icon={AlignLeft} size="icon" label={p('Align Left')} title={p('Align Left')} />
-            <CommandButton command="format.alignCenter" primary icon={AlignCenter} size="icon" label={p('Center')} title={p('Center')} />
-            <CommandButton command="format.alignRight" icon={AlignRight} size="icon" label={p('Align Right')} title={p('Align Right')} />
-            <CommandButton command="format.justify" icon={AlignJustify} size="icon" label={p('Justify')} title={p('Justify')} />
+            {/* The caret's paragraph's alignment is the pressed one; all four are in Single line's row (walkthrough G6). */}
+            <CommandButton command="format.alignLeft" primary icon={AlignLeft} size="icon" pressed={format.align === 'left'} label={p('Align Left')} title={p('Align Left')} />
+            <CommandButton command="format.alignCenter" primary icon={AlignCenter} size="icon" pressed={format.align === 'center'} label={p('Center')} title={p('Center')} />
+            <CommandButton command="format.alignRight" primary icon={AlignRight} size="icon" pressed={format.align === 'right'} label={p('Align Right')} title={p('Align Right')} />
+            <CommandButton command="format.justify" primary icon={AlignJustify} size="icon" pressed={format.align === 'justify'} label={p('Justify')} title={p('Justify')} />
             <RibbonMenu icon={UnfoldVertical} label={p('Line and Paragraph Spacing')} size="icon">
               {[1, 1.15, 1.5, 2, 2.5, 3].map((value) => (
                 <CommandItem key={value} command="paragraph.lineSpacing" params={{ value }} label={String(value)} />

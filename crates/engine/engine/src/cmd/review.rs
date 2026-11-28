@@ -19,7 +19,7 @@ fn comment_id(s: &Session, v: &Value) -> Result<Option<u32>, CmdError> {
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("comment.new", "New Comment", "Review › Comments", new_comment).key("Mod+Alt+M").params(r#"{"text": string}"#),
+        CommandSpec::new("comment.new", "New Comment", "Review › Comments", new_comment).key("Mod+Alt+A").params(r#"{"text": string}"#),
         CommandSpec::new("comment.replyCurrent", "Reply", "Review › Comments", reply).params(r#"{"id": n, "text": string}"#),
         CommandSpec::new("comment.edit", "Edit Comment", "Review › Comments", edit_comment).params(r#"{"id": n, "text": string}"#),
         CommandSpec::new("comment.deleteCurrent", "Delete", "Review › Comments", delete_comment).params(r#"{"id"?: n, "all"?: bool}"#),

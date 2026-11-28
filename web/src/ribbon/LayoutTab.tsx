@@ -23,6 +23,7 @@ const BREAKS: Array<[string, string]> = [
   ['Odd Page', 'oddPage'],
 ]
 
+/** Arrange › Selection Pane answers an agent the objects' list; the editor has no pane of it (not on the ribbon). */
 export function LayoutTab() {
   const { phrase: p } = useKitEditor()
   return (
@@ -62,7 +63,7 @@ export function LayoutTab() {
           </RibbonMenu>
         </RibbonStack>
       </RibbonGroup>
-      <CommandTab menu="Layout" exclude={['page.margins', 'page.orientation', 'page.size', 'page.columns', 'page.break', 'page.lineNumbers', 'page.hyphenation', 'page.pageSetup', 'page.section', 'text.columnBreak']} primary={DOC_PRIMARY.Layout} />
+      <CommandTab menu="Layout" exclude={['page.margins', 'page.orientation', 'page.size', 'page.columns', 'page.break', 'page.lineNumbers', 'page.hyphenation', 'page.pageSetup', 'page.section', 'text.columnBreak', 'arrange.selectionPane']} primary={DOC_PRIMARY.Layout} />
     </>
   )
 }

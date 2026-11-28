@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-hand-h5-table-design-menus
+feature: doc.editor.dialogs
+intent: "Table Design's Shading is a menu of colours that shades the cell, and Borders a menu of the border kinds (before, both ran with nothing to show; walkthrough H5)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/dialogs.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/dialogs.mjs, chromium, h5-table-design-menus]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 120
+since: "2026-11-28"

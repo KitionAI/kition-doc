@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.dialogs/binding-marks
+feature: doc.editor.dialogs
+intent: "Show/Hide ¶ draws the formatting marks while editing only, and the pages are drawn again when it turns."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: show_marks_draws_the_marks_while_editing
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 120
+since: "2026-11-28"

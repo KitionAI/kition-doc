@@ -118,10 +118,16 @@ impl DocDocument {
         self.clipboard_gate(command, &params)?;
         let params = self.resolved(command, params);
         let selection = self.session.borrow().sel.clone();
+        let marks = self.session.borrow().view.marks;
         let answer = self.session().execute_as(command, &params, origin).map_err(engine_error)?;
         self.selection_active |= self.session.borrow().sel != selection || matches!(command, "select.range" | "caret.set");
         self.copied_by(command);
         self.note_inserted_chart(command, &params, &answer);
+        // The origin is back to the session's own here: a call given another's drops its dialogs.
+        if kition_kit::kdm::UndoScope::of(origin.kind) != Some(kition_kit::kdm::UndoScope::Person) {
+            self.session().ui_requests.clear();
+        }
+        self.after_run(marks);
         Ok(answer)
     }
 

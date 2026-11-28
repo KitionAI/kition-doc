@@ -131,3 +131,105 @@
 .doc-zoom-field {
   width: 52px;
 }
+
+/* The editor's dialogs (stage 6A, dialogs/): rows of a label and its field, two to a line. */
+.doc-dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.doc-dialog-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.doc-dialog-row > span:first-child {
+  flex: none;
+  min-width: 88px;
+  color: var(--kit-text-muted, inherit);
+}
+
+.doc-dialog-row > .kui-field,
+.doc-dialog-measure {
+  flex: 1;
+  min-width: 0;
+}
+
+.doc-dialog-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+}
+
+.doc-dialog-heading {
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+.doc-dialog-measure {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.doc-dialog-measure > .kui-field:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.doc-dialog-unit {
+  flex: none;
+  width: 72px;
+}
+
+.doc-dialog-suffix {
+  flex: none;
+  color: var(--kit-text-muted, inherit);
+}
+
+.doc-dialog-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.doc-dialog-choice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.doc-dialog-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64px;
+  overflow: hidden;
+  border: 1px solid var(--kit-border);
+  border-radius: 6px;
+  background: var(--kit-surface, var(--kit-panel));
+  white-space: nowrap;
+}
+
+.doc-dialog-table th {
+  padding: 2px 24px 2px 0;
+  font-weight: 400;
+  text-align: left;
+}
+
+.doc-dialog-table td {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.doc-dialog-actions {
+  justify-content: flex-end;
+}
+
+.doc-read-mode {
+  gap: 8px;
+}

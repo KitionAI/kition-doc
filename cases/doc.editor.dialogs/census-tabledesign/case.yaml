@@ -1,0 +1,22 @@
+format: 1
+id: doc.editor.dialogs/census-tabledesign
+feature: doc.editor.dialogs
+intent: "Every button with a test id on the tableDesign tab, in its row and its More panels, shows a person something when clicked, is grey, or is exempt with its reason (the button census, probe14)."
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/census.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [node, web/tests/hand/census.mjs, chromium, tableDesign]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+tags: [browser]
+requires: [chromium]
+timeout_s: 120
+since: "2026-11-28"

@@ -176,7 +176,11 @@ pub fn specs() -> Vec<CommandSpec> {
             select_cells(s, &tp, Some((r, Some(c))))
         })
         .pure()),
-        t(CommandSpec::new("table.properties", "Properties", "Table Layout › Table", properties).params(
+        t(CommandSpec::new("table.properties", "Properties", "Table Layout › Table", properties)
+            // Without settings it only answers the current ones (the Table Properties dialog's
+            // start): no undo step, no unsaved change.
+            .moves_only_when(|_, v| !PROPERTY_KEYS.iter().any(|k| v.get(*k).is_some()))
+            .params(
             r#"{"align"?: "left|center|right", "width"?: pt|null, "widthPct"?: percent, "indent"?: pt, "rowHeight"?: pt|null, "rowHeightRule"?: "atLeast|exact", "allowBreak"?: bool, "headerRow"?: bool, "columnWidth"?: pt, "cellWidth"?: pt|null, "valign"?: "top|center|bottom"} (row, column and cell settings apply to the caret's; without settings it returns the current ones)"#,
         )),
         CommandSpec::new("table.fromText", "Convert Text to Table", "Insert › Tables", from_text).params(r#"{"separator"?: "tab|comma"}"#),
@@ -335,13 +339,15 @@ fn set_column_width(t: &mut Table, r: usize, c: usize, w: f32) {
     }
 }
 
+/// The settings `table.properties` takes; with none of them it answers the current ones.
+const PROPERTY_KEYS: [&str; 11] =
+    ["align", "width", "widthPct", "indent", "rowHeight", "rowHeightRule", "allowBreak", "headerRow", "columnWidth", "cellWidth", "valign"];
+
 /// Table Properties: table, row, column and cell settings in one undoable step. Row, column and
 /// cell settings apply to the caret's. Without any setting it returns the current values.
 fn properties(s: &mut Session, v: &Value) -> CmdResult {
     let (tp, r, c) = cell(s)?;
-    let keys =
-        ["align", "width", "widthPct", "indent", "rowHeight", "rowHeightRule", "allowBreak", "headerRow", "columnWidth", "cellWidth", "valign"];
-    if !keys.iter().any(|k| v.get(*k).is_some()) {
+    if !PROPERTY_KEYS.iter().any(|k| v.get(*k).is_some()) {
         let t = s.doc.table(s.sel.focus.story, &tp).cloned().unwrap_or_default();
         let mut out = serde_json::to_value(&t.props).unwrap_or(Value::Null);
         let row = t.rows.get(r);

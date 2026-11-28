@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Button,
   CommentsPanel,
@@ -13,6 +13,7 @@ import {
   type RasterRect,
 } from '@kition/sdk/editor'
 import { MessageSquarePlusIcon as MessageSquarePlus, XIcon as X } from '@kition/tessera/icons/react'
+import { focusText } from './focus'
 
 /**
  * Comment threads (Kition platform rule M23): kit-editor's `CommentsPanel` over the engine's
@@ -99,17 +100,28 @@ function threadOf(made: unknown): string | null {
  * thread on the selection instead of a Word comment (null: this person starts none); the file's
  * own Word comments stay listed here, to reply to and resolve as before.
  */
-export function CommentsPane({ threads, active, onActive, onClose, onNew, strings }: {
+export function CommentsPane({ threads, active, onActive, onClose, onNew, start = 0, strings }: {
   threads: CommentThread[]
   active: string | null
   onActive: (thread: string | null) => void
   onClose: () => void
   onNew?: (() => void) | null
+  /**
+   * Counts New Comment asked for (Cmd+Alt+A, Review, Insert, the right-click menu; stage 6A item
+   * 5, walkthrough K3): each opens the new comment's box on the selection, which takes the keyboard
+   * (the selected text stays selected, so typing goes into the comment, not over the text). Enter
+   * is a new line, Cmd+Enter or Comment adds it, Escape or Cancel drops it (an empty one is never
+   * added); the keyboard goes back to the text either way.
+   */
+  start?: number
   strings: { title: string; newComment: string; close: string; selectFirst: string; labels: CommentsPanelProps['labels'] }
 }) {
   const { run, host } = useKitEditor()
   const access = useMemo(() => commentAccess(host), [host])
   const [pending, setPending] = useState<CommentAnchor | null>(null)
+  useEffect(() => {
+    if (start > 0 && access.canComment) setPending({ object: 'selection', field: 'text' })
+  }, [start, access.canComment])
   const who = { ...(access.me ? { author: access.me } : {}), ...(access.name ? { name: access.name } : {}) }
   const created = () => new Date().toISOString()
   const go = (thread: string) => {
@@ -146,9 +158,13 @@ export function CommentsPane({ threads, active, onActive, onClose, onNew, string
           void run('comment.add', { text: body, ...who, created: created() }).then((made) => {
             const thread = threadOf(made)
             if (thread) onActive(thread)
+            window.requestAnimationFrame(() => focusText())
           })
         }}
-        onCancelNew={() => setPending(null)}
+        onCancelNew={() => {
+          setPending(null)
+          window.requestAnimationFrame(() => focusText())
+        }}
         onReply={(thread, body) => void run('comment.reply', { thread, text: body, ...who, created: created() })}
         onResolve={(thread, resolved) => void run('comment.resolve', { thread, resolved })}
         onDelete={(thread, comment) => void run('comment.delete', comment === thread ? { thread } : { thread, comment })}

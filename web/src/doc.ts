@@ -82,6 +82,8 @@ export type FormatState = {
   border?: boolean
   styleName?: string
   color?: string
+  /** The caret's paragraph's alignment (`left`, `center`, `right`, `justify`, `distribute`). */
+  align?: string | null
 }
 
 /** `view.state`: the view's options and the drawing mode. */

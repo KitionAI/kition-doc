@@ -1248,3 +1248,82 @@ fn shift_right_from_a_cells_end_grows_by_cells() {
     doc.key("ArrowRight", shift, 1.0).unwrap();
     assert_eq!(doc.inspect().unwrap()["cells"]["cols"], json!([0, 1]));
 }
+
+/// The dialogs the engine's commands ask for (`ui_requests`) reach the editor as the tool's
+/// requests (stage 6A item 1; gap R7): a key's in its own answer, a run's in the next one, each once.
+#[test]
+fn a_dialog_the_person_asks_for_comes_with_the_tools_answer() {
+    let mut doc = DocDocument::open("Letter.docx", &fixture()).unwrap();
+    let dialogs = |response: &ToolResponse| -> Vec<(String, Value)> {
+        response
+            .requests
+            .iter()
+            .filter_map(|request| match request {
+                ToolRequest::Dialog { name, params } => Some((name.clone(), params.clone())),
+                _ => None,
+            })
+            .collect()
+    };
+    // Cmd+D runs Font Dialog through the text tool: its answer asks for the font dialog.
+    let answer = doc.key("d", ToolMods { command: true, ..ToolMods::default() }, 1.0).unwrap();
+    assert_eq!(dialogs(&answer), vec![("font".to_owned(), json!({}))]);
+    assert!(dialogs(&doc.state(0.0, 0.0, ToolMods::default(), 1.0)).is_empty(), "asked once");
+    // The ribbon's Link without an address: the next answer asks for the link dialog.
+    doc.execute("link.insert", json!({})).unwrap();
+    assert_eq!(dialogs(&doc.state(0.0, 0.0, ToolMods::default(), 1.0)), vec![("link".to_owned(), json!({}))]);
+    // Go To a page: the caret is brought into view.
+    doc.execute("edit.goto", json!({ "page": 1 })).unwrap();
+    assert_eq!(dialogs(&doc.state(0.0, 0.0, ToolMods::default(), 1.0)), vec![("scrollTo".to_owned(), json!({ "to": "caret" }))]);
+    // Paste Special without a format: the dialog with the formats the engine offers.
+    doc.execute("edit.pasteSpecial", json!({ "text": "pasted" })).unwrap();
+    let asked = dialogs(&doc.state(0.0, 0.0, ToolMods::default(), 1.0));
+    assert_eq!(asked.len(), 1);
+    assert_eq!(asked[0].0, "pasteSpecial");
+    assert!(asked[0].1["formats"].is_array() && asked[0].1["text"] == "pasted", "{asked:?}");
+}
+
+/// Programmatic calls never open dialogs: an agent's call asks for none (stage 6A item 1).
+#[test]
+fn an_agents_call_opens_no_dialog() {
+    let mut doc = DocDocument::open("Letter.docx", &fixture()).unwrap();
+    doc.execute_as("format.fontDialog", json!({}), &kition_doc_engine::Origin::agent("user:agent-1")).unwrap();
+    doc.execute_as("link.insert", json!({}), &kition_doc_engine::Origin::agent("user:agent-1")).unwrap();
+    let answer = doc.state(0.0, 0.0, ToolMods::default(), 1.0);
+    assert!(!answer.requests.iter().any(|request| matches!(request, ToolRequest::Dialog { .. })), "{:?}", answer.requests);
+}
+
+/// Show/Hide ¶ draws the formatting marks on the pages while editing, and only then (walkthrough
+/// G13): the pages are drawn again (a new revision) though the document did not change.
+#[test]
+fn show_marks_draws_the_marks_while_editing() {
+    let mut doc = DocDocument::open("Letter.docx", &fixture()).unwrap();
+    doc.set_editing(true);
+    let (w, h) = (doc.width(), doc.height());
+    let plain = doc.render(0.0, 0.0, 1.0, w, h).unwrap();
+    let before = doc.revision();
+    doc.execute("view.marks", json!({ "value": true })).unwrap();
+    assert!(doc.revision() > before, "the pages are drawn again");
+    let marked = doc.render(0.0, 0.0, 1.0, w, h).unwrap();
+    assert_ne!(plain, marked, "the marks are drawn");
+    doc.set_editing(false);
+    assert_eq!(doc.render(0.0, 0.0, 1.0, w, h).unwrap(), plain, "never as printed");
+    doc.set_editing(true);
+    doc.execute("view.marks", json!({ "value": false })).unwrap();
+    assert_eq!(doc.render(0.0, 0.0, 1.0, w, h).unwrap(), plain, "off again");
+}
+
+/// Table Properties with no settings answers the table's (the dialog's start) and is no edit: no
+/// undo step, nothing unsaved (stage 6A item 4).
+#[test]
+fn reading_table_properties_is_no_edit() {
+    let mut doc = DocDocument::open("Letter.docx", &fixture()).unwrap();
+    doc.execute("table.insert", json!({ "rows": 2, "cols": 2 })).unwrap();
+    doc.mark_saved();
+    let steps = doc.session.borrow().kdm_undo_steps().len();
+    let answer = doc.execute("table.properties", json!({})).unwrap();
+    assert!(answer.get("row").is_some() && answer.get("columnWidth").is_some(), "{answer}");
+    assert_eq!(doc.session.borrow().kdm_undo_steps().len(), steps, "no undo step");
+    assert!(!doc.dirty(), "nothing to save");
+    doc.execute("table.properties", json!({ "align": "center" })).unwrap();
+    assert_eq!(doc.session.borrow().kdm_undo_steps().len(), steps + 1, "a setting is one step");
+}

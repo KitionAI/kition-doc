@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.dialogs/binding-requests
+feature: doc.editor.dialogs
+intent: "The dialogs the engine's commands ask for reach the editor as the tool's requests: a key's in its own answer, a command's in the next, each once, with their values (Paste Special's formats)."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: a_dialog_the_person_asks_for_comes_with_the_tools_answer
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 120
+since: "2026-11-28"

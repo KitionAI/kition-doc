@@ -141,6 +141,7 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"props": ParaProps}"#),
         CommandSpec::new("paragraph.dialog", "Paragraph Settings", "Home › Paragraph", dialog)
+            .key("Mod+Alt+M")
             .params(r#"{"path"?: [n] (default: the caret's paragraph), "story"?: Story} → {"props": the paragraph's formatting as paragraph.set takes it, "direct": its own (not inherited) settings, "anchor", "focus"}"#)
             .pure(),
         CommandSpec::new("style.add", "Create a Style", "Home › Styles", create_style).params(r#"{"name": string, "basedOn"?: string, "fromSelection"?: bool}"#),

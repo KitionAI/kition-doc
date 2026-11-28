@@ -64,8 +64,12 @@ export const KEYS: KeyRow[] = [
   { keys: ['Ctrl+G'], when: onMac, act: (c) => c.ask('edit.goto') },
   // Show/Hide ¶ (both of the engine's keys).
   { keys: ['Cmd+8', 'Cmd+Shift+8'], act: (c) => c.run('view.marks') },
-  // Insert › Link's parameters until the link dialog (stage 6A).
-  { keys: ['Cmd+K'], act: (c) => c.ask('link.insert') },
+  // The dialogs' keys (WPS W-L6; stage 6A): Font, Paragraph, Hyperlink; New Comment on Cmd+Alt+A
+  // (Word for Mac; WPS untested). Each runs its command without values, which opens its window.
+  { keys: ['Cmd+D'], act: (c) => c.run('format.fontDialog') },
+  { keys: ['Cmd+Alt+M'], act: (c) => c.run('paragraph.dialog') },
+  { keys: ['Cmd+K'], act: (c) => c.run('link.insert') },
+  { keys: ['Cmd+Alt+A'], act: (c) => c.run('comment.new') },
   // Cmd+Y and Cmd+Shift+Z both redo (WPS W-I2; the catalogue gives the frame one of them).
   { keys: ['Cmd+Y', 'Cmd+Shift+Z'], act: (c) => c.run('edit.redo') },
   // Cmd+] and Cmd+Shift+> grow the text through the size list, Cmd+[ and Cmd+Shift+< shrink it

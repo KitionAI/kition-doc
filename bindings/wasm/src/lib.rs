@@ -199,8 +199,29 @@ impl DocDocument {
 
     /// How pages are drawn: as printed, or with the editor's editing look (see `editing`).
     fn render_options(&self) -> kition_doc_render::RenderOptions {
-        let display = kition_doc_engine::layout::display::DisplayOptions { dim_header: self.editing, proofing: self.editing, ..Default::default() };
+        // Show/Hide ¶ draws the formatting marks while editing (walkthrough G13; never in print).
+        let marks = self.editing && self.session.borrow().view.marks;
+        let display =
+            kition_doc_engine::layout::display::DisplayOptions { dim_header: self.editing, proofing: self.editing, marks, ..Default::default() };
         kition_doc_render::RenderOptions { display, ..Default::default() }
+    }
+
+    /// After a command ran (`marks`: whether Show/Hide ¶ was on before it). The pages are drawn
+    /// again when it turned the marks on or off (they are not part of the revision). A dialog it
+    /// asked for is the person's only: an agent's call, and a served session's, opens none
+    /// (programmatic calls never open dialogs), so its requests are dropped; the person's wait for
+    /// the next tool answer (`respond`).
+    pub(crate) fn after_run(&mut self, marks: bool) {
+        let (now, person) = {
+            let session = self.session.borrow();
+            (session.view.marks, session.undo_scope() == kition_kit::kdm::UndoScope::Person)
+        };
+        if now != marks {
+            self.drawn = self.drawn.saturating_add(1);
+        }
+        if !person || files::served() {
+            self.session().ui_requests.clear();
+        }
     }
 
     fn session(&self) -> RefMut<'_, Session> {
@@ -348,9 +369,15 @@ impl DocDocument {
     }
 
     fn respond(&self) -> ToolResponse {
-        let requests = std::mem::take(&mut self.session().status);
+        let status = std::mem::take(&mut self.session().status);
+        // The dialogs the person's commands asked for (stage 6A; the engine's `ui_requests`), for
+        // the editor to open: each once, in the order asked.
+        let mut requests: Vec<ToolRequest> = std::mem::take(&mut self.session().ui_requests).into_iter().filter_map(dialog_request).collect();
+        if !status.is_empty() {
+            requests.push(ToolRequest::Status { text: status });
+        }
         ToolResponse {
-            requests: if requests.is_empty() { Vec::new() } else { vec![ToolRequest::Status { text: requests }] },
+            requests,
             overlays: self.overlays(),
             cursor: {
                 let layout = self.layout();
@@ -448,6 +475,26 @@ fn shortcut(text: &str) -> Option<String> {
     text.split(" / ").next().filter(|first| !first.is_empty()).map(|first| first.replace("Mod+", "Cmd+"))
 }
 
+/// An engine request (`ui_requests`: `{"open": "font"}`, `{"scrollTo": "caret"}`,
+/// `{"toggle": "split"}`, `{"close": true}`) as the dialog the editor opens: its name, and the
+/// request's other members as its values (the paste formats, the text to paste).
+fn dialog_request(request: Value) -> Option<ToolRequest> {
+    let Value::Object(mut members) = request else { return None };
+    let name = if let Some(Value::String(name)) = members.remove("open") {
+        name
+    } else if let Some(Value::String(to)) = members.remove("scrollTo") {
+        members.insert("to".into(), Value::String(to));
+        "scrollTo".into()
+    } else if let Some(Value::String(name)) = members.remove("toggle") {
+        name
+    } else if members.remove("close").is_some() {
+        "close".into()
+    } else {
+        return None;
+    };
+    Some(ToolRequest::Dialog { name, params: Value::Object(members) })
+}
+
 impl KitDocument for DocDocument {
     /// Opens a Word document (and the other formats Kition Doc reads).
     fn open(name: &str, bytes: &[u8]) -> Result<Self, String> {
@@ -523,11 +570,13 @@ impl KitDocument for DocDocument {
         self.clipboard_gate(command, &params)?;
         let params = self.resolved(command, params);
         let selection = self.session.borrow().sel.clone();
+        let marks = self.session.borrow().view.marks;
         let answer = self.session().run(command, &params).map_err(|error| error.to_string())?;
         self.selection_active |= self.session.borrow().sel != selection || matches!(command, "select.range" | "caret.set");
         self.copied_by(command);
         self.note_inserted_chart(command, &params, &answer);
         self.settle_preedit();
+        self.after_run(marks);
         Ok(answer)
     }
 
@@ -837,8 +886,10 @@ impl KitTools for DocDocument {
     }
 
     fn key(&mut self, key: &str, mods: ToolMods, zoom: f64) -> Result<ToolResponse, String> {
+        let marks = self.session.borrow().view.marks;
         let answer = self.key_press(key, mods, zoom);
         self.settle_preedit();
+        self.after_run(marks);
         answer
     }
 

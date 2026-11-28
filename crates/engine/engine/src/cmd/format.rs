@@ -518,6 +518,8 @@ pub fn state(s: &Session) -> Value {
         "highlight": same(&|r| json!(r.highlight.map(|c| c.hex()))),
         "style": style,
         "styleName": style_name,
+        // The caret's paragraph's alignment, as the ribbon's alignment buttons show it (G6).
+        "align": s.doc.para_at(&s.sel.focus).map(|p| json!(s.doc.styles.resolve_para(&p.props).align)),
     })
 }
 

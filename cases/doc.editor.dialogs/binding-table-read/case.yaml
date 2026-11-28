@@ -1,0 +1,21 @@
+format: 1
+id: doc.editor.dialogs/binding-table-read
+feature: doc.editor.dialogs
+intent: "Table Properties with no settings answers the table's and is no edit: no undo step, nothing to save."
+layer: gate
+dimension: function
+source:
+  kind: synthetic
+  from: bindings/wasm/src/tests.rs
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-doc-kit
+      filter: reading_table_properties_is_no_edit
+expected:
+  - actual: out:cargo-test
+    compare: exit
+    value: 0
+timeout_s: 120
+since: "2026-11-28"

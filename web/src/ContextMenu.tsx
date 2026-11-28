@@ -3,8 +3,8 @@
  * walkthrough R1; WPS W-S1-W-S4). The engine settles the selection first and answers what the menu
  * is for (`contextMenu` in the binding, `context_menu.rs`): text, with or without a selection, a
  * misspelled word, a table's cell, a picture, a shape or a chart. The rows are WPS's, in its order,
- * and each runs a command the ribbon runs too; a row WPS has whose command or dialog the editor
- * does not have yet is not there (Font…, Paragraph…, Table Properties…: stage 6A's dialogs).
+ * and each runs a command the ribbon runs too; Font…, Paragraph… and Table Properties… open the
+ * editor's dialogs (stage 6A). WPS's Borders and Shading… dialog is the Borders submenu here.
  *
  * It opens at the pointer (or, from Shift+F10 and the menu key, at the caret's foot or the selected
  * object's middle), and closes on Escape, a press outside, a choice, the wheel or the window going
@@ -117,6 +117,8 @@ export function DocContextMenu({ menu, onClose, onClipboard, onNewComment }: {
           <MenuItem label={t('menuKeepTextOnly')} disabled={!enabled('edit.pasteText')} onSelect={() => onClipboard('pasteText')} testId="doc-menu-paste-text" />
           <MenuItem label={t('menuPasteSpecial')} disabled={!enabled('edit.pasteSpecial')} onSelect={() => onClipboard('pasteSpecial')} testId="doc-menu-paste-special" />
           <MenuSeparator />
+          <MenuItem label={t('menuFont')} disabled={!enabled('format.set')} onSelect={() => go('format.fontDialog')} testId="doc-menu-font" />
+          <MenuItem label={t('menuParagraph')} disabled={!enabled('paragraph.set')} onSelect={() => go('paragraph.dialog')} testId="doc-menu-paragraph" />
           <SubMenu label={t('menuBullets')} path="Context/Bullets" testId="doc-menu-bullets">
             {BULLETS.map((kind) => (
               <CommandItem key={kind} command="paragraph.bullets" params={{ kind }} label={kind} />
@@ -176,6 +178,7 @@ export function DocContextMenu({ menu, onClose, onClipboard, onNewComment }: {
               <CommandItem key={value} command="table.textDirection" params={{ value }} label={t(`menuDirection.${value}`)} />
             ))}
           </SubMenu>
+          <MenuItem label={t('menuTableProperties')} disabled={!enabled('table.properties')} onSelect={() => go('table.properties')} testId="doc-menu-table-properties" />
         </>
       ) : null}
       {menu && object ? (
@@ -183,6 +186,7 @@ export function DocContextMenu({ menu, onClose, onClipboard, onNewComment }: {
           <MenuSeparator />
           <MenuItem label={t('menuDeleteObject')} disabled={!enabled('text.delete')} onSelect={() => go('text.delete')} testId="doc-menu-delete-object" />
           {menu.target === 'picture' ? <CommandItem command="image.altText" ask label={t('menuAltText')} /> : null}
+          {menu.target !== 'chart' ? <MenuItem label={t('menuSize')} disabled={!enabled('image.size')} onSelect={() => go('image.size')} testId="doc-menu-size" /> : null}
           <CommandItem command="caption.insert" ask label={t('menuCaption')} />
           <MenuSeparator />
           {menu.target === 'shape' ? <CommandItem command="arrange.group" label={t('menuGroup')} /> : null}

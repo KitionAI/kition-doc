@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import {
   Button,
   CommandTab,
@@ -19,6 +19,7 @@ import {
   type Phrases,
   type RasterRect,
   type RasterView,
+  toast,
 } from '@kition/sdk/editor'
 import { engineManifest } from './engine'
 import { useEngineBackdrop } from './backdrop'
@@ -45,6 +46,12 @@ import { useInputMethod } from './inputMethod'
 import { edgeScrolling } from './edgeScroll'
 import { ZoomControl, type ZoomActions } from './ZoomControl'
 import { DocContextMenu, type MenuAnswer, type OpenMenu } from './ContextMenu'
+import { DocDialogs } from './dialogs/DocDialogs'
+import { openDialog } from './dialogs/store'
+import { ASKING, NOTICES, OWN_WINDOWS, PARAMS_FIRST, REQUESTS, unfilled, type AskContext } from './dialogs/asks'
+import { ReviewTab, REVIEW_OWN } from './ribbon/ReviewTab'
+import { ReadModeBar } from './ReadModeBar'
+import { TableDesignGroups, TableLayoutGroups, TABLE_DESIGN_OWN, TABLE_LAYOUT_OWN } from './ribbon/TableGroups'
 
 const NO_PAGES: RasterRect[] = []
 /** Word's New Comment: in a host that keeps comment threads, the host's new thread instead. */
@@ -77,6 +84,13 @@ function useCommentThreadsOf(editor: { query: <R>(id: string, params?: Record<st
  */
 const hiddenShortcut = (command: string) => command === 'select.collapse' || command === 'edit.replace'
 
+/**
+ * Buttons the generated tabs leave out: what they run is an agent's query (a list) with nothing a
+ * person would see, or needs a service Kition does not have (stage 6A item 7, the button census).
+ * The commands stay, for agents and the command search.
+ */
+const HIDDEN_FROM_RIBBON = ['theme.list', 'research.open']
+
 const TABS = ['file', 'home', 'insert', 'draw', 'design', 'layout', 'references', 'mailings', 'review', 'view'] as const
 const TAB_MENUS: Record<string, string> = { file: 'File', home: 'Home', insert: 'Insert', draw: 'Draw', design: 'Design', layout: 'Layout', references: 'References', mailings: 'Mailings', review: 'Review', view: 'View' }
 
@@ -105,18 +119,47 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   // The editor's own runs (the ribbon, the keys table, dialogs) are the person's moves: the view
   // follows the caret after them (followCaret.ts).
   const personActed = useRef<() => void>(() => undefined)
+  // What the dialogs a person asks for open (dialogs/asks.ts); filled in below, once the parts exist.
+  const asks = useRef<AskContext | null>(null)
+  // The engine's requests wait in the tool's next answer: asked for after a run that may make one.
+  const refreshTools = useRef<() => void>(() => undefined)
+  // What the commands' buttons are greyed by beyond the engine's own conditions (stage 6A item 7).
+  const greyed = useRef<(id: string) => boolean>(() => false)
+  // A run the editor does its own way first (Next Footnote with none), and what follows a run (a notice).
+  const special = useRef<(id: string, params?: Record<string, unknown>) => Promise<string | null> | null>(() => null)
+  const afterRun = useRef<(id: string, answer: Promise<string | null>) => void>(() => undefined)
   const editor = useMemo(() => {
+    const ownWindow = (id: string, params?: Record<string, unknown>) => {
+      const own = OWN_WINDOWS[id]
+      if (!own || !asks.current || (id === NEW_COMMENT && hosted.on) || !unfilled(params, own.fills)) return false
+      own.open(asks.current)
+      return true
+    }
+    const ask: typeof ownEditor.ask = (id, values) => {
+      if (!ownWindow(id, values)) ownEditor.ask(id, values)
+    }
     const run: typeof ownEditor.run = (id, params, options) => {
       if (id === 'edit.selectAll') holdView.current = true
       if (id === 'table.insert' || id === 'table.quick' || id === 'table.fromText') tableMade.current = true
       personActed.current()
-      if (id !== NEW_COMMENT || !hosted.on) return ownEditor.run(id, params, options)
+      if (ownWindow(id, params)) return Promise.resolve(null)
+      if (PARAMS_FIRST.has(id) && unfilled(params, [])) {
+        ownEditor.ask(id)
+        return Promise.resolve(null)
+      }
+      const own = special.current(id, params)
+      if (own) return own
+      if (id !== NEW_COMMENT || !hosted.on) {
+        const answer = ownEditor.run(id, params, options)
+        if (ASKING.has(id)) void answer.then(() => refreshTools.current())
+        afterRun.current(id, answer)
+        return answer
+      }
       if (hostCreates) startHosted()
       return Promise.resolve(null)
     }
-    if (!hosted.on) return { ...ownEditor, run }
-    const enabled = (id: string) => (id === NEW_COMMENT ? hostCreates && hostSelection != null : ownEditor.enabled(id))
-    return { ...ownEditor, run, enabled }
+    const enabled = (id: string) => (hosted.on && id === NEW_COMMENT ? hostCreates && hostSelection != null : ownEditor.enabled(id) && !greyed.current(id))
+    return { ...ownEditor, run, ask, enabled }
   }, [hostCreates, hostSelection, hosted.on, ownEditor, startHosted])
   // Select All holds the view until the person's next key (but Cmd+A itself) or press.
   useEffect(() => {
@@ -134,7 +177,17 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   // Escape cancels first (KitPointer 4.4): the text tool takes Escape only while the engine has
   // something for it to cancel (`escape`: a gesture, a shape chosen to draw, a selection). Any
   // other Escape is left untaken, so in Focus it leaves Focus.
-  const tools = useEngineTools(session.tool, doc != null, change, { initial: 'text', hostTools: {}, escapable: () => state?.escape === true })
+  const tools = useEngineTools(session.tool, doc != null, change, {
+    initial: 'text',
+    hostTools: {},
+    escapable: () => state?.escape === true,
+    // A dialog the engine asks for (its `ui_requests`, the binding's tool requests): dialogs/asks.ts.
+    onDialog: (name, params) => {
+      const open = REQUESTS[name]
+      if (open && asks.current) open(asks.current, params && typeof params === 'object' ? (params as Record<string, unknown>) : {})
+    },
+  })
+  refreshTools.current = tools.refresh
   const canvas = useRef<KitCanvasHandle>(null)
   useEngineBackdrop(doc, canvas)
   // A drag past the window's edge scrolls the view (edgeScroll.ts), whatever the text tool's
@@ -170,6 +223,9 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   const findText = useRef('')
   const findAsks = useRef(0)
   const [commentsOpen, setCommentsOpen] = useState(false)
+  // New Comment (Cmd+Alt+A, Review, Insert, the right-click menu): the pane with the new comment's
+  // box, which takes the keyboard; the text stays selected (stage 6A item 5; walkthrough K3).
+  const [newCommentAsked, setNewCommentAsked] = useState(0)
   const [activeThread, setActiveThread] = useState<string | null>(null)
 
   const threads = useCommentThreadsOf(editor)
@@ -320,7 +376,59 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
       })
       .catch(() => undefined)
   }
-  const newComment = () => (hosted.on ? void editor.run(NEW_COMMENT) : editor.ask(NEW_COMMENT))
+  const startComment = () => {
+    setCommentsOpen(true)
+    setNewCommentAsked((count) => count + 1)
+  }
+  const newComment = () => (hosted.on ? void editor.run(NEW_COMMENT) : startComment())
+
+  // Insert › Pictures' file picker (the host's), for the engine's request of it.
+  const pickPicture = useRef<() => void>(() => undefined)
+  asks.current = {
+    dialog: openDialog,
+    find: (replacing) => openFind(replacing),
+    params: (command) => ownEditor.ask(command),
+    showCaret: () => personActed.current(),
+    pasteSpecial: () => clipboard('pasteSpecial'),
+    picture: () => pickPicture.current(),
+    // The status bar's zoom choices.
+    zoom: () => document.querySelector<HTMLButtonElement>('[data-testid=kit-zoom]')?.click(),
+    tell: (key) => void toast('info', t(key)),
+    close: () => host.close(),
+    comment: startComment,
+    commentsPane: () => setCommentsOpen((open) => !open),
+  }
+  // Review's buttons on comments and tracked changes are grey when the document has none (REVIEW_OWN).
+  const [revisions, setRevisions] = useState<number | null>(null)
+  useEffect(() => {
+    if (tab !== 'review' || !doc) {
+      setRevisions(null)
+      return undefined
+    }
+    let stale = false
+    void ownEditor.query<unknown[]>('change.list').then((list) => {
+      if (!stale) setRevisions(Array.isArray(list) ? list.length : null)
+    })
+    return () => {
+      stale = true
+    }
+  }, [tab, doc, change.revision, ownEditor.query])
+  greyed.current = (id) => (REVIEW_OWN.comments.includes(id) && threads.length === 0) || (REVIEW_OWN.changes.includes(id) && revisions === 0)
+  special.current = (id) => {
+    // Next Footnote, and Show Notes (which only lists them to an agent), go to the next note's
+    // reference; with none in the text the caret stays, and they say so.
+    if (id !== 'footnote.next' && id !== 'footnote.show') return null
+    const where = () => ownEditor.query<{ anchor?: unknown; focus?: unknown }>('file.selection').then((selection) => JSON.stringify([selection?.anchor, selection?.focus]))
+    return where().then(async (before) => {
+      const answer = await ownEditor.run('footnote.next')
+      if ((await where()) === before) toast('info', t('noNotes'))
+      return answer
+    })
+  }
+  afterRun.current = (id, answer) => {
+    const notice = NOTICES[id]
+    if (notice) void answer.then((done) => done != null && toast('success', t(notice)))
+  }
 
   const openFind = (replacing: boolean) => setFind((open) => ({ replacing: replacing || (open?.replacing ?? false), request: open?.request, focus: ++findAsks.current }))
   const closeFind = () => {
@@ -353,6 +461,18 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   }
   const keyDown = (event: KeyboardEvent<HTMLDivElement>) => pressKey(event, keyContext)
 
+  // The commands the editor has a window for never show their parameters dialog, whatever asked
+  // for it (a ribbon tab's command list, the command search): the window opens instead.
+  const askedFor = ownEditor.dialog?.command.id
+  useLayoutEffect(() => {
+    if (!askedFor || !asks.current) return
+    const own = OWN_WINDOWS[askedFor]
+    if (!own || (askedFor === NEW_COMMENT && hosted.on) || !unfilled(ownEditor.dialog?.values, own.fills)) return
+    ownEditor.setDialog(null)
+    own.open(asks.current)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- per dialog asked for
+  }, [ownEditor.dialog])
+
   const contextTabs = state ? CONTEXT_TABS.filter((context) => context.when(editor.enabled, state)) : []
   const ribbons: Record<(typeof TABS)[number], ReactNode> = {
     file: (
@@ -364,11 +484,11 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     home: <HomeTab onFind={openFind} onClipboard={clipboard} painter={state?.painter ?? null} />,
     insert: <InsertTab />,
     draw: <DrawTab />,
-    design: <CommandTab menu="Design" primary={DOC_PRIMARY.Design} />,
+    design: <CommandTab menu="Design" exclude={HIDDEN_FROM_RIBBON} primary={DOC_PRIMARY.Design} />,
     layout: <LayoutTab />,
-    references: <CommandTab menu="References" primary={DOC_PRIMARY.References} />,
+    references: <CommandTab menu="References" exclude={HIDDEN_FROM_RIBBON} primary={DOC_PRIMARY.References} />,
     mailings: <CommandTab menu="Mailings" primary={DOC_PRIMARY.Mailings} />,
-    review: <CommandTab menu="Review" primary={DOC_PRIMARY.Review} />,
+    review: <ReviewTab />,
     view: <ViewTab zoom={zoomActions} />,
   }
   const tabs: FrameTab[] = [
@@ -380,7 +500,9 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
         <>
           {context.id === 'shapeFormat' && state?.shape ? <DrawingFormatGroup ids={state.shapes?.length ? state.shapes : [state.shape]} testId="doc-drawing" /> : null}
           {context.id === 'chartDesign' && state?.chart ? <ChartDesignGroups id={state.chart} testId="doc-chart" /> : null}
-          <CommandTab menu={context.menu} extra={context.extra} primary={context.primary} />
+          {context.id === 'tableDesign' ? <TableDesignGroups /> : null}
+          {context.id === 'tableLayout' ? <TableLayoutGroups /> : null}
+          <CommandTab menu={context.menu} extra={context.extra} primary={context.primary} exclude={context.id === 'tableDesign' ? TABLE_DESIGN_OWN : context.id === 'tableLayout' ? TABLE_LAYOUT_OWN : undefined} />
         </>
       ),
     })),
@@ -435,11 +557,13 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
               onActive={setActiveThread}
               onClose={() => setCommentsOpen(false)}
               onNew={hosted.on ? (hostCreates ? startHosted : null) : undefined}
+              start={newCommentAsked}
               strings={{ title: t('comments'), newComment: t('newComment'), close: t('close'), selectFirst: t('commentOnSelection'), labels: commentLabels }}
             />
           ) : null
         }
       >
+        <ReadModeBar />
         {find ? (
           <FrameChrome>
             <FindBar replacing={find.replacing} initial={findText.current} request={find.request} focus={find.focus} onText={(text) => (findText.current = text)} onClose={closeFind} />
@@ -480,6 +604,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
           }
         />
         <DocContextMenu menu={menu} onClose={closeMenu} onClipboard={clipboard} onNewComment={newComment} />
+        <DocDialogs pick={pickPicture} />
       </EditorFrame>
     </KitEditorProvider>
   )
