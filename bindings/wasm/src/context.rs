@@ -18,7 +18,7 @@ use crate::DocDocument;
 
 /// The keys and JSON Pointers of `inspect()` that are the editing session, not the file: the
 /// kit's editor-state list (kition-headless's volatile keys and `testing::check_context`).
-pub const EDITOR_STATE: &[&str] = &["/page", "/selected", "/story", "/equation", "/shape", "/shapes", "/chart", "/escape"];
+pub const EDITOR_STATE: &[&str] = &["/page", "/caret", "/selected", "/story", "/equation", "/shape", "/shapes", "/chart", "/escape"];
 
 /// Where paragraph `id` (`p` and eight hex digits) is: its story and path.
 pub(crate) fn paragraph(doc: &Document, id: &str) -> Option<Pos> {
